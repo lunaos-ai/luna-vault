@@ -37,11 +37,13 @@ public final class VaultService: @unchecked Sendable {
         value: String,
         notes: String? = nil,
         expiresAt: Date? = nil,
-        rotateEveryDays: Int? = nil
+        rotateEveryDays: Int? = nil,
+        mcpAllowed: Bool = false
     ) throws {
         let secret = Secret(
             name: name, value: value, notes: notes,
-            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
+            mcpAllowed: mcpAllowed
         )
         try store.add(secret)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
@@ -52,13 +54,27 @@ public final class VaultService: @unchecked Sendable {
         value: String,
         notes: String? = nil,
         expiresAt: Date? = nil,
-        rotateEveryDays: Int? = nil
+        rotateEveryDays: Int? = nil,
+        mcpAllowed: Bool = false
     ) throws {
         let secret = Secret(
             name: name, value: value, notes: notes,
-            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
+            mcpAllowed: mcpAllowed
         )
         try store.update(secret)
+        try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
+    }
+
+    public func setMCPAllowed(name: String, allowed: Bool) async throws {
+        let existing = try await read(name: name, reason: "Toggle MCP access for \(name)")
+        let updated = Secret(
+            name: existing.name, value: existing.value, updatedAt: Date(),
+            notes: existing.notes, expiresAt: existing.expiresAt,
+            rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
+            mcpAllowed: allowed
+        )
+        try store.update(updated)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
 

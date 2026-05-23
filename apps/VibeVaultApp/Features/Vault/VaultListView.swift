@@ -92,6 +92,7 @@ struct AddSecretSheet: View {
     @State private var expiresAt = Date().addingTimeInterval(60 * 60 * 24 * 90)
     @State private var rotateEnabled = false
     @State private var rotateDays = 90
+    @State private var mcpAllowed = false
 
     var body: some View {
         Form {
@@ -125,6 +126,14 @@ struct AddSecretSheet: View {
             } footer: {
                 Text("Tracks when each secret was last rotated. CLI: `vibevault rotate <NAME>`.")
             }
+
+            Section {
+                Toggle("Allow AI agents", isOn: $mcpAllowed)
+            } header: {
+                Text("Access")
+            } footer: {
+                Text("When on, AI agents using the Vibe Vault MCP server (Claude Code, Cursor, etc.) can read this secret. Every read is audited.")
+            }
         }
         .formStyle(.grouped)
         .frame(minWidth: 480, minHeight: 460)
@@ -139,7 +148,8 @@ struct AddSecretSheet: View {
                         value: value,
                         notes: notes.isEmpty ? nil : notes,
                         expiresAt: hasExpiry ? expiresAt : nil,
-                        rotateEveryDays: rotateEnabled ? rotateDays : nil
+                        rotateEveryDays: rotateEnabled ? rotateDays : nil,
+                        mcpAllowed: mcpAllowed
                     )
                     dismiss()
                 }

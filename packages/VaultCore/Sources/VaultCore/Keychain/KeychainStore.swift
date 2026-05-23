@@ -70,7 +70,8 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
             notes: meta.notes,
             expiresAt: meta.expiresAt,
             rotateEveryDays: meta.rotateEveryDays,
-            lastRotatedAt: meta.lastRotatedAt
+            lastRotatedAt: meta.lastRotatedAt,
+            mcpAllowed: meta.mcpAllowed ?? false
         )
     }
 
@@ -79,7 +80,8 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
             notes: secret.notes,
             expiresAt: secret.expiresAt,
             rotateEveryDays: secret.rotateEveryDays,
-            lastRotatedAt: secret.lastRotatedAt
+            lastRotatedAt: secret.lastRotatedAt,
+            mcpAllowed: secret.mcpAllowed ? true : nil
         )
         return meta.encode()
     }
@@ -115,7 +117,8 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
                 notes: meta.notes,
                 expiresAt: meta.expiresAt,
                 rotateEveryDays: meta.rotateEveryDays,
-                lastRotatedAt: meta.lastRotatedAt
+                lastRotatedAt: meta.lastRotatedAt,
+                mcpAllowed: meta.mcpAllowed ?? false
             )
         }
     }

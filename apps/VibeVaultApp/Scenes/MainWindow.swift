@@ -6,7 +6,7 @@ struct MainWindow: View {
     @State private var selection: SidebarItem = .vault
 
     enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-        case vault, importSecrets = "import", projects, audit, providers, settings
+        case vault, importSecrets = "import", projects, audit, providers, aiAgents = "ai-agents", settings
         var id: String { rawValue }
         var label: String {
             switch self {
@@ -15,6 +15,7 @@ struct MainWindow: View {
             case .projects: return "Projects"
             case .audit: return "Audit"
             case .providers: return "Providers"
+            case .aiAgents: return "AI Agents"
             case .settings: return "Settings"
             }
         }
@@ -25,6 +26,7 @@ struct MainWindow: View {
             case .projects: return "folder.badge.questionmark"
             case .audit: return "list.bullet.rectangle"
             case .providers: return "icloud.and.arrow.up"
+            case .aiAgents: return "sparkles"
             case .settings: return "gearshape"
             }
         }
@@ -51,6 +53,7 @@ struct MainWindow: View {
         case .projects: ProjectScannerView()
         case .audit: AuditLogView()
         case .providers: ProviderSyncView()
+        case .aiAgents: AIAgentsView()
         case .settings: SettingsView()
         }
     }

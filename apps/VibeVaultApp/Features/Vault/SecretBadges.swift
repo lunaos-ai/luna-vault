@@ -29,6 +29,9 @@ struct SecretBadgeStrip: View {
         if secret.isRotationDue {
             out.append(Badge(text: "Rotate due", icon: "arrow.triangle.2.circlepath", tint: .red))
         }
+        if secret.mcpAllowed {
+            out.append(Badge(text: "MCP", icon: "sparkles", tint: .purple))
+        }
         return out
     }
 

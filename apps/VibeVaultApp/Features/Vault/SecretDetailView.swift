@@ -52,6 +52,17 @@ struct SecretDetailView: View {
             }
 
             Section {
+                Toggle("Allow AI agents (MCP)", isOn: Binding(
+                    get: { secret.mcpAllowed },
+                    set: { newVal in Task { await env.setMCPAllowed(name: secret.name, allowed: newVal) } }
+                ))
+            } header: {
+                Text("Access")
+            } footer: {
+                Text("When on, AI agents connected via the Vibe Vault MCP server (Claude Code, Cursor, etc.) can read this secret. Every read is audited.")
+            }
+
+            Section {
                 Button { showRotateSheet = true } label: {
                     Label("Rotate value…", systemImage: "arrow.triangle.2.circlepath")
                 }

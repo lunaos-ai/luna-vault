@@ -8,6 +8,7 @@ public struct Secret: Equatable, Hashable, Sendable {
     public let expiresAt: Date?
     public let rotateEveryDays: Int?
     public let lastRotatedAt: Date?
+    public let mcpAllowed: Bool
 
     public init(
         name: String,
@@ -16,7 +17,8 @@ public struct Secret: Equatable, Hashable, Sendable {
         notes: String? = nil,
         expiresAt: Date? = nil,
         rotateEveryDays: Int? = nil,
-        lastRotatedAt: Date? = nil
+        lastRotatedAt: Date? = nil,
+        mcpAllowed: Bool = false
     ) {
         self.name = name
         self.value = value
@@ -25,6 +27,7 @@ public struct Secret: Equatable, Hashable, Sendable {
         self.expiresAt = expiresAt
         self.rotateEveryDays = rotateEveryDays
         self.lastRotatedAt = lastRotatedAt
+        self.mcpAllowed = mcpAllowed
     }
 
     public var maskedValue: String {
@@ -77,18 +80,19 @@ struct SecretMetadata: Codable {
     var expiresAt: Date?
     var rotateEveryDays: Int?
     var lastRotatedAt: Date?
+    var mcpAllowed: Bool?
 
     static let empty = SecretMetadata()
 
     static func decode(_ string: String?) -> SecretMetadata {
         guard let s = string, !s.isEmpty, let data = s.data(using: .utf8) else { return .empty }
         if let parsed = try? JSONDecoder.luna.decode(SecretMetadata.self, from: data) { return parsed }
-        // Backwards-compat: treat plain text as legacy notes.
         return SecretMetadata(notes: s)
     }
 
     func encode() -> String? {
-        if notes == nil, expiresAt == nil, rotateEveryDays == nil, lastRotatedAt == nil { return nil }
+        if notes == nil, expiresAt == nil, rotateEveryDays == nil,
+           lastRotatedAt == nil, mcpAllowed == nil { return nil }
         guard let data = try? JSONEncoder.luna.encode(self),
               let s = String(data: data, encoding: .utf8) else { return nil }
         return s
