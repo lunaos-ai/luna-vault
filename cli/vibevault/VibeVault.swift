@@ -3,9 +3,9 @@ import Foundation
 import VaultCore
 
 @main
-struct LunaVault: AsyncParsableCommand {
+struct VibeVault: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "lunavault",
+        commandName: "vibevault",
         abstract: "Local-first secret manager for AI-coding workflows.",
         version: "0.1.0-dev",
         subcommands: [

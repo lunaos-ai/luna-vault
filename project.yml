@@ -1,11 +1,11 @@
-# xcodegen config for the LunaVault.app target.
+# xcodegen config for the VibeVault.app target.
 # Install xcodegen:  brew install xcodegen
 # Generate Xcode project:  xcodegen generate
-# Build .app:  xcodebuild -scheme LunaVault -configuration Release build
+# Build .app:  xcodebuild -scheme VibeVault -configuration Release build
 
-name: LunaVault
+name: VibeVault
 options:
-  bundleIdPrefix: dev.lunaos.vault
+  bundleIdPrefix: dev.vibevault
   developmentLanguage: en
   deploymentTarget:
     macOS: "14.0"
@@ -13,7 +13,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    PRODUCT_BUNDLE_IDENTIFIER: dev.lunaos.vault
+    PRODUCT_BUNDLE_IDENTIFIER: dev.vibevault
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: NO
@@ -26,35 +26,35 @@ packages:
     path: .
 
 targets:
-  LunaVault:
+  VibeVault:
     type: application
     platform: macOS
     sources:
-      - path: apps/LunaVaultApp
+      - path: apps/VibeVaultApp
         excludes:
           - "Info.plist"
-          - "LunaVault.entitlements"
+          - "VibeVault.entitlements"
           - "Resources"
     info:
-      path: apps/LunaVaultApp/Info.plist
+      path: apps/VibeVaultApp/Info.plist
     entitlements:
-      path: apps/LunaVaultApp/LunaVault.entitlements
+      path: apps/VibeVaultApp/VibeVault.entitlements
     dependencies:
       - package: VaultCore
         product: VaultCore
     settings:
       base:
-        INFOPLIST_FILE: apps/LunaVaultApp/Info.plist
-        CODE_SIGN_ENTITLEMENTS: apps/LunaVaultApp/LunaVault.entitlements
+        INFOPLIST_FILE: apps/VibeVaultApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: apps/VibeVaultApp/VibeVault.entitlements
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
 
 schemes:
-  LunaVault:
+  VibeVault:
     build:
       targets:
-        LunaVault: all
+        VibeVault: all
     run:
       config: Debug
     archive:

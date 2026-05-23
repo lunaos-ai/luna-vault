@@ -9,14 +9,14 @@ public protocol AuditLogging: Sendable {
 
 public final class AuditDB: AuditLogging, @unchecked Sendable {
     private var db: OpaquePointer?
-    private let queue = DispatchQueue(label: "dev.lunaos.vault.audit")
+    private let queue = DispatchQueue(label: "dev.vibevault.audit")
     private let path: String
     private static let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     public static func defaultURL() -> URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        let dir = base.appendingPathComponent("luna-vault", isDirectory: true)
+        let dir = base.appendingPathComponent("vibe-vault", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("audit.db")
     }

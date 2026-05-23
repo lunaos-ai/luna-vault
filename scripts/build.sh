@@ -6,5 +6,5 @@ cd "$(dirname "$0")/.."
 swift build -c release
 echo ""
 echo "Built:"
-echo "  CLI:    .build/release/lunavault"
+echo "  CLI:    .build/release/vibevault"
 echo "  Core:   .build/release/libVaultCore.dylib (linked into CLI)"

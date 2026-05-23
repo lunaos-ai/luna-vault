@@ -5,7 +5,7 @@ struct OnboardingScene: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.xl) {
-            Text("Welcome to luna-vault")
+            Text("Welcome to vibe-vault")
                 .font(.system(size: 28, weight: .semibold))
             Text("Your secrets live in macOS Keychain. Every read is audited per AI agent. No cloud, no account.")
                 .foregroundStyle(Tokens.Color.textSecondary)

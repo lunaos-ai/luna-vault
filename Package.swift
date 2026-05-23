@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "luna-vault",
+    name: "vibe-vault",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "VaultCore", targets: ["VaultCore"]),
-        .executable(name: "lunavault", targets: ["lunavault"]),
-        .executable(name: "LunaVaultApp", targets: ["LunaVaultApp"])
+        .executable(name: "vibevault", targets: ["vibevault"]),
+        .executable(name: "VibeVaultApp", targets: ["VibeVaultApp"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0")
@@ -28,18 +28,18 @@ let package = Package(
             path: "packages/VaultCore/Tests/VaultCoreTests"
         ),
         .executableTarget(
-            name: "lunavault",
+            name: "vibevault",
             dependencies: [
                 "VaultCore",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
-            path: "cli/lunavault"
+            path: "cli/vibevault"
         ),
         .executableTarget(
-            name: "LunaVaultApp",
+            name: "VibeVaultApp",
             dependencies: ["VaultCore"],
-            path: "apps/LunaVaultApp",
-            exclude: ["Info.plist", "LunaVault.entitlements", "Resources"]
+            path: "apps/VibeVaultApp",
+            exclude: ["Info.plist", "VibeVault.entitlements", "Resources"]
         )
     ]
 )

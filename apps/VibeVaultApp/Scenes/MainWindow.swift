@@ -10,8 +10,12 @@ struct MainWindow: View {
         var id: String { rawValue }
         var label: String {
             switch self {
+            case .vault: return "Vault"
             case .importSecrets: return "Import"
-            default: return rawValue.capitalized
+            case .projects: return "Projects"
+            case .audit: return "Audit"
+            case .providers: return "Providers"
+            case .settings: return "Settings"
             }
         }
         var systemImage: String {
@@ -21,7 +25,7 @@ struct MainWindow: View {
             case .projects: return "folder.badge.questionmark"
             case .audit: return "list.bullet.rectangle"
             case .providers: return "icloud.and.arrow.up"
-            case .settings: return "gear"
+            case .settings: return "gearshape"
             }
         }
     }
@@ -31,11 +35,10 @@ struct MainWindow: View {
             List(SidebarItem.allCases, selection: $selection) { item in
                 Label(item.label, systemImage: item.systemImage).tag(item)
             }
-            .navigationSplitViewColumnWidth(min: 160, ideal: 200, max: 240)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
+            .navigationTitle("Vibe Vault")
         } detail: {
             detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Tokens.Color.surface)
         }
         .task { env.refresh(); env.refreshAudit() }
     }
@@ -58,17 +61,14 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Touch ID session") {
+            Section {
                 Stepper(
                     "Re-prompt every \(Int(env.biometricSessionMinutes)) minute(s)",
                     value: $env.biometricSessionMinutes,
                     in: 1...60
                 )
-                Text("Lower = safer; higher = fewer prompts during long sessions.")
-                    .font(.caption)
-                    .foregroundStyle(Tokens.Color.textSecondary)
-
-                HStack(spacing: Tokens.Space.md) {
+                LabeledContent("Status", value: env.biometricStatus)
+                HStack {
                     Button {
                         Task { await env.testBiometric() }
                     } label: {
@@ -80,20 +80,19 @@ struct SettingsView: View {
                         Label("Lock session", systemImage: "lock.fill")
                     }
                 }
-                HStack {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(Tokens.Color.textSecondary)
-                    Text(env.biometricStatus)
-                        .font(.caption)
-                        .foregroundStyle(Tokens.Color.textSecondary)
-                }
+            } header: {
+                Text("Touch ID session")
+            } footer: {
+                Text("Lower = safer; higher = fewer prompts during long sessions.")
             }
-            Section("Audit retention") {
-                Text("Records older than 90 days are auto-purged. Override in CLI: `lunavault purge --days N`.")
-                    .foregroundStyle(Tokens.Color.textSecondary)
+            Section {
+                Text("Records older than 90 days are auto-purged. Override in CLI: `vibevault purge --days N`.")
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Audit retention")
             }
         }
         .formStyle(.grouped)
-        .padding(Tokens.Space.xl)
+        .navigationTitle("Settings")
     }
 }

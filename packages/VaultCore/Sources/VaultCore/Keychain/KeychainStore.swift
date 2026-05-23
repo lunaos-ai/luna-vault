@@ -11,7 +11,7 @@ public protocol KeychainStoring: Sendable {
 }
 
 public final class KeychainStore: KeychainStoring, @unchecked Sendable {
-    public static let service = "dev.lunaos.vault"
+    public static let service = "dev.vibevault"
     public static let accessGroup: String? = nil
 
     private let serviceName: String

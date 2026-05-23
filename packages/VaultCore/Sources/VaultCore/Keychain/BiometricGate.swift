@@ -11,7 +11,7 @@ public protocol BiometricGating: Sendable {
 public final class BiometricGate: BiometricGating, @unchecked Sendable {
     private var sessionWindow: TimeInterval
     private var lastSuccess: Date?
-    private let queue = DispatchQueue(label: "dev.lunaos.vault.biometric")
+    private let queue = DispatchQueue(label: "dev.vibevault.biometric")
 
     public init(sessionWindow: TimeInterval = 300) {
         self.sessionWindow = sessionWindow

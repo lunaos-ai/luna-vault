@@ -1,4 +1,4 @@
-# luna-vault — Product CLAUDE Rules
+# vibe-vault — Product CLAUDE Rules
 
 Extends `/Users/shaharsolomon/dev/projects/CLAUDE.md`. Cannot weaken any portfolio rule.
 
@@ -17,11 +17,11 @@ Solo developer or small team using AI coding tools (Cursor, Claude Code, Windsur
 ## Architecture constraints
 
 - **Platform**: macOS 14 Sonoma minimum. No iOS, no Linux, no Windows in v0.1.
-- **Stack**: Native SwiftUI (App), Swift CLI (`lunavault`), shared `VaultCore` SwiftPM framework.
+- **Stack**: Native SwiftUI (App), Swift CLI (`vibevault`), shared `VaultCore` SwiftPM framework.
 - **No third-party dependencies** in VaultCore except `swift-argument-parser` (CLI only) and system frameworks (Security, LocalAuthentication, sqlite3, Foundation).
-- **Keychain service**: `kSecAttrService = "dev.lunaos.vault"`.
-- **Audit DB**: `~/Library/Application Support/luna-vault/audit.db` (SQLite via system sqlite3).
-- **App Group**: `group.dev.lunaos.vault` for App↔CLI Keychain sharing.
+- **Keychain service**: `kSecAttrService = "dev.vibevault"`.
+- **Audit DB**: `~/Library/Application Support/vibe-vault/audit.db` (SQLite via system sqlite3).
+- **App Group**: `group.dev.vibevault` for App↔CLI Keychain sharing.
 - **File size cap**: 200 LOC per Swift file (non-blank, non-comment). Enforced by `scripts/check-loc.sh` in CI.
 - **No network calls** in solo tier. Team tier (later) opt-in only.
 

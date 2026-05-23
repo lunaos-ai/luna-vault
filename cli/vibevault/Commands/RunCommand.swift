@@ -6,7 +6,7 @@ struct RunCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "run",
         abstract: "Run a command with secrets injected as environment variables.",
-        usage: "lunavault run [--only NAME] [--exclude NAME] -- <command> [args...]"
+        usage: "vibevault run [--only NAME] [--exclude NAME] -- <command> [args...]"
     )
 
     @Option(name: .long, parsing: .upToNextOption, help: "Only inject these named secrets.") var only: [String] = []

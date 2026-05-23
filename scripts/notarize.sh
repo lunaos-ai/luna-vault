@@ -5,12 +5,12 @@ set -euo pipefail
 #   NOTARYTOOL_APPLE_ID       Apple ID email
 #   NOTARYTOOL_TEAM_ID        Developer team identifier
 #   NOTARYTOOL_PASSWORD       App-specific password
-#   APP_PATH                  Path to LunaVault.app
+#   APP_PATH                  Path to VibeVault.app
 
 : "${NOTARYTOOL_APPLE_ID:?missing}"
 : "${NOTARYTOOL_TEAM_ID:?missing}"
 : "${NOTARYTOOL_PASSWORD:?missing}"
-APP_PATH="${APP_PATH:-build/LunaVault.app}"
+APP_PATH="${APP_PATH:-build/VibeVault.app}"
 
 ZIP="${APP_PATH%.app}.zip"
 ditto -c -k --keepParent "$APP_PATH" "$ZIP"

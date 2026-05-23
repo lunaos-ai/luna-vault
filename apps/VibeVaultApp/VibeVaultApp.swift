@@ -2,20 +2,21 @@ import SwiftUI
 import VaultCore
 
 @main
-struct LunaVaultApp: App {
+struct VibeVaultApp: App {
     @StateObject private var env = AppEnvironment.makeLive()
 
     var body: some Scene {
-        WindowGroup("luna-vault", id: "main") {
+        WindowGroup("Vibe Vault", id: "main") {
             MainWindow()
                 .environmentObject(env)
-                .frame(minWidth: 760, minHeight: 480)
+                .frame(minWidth: 880, minHeight: 560)
         }
         .windowStyle(.titleBar)
+        .windowToolbarStyle(.unifiedCompact)
         .windowResizability(.contentMinSize)
-        .commands { LunaVaultCommands() }
+        .commands { VibeVaultCommands() }
 
-        MenuBarExtra("luna-vault", systemImage: "key.viewfinder") {
+        MenuBarExtra("Vibe Vault", systemImage: "key.viewfinder") {
             MenuBarScene()
                 .environmentObject(env)
         }
@@ -23,10 +24,10 @@ struct LunaVaultApp: App {
     }
 }
 
-struct LunaVaultCommands: Commands {
+struct VibeVaultCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
-            Button("About luna-vault") {}
+            Button("About Vibe Vault") {}
         }
         CommandGroup(after: .newItem) {
             Button("New Secret…") {}.keyboardShortcut("n")

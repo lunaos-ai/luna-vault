@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>dev.lunaos.vault</string>
+    <string>dev.vibevault</string>
     <key>CFBundleName</key>
-    <string>luna-vault</string>
+    <string>vibe-vault</string>
     <key>CFBundleDisplayName</key>
-    <string>luna-vault</string>
+    <string>vibe-vault</string>
     <key>CFBundleShortVersionString</key>
     <string>0.1.0</string>
     <key>CFBundleVersion</key>
@@ -21,6 +21,6 @@
     <key>NSHumanReadableCopyright</key>
     <string>© 2026 LunaOS. All rights reserved.</string>
     <key>NSFaceIDUsageDescription</key>
-    <string>luna-vault uses Touch ID to authorize reads of your secrets.</string>
+    <string>vibe-vault uses Touch ID to authorize reads of your secrets.</string>
 </dict>
 </plist>

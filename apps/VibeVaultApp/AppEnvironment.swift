@@ -18,7 +18,7 @@ final class AppEnvironment: ObservableObject {
     @Published var rotatePromptName: String?
     @Published var importStatus: String?
 
-    static let sessionMinutesKey = "luna-vault.biometric.session-minutes"
+    static let sessionMinutesKey = "vibe-vault.biometric.session-minutes"
 
     let service: VaultService
     let registry: ProviderRegistry

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Wrap the SwiftPM-built LunaVaultApp executable into a .app bundle so
+# Wrap the SwiftPM-built VibeVaultApp executable into a .app bundle so
 # MenuBarExtra, Info.plist, and entitlements behave correctly.
-# Output: build/LunaVault.app
+# Output: build/VibeVault.app
 
 cd "$(dirname "$0")/.."
 
@@ -14,27 +14,27 @@ case "$CONFIG" in
     *) echo "usage: $0 [debug|release]"; exit 64 ;;
 esac
 
-echo "==> Building LunaVaultApp ($CONFIG)..."
-swift build $SWIFT_BUILD_FLAGS --product LunaVaultApp
+echo "==> Building VibeVaultApp ($CONFIG)..."
+swift build $SWIFT_BUILD_FLAGS --product VibeVaultApp
 
 ARCH=$(uname -m)
 BIN_DIR=".build/${ARCH}-apple-macosx/${CONFIG}"
-BIN="$BIN_DIR/LunaVaultApp"
+BIN="$BIN_DIR/VibeVaultApp"
 
 if [ ! -x "$BIN" ]; then
     echo "error: binary not found at $BIN"; exit 1
 fi
 
-APP_DIR="build/LunaVault.app"
+APP_DIR="build/VibeVault.app"
 echo "==> Bundling to $APP_DIR..."
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 
-cp "$BIN" "$APP_DIR/Contents/MacOS/LunaVault"
-cp apps/LunaVaultApp/Info.plist "$APP_DIR/Contents/Info.plist"
+cp "$BIN" "$APP_DIR/Contents/MacOS/VibeVault"
+cp apps/VibeVaultApp/Info.plist "$APP_DIR/Contents/Info.plist"
 
 # Patch Info.plist so the binary name matches.
-/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable LunaVault" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable VibeVault" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
 
 # Ad-hoc sign so MenuBarExtra/LAContext work without Developer ID.
 codesign --force --deep --sign - "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'

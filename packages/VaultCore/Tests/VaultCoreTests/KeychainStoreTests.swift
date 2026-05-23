@@ -6,7 +6,7 @@ final class KeychainStoreTests: XCTestCase {
     private var serviceName: String!
 
     override func setUpWithError() throws {
-        serviceName = "dev.lunaos.vault.test.\(UUID().uuidString)"
+        serviceName = "dev.vibevault.test.\(UUID().uuidString)"
         store = KeychainStore(service: serviceName)
     }
 
