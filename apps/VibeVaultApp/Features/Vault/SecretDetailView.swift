@@ -8,32 +8,12 @@ struct SecretDetailView: View {
     @State private var revealedValue = ""
     @State private var deleteConfirm = false
     @State private var showRotateSheet = false
-    @State private var rotateNewValue = ""
 
     var body: some View {
         Form {
             Section {
                 LabeledContent {
-                    HStack(spacing: 8) {
-                        Text(revealed ? revealedValue : secret.maskedValue)
-                            .font(.system(.body, design: .monospaced))
-                            .textSelection(.enabled)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Button {
-                            Task { await reveal() }
-                        } label: {
-                            Image(systemName: revealed ? "eye.slash" : "eye")
-                        }
-                        .buttonStyle(.borderless)
-                        Button {
-                            copy()
-                        } label: {
-                            Image(systemName: "doc.on.doc")
-                        }
-                        .buttonStyle(.borderless)
-                        .help("Copy value (requires Touch ID)")
-                    }
+                    valueRow
                 } label: {
                     Text("Value")
                 }
@@ -51,9 +31,7 @@ struct SecretDetailView: View {
                         .textCase(nil)
                         .foregroundStyle(.primary)
                     Spacer()
-                    if !badges.isEmpty {
-                        HStack(spacing: 6) { ForEach(badges, id: \.text) { badge($0) } }
-                    }
+                    SecretBadgeStrip(secret: secret)
                 }
             }
 
@@ -74,7 +52,7 @@ struct SecretDetailView: View {
             }
 
             Section {
-                Button { Task { await rotate() } } label: {
+                Button { showRotateSheet = true } label: {
                     Label("Rotate value…", systemImage: "arrow.triangle.2.circlepath")
                 }
                 Button { Task { await markRotated() } } label: {
@@ -101,70 +79,33 @@ struct SecretDetailView: View {
         } message: {
             Text("This removes the secret from your local Keychain. Cloud provider copies are not revoked.")
         }
-        .sheet(isPresented: $showRotateSheet) { rotateSheet }
-    }
-
-    private var rotateSheet: some View {
-        Form {
-            Section {
-                SecureField("New value", text: $rotateNewValue)
-            } header: {
-                Text("Rotate \(secret.name)")
-            } footer: {
-                Text("Audit log records who rotated and when. Cloud provider copies are not updated.")
-            }
-        }
-        .formStyle(.grouped)
-        .frame(minWidth: 440, minHeight: 220)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { showRotateSheet = false }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Rotate") {
-                    Task {
-                        await env.rotate(name: secret.name, newValue: rotateNewValue)
-                        showRotateSheet = false
-                    }
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(rotateNewValue.isEmpty)
-            }
+        .sheet(isPresented: $showRotateSheet) {
+            RotateSheetView(secret: secret, isPresented: $showRotateSheet)
+                .environmentObject(env)
         }
     }
 
-    private struct Badge {
-        let text: String
-        let icon: String
-        let tint: Color
-    }
-
-    private var badges: [Badge] {
-        var out: [Badge] = []
-        if secret.isExpired {
-            out.append(Badge(text: "Expired", icon: "exclamationmark.triangle.fill", tint: .red))
-        } else if let exp = secret.expiresAt {
-            let days = Calendar.current.dateComponents([.day], from: Date(), to: exp).day ?? 0
-            if days < 14 {
-                out.append(Badge(text: "Expires in \(days)d", icon: "clock", tint: .orange))
+    private var valueRow: some View {
+        HStack(spacing: 8) {
+            Text(revealed ? revealedValue : secret.maskedValue)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Button {
+                Task { await reveal() }
+            } label: {
+                Image(systemName: revealed ? "eye.slash" : "eye")
             }
+            .buttonStyle(.borderless)
+            Button {
+                copy()
+            } label: {
+                Image(systemName: "doc.on.doc")
+            }
+            .buttonStyle(.borderless)
+            .help("Copy value (requires Touch ID)")
         }
-        if secret.isRotationDue {
-            out.append(Badge(text: "Rotate due", icon: "arrow.triangle.2.circlepath", tint: .red))
-        }
-        return out
-    }
-
-    private func badge(_ b: Badge) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: b.icon)
-            Text(b.text)
-        }
-        .font(.caption2)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(b.tint.opacity(0.15), in: Capsule())
-        .foregroundStyle(b.tint)
     }
 
     private func reveal() async {
@@ -188,11 +129,6 @@ struct SecretDetailView: View {
                 env.lastError = "\(error)"
             }
         }
-    }
-
-    private func rotate() async {
-        rotateNewValue = ""
-        showRotateSheet = true
     }
 
     private func markRotated() async {

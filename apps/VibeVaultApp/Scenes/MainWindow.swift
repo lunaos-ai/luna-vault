@@ -86,6 +86,27 @@ struct SettingsView: View {
                 Text("Lower = safer; higher = fewer prompts during long sessions.")
             }
             Section {
+                Toggle("Background expiry notifications", isOn: $env.notificationsEnabled)
+                if env.notificationsEnabled {
+                    Stepper("Warn within \(env.warnWithinDays) day\(env.warnWithinDays == 1 ? "" : "s")",
+                            value: $env.warnWithinDays, in: 1...90)
+                }
+                LabeledContent("Last check", value: env.lastNotifierRun)
+                HStack {
+                    Button { Task { await env.runExpiryCheckNow() } } label: {
+                        Label("Check now", systemImage: "bell.badge")
+                    }
+                    Button(role: .destructive) { env.resetNotificationDedupe() } label: {
+                        Label("Reset reminders", systemImage: "arrow.counterclockwise")
+                    }
+                    .help("Clears the delivered-alerts log so previously-sent notifications fire again.")
+                }
+            } header: {
+                Text("Notifications")
+            } footer: {
+                Text("Posts a macOS notification when a secret expires or is due for rotation. Runs hourly while the app is open.")
+            }
+            Section {
                 Text("Records older than 90 days are auto-purged. Override in CLI: `vibevault purge --days N`.")
                     .foregroundStyle(.secondary)
             } header: {

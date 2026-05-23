@@ -17,8 +17,27 @@ final class AppEnvironment: ObservableObject {
     @Published var biometricStatus: String = "Idle"
     @Published var rotatePromptName: String?
     @Published var importStatus: String?
+    @Published var notificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(notificationsEnabled, forKey: Self.notificationsEnabledKey)
+            updateSchedulerState()
+        }
+    }
+    @Published var warnWithinDays: Int {
+        didSet {
+            UserDefaults.standard.set(warnWithinDays, forKey: Self.warnWithinDaysKey)
+            updateSchedulerState()
+        }
+    }
+    @Published var lastNotifierRun: String = "Never"
 
     static let sessionMinutesKey = "vibe-vault.biometric.session-minutes"
+    static let notificationsEnabledKey = "vibe-vault.notifications.enabled"
+    static let warnWithinDaysKey = "vibe-vault.notifications.warn-within-days"
+
+    lazy var scheduler: ExpiryScheduler = ExpiryScheduler(
+        secretsProvider: { [weak self] in self?.secrets ?? [] }
+    )
 
     let service: VaultService
     let registry: ProviderRegistry
@@ -28,7 +47,30 @@ final class AppEnvironment: ObservableObject {
         self.registry = registry
         let stored = UserDefaults.standard.double(forKey: Self.sessionMinutesKey)
         self.biometricSessionMinutes = stored > 0 ? stored : 5
+        self.notificationsEnabled = UserDefaults.standard.object(forKey: Self.notificationsEnabledKey) as? Bool ?? true
+        let storedWarn = UserDefaults.standard.integer(forKey: Self.warnWithinDaysKey)
+        self.warnWithinDays = storedWarn > 0 ? storedWarn : 14
         service.biometric.setSessionWindow(self.biometricSessionMinutes * 60)
+        Task { @MainActor [weak self] in self?.updateSchedulerState() }
+    }
+
+    private func updateSchedulerState() {
+        if notificationsEnabled {
+            scheduler.start(intervalMinutes: 60, warnWithinDays: warnWithinDays)
+        } else {
+            scheduler.stop()
+        }
+    }
+
+    func runExpiryCheckNow() async {
+        await scheduler.runOnce(warnWithinDays: warnWithinDays)
+        if let last = scheduler.lastRunAt {
+            lastNotifierRun = "\(scheduler.lastAlertCount) alert\(scheduler.lastAlertCount == 1 ? "" : "s") at \(last.formatted(date: .omitted, time: .standard))"
+        }
+    }
+
+    func resetNotificationDedupe() {
+        scheduler.resetDedupe()
     }
 
     static func makeLive() -> AppEnvironment {
@@ -73,6 +115,17 @@ final class AppEnvironment: ObservableObject {
     func importEnv(globs: [String], overwrite: Bool) {
         do {
             let items = EnvImporter.collect(matching: globs)
+            let r = try service.importSecrets(items, overwrite: overwrite)
+            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
+            refresh()
+        } catch {
+            importStatus = "error: \(error)"
+        }
+    }
+
+    func importOnePassword(itemRef: String, overwrite: Bool) {
+        do {
+            let items = try OnePasswordImporter.fetch(itemRef: itemRef)
             let r = try service.importSecrets(items, overwrite: overwrite)
             importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
             refresh()

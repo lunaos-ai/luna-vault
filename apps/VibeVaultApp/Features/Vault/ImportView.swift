@@ -5,6 +5,8 @@ struct ImportView: View {
     @EnvironmentObject var env: AppEnvironment
     @State private var overwrite = false
     @State private var envGlobs = "CF_* STRIPE_* *_TOKEN *_API_KEY"
+    @State private var opItemRef = ""
+    @State private var opCLIStatus: String?
 
     var body: some View {
         Form {
@@ -53,20 +55,37 @@ struct ImportView: View {
             }
 
             Section {
-                LabeledContent("1Password") {
-                    Text("`vibevault import --from op --item <name>`")
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
+                HStack {
+                    TextField("Item reference", text: $opItemRef, prompt: Text("Cloudflare API"))
+                    Button("Import") {
+                        env.importOnePassword(itemRef: opItemRef, overwrite: overwrite)
+                    }
+                    .disabled(opItemRef.isEmpty)
                 }
+                Button {
+                    Task { opCLIStatus = await probeOpCLI() }
+                } label: {
+                    Label("Check op CLI", systemImage: "checkmark.circle")
+                }
+                if let s = opCLIStatus {
+                    Text(s).font(.caption).foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("1Password")
+            } footer: {
+                Text("Requires the 1Password CLI signed in. Install: `brew install --cask 1password-cli`. Item reference is the name shown in 1Password (e.g. \"Cloudflare API\").")
+            }
+
+            Section {
                 LabeledContent("System Keychain") {
                     Text("`vibevault import --from keychain`")
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("CLI sources")
+                Text("Other CLI sources")
             } footer: {
-                Text("These sources need terminal access and are not yet wrapped in UI.")
+                Text("These sources need terminal access; CLI only for now.")
             }
 
             if let status = env.importStatus {
@@ -93,5 +112,22 @@ struct ImportView: View {
                 env.importDotenv(at: url, overwrite: overwrite)
             }
         }
+    }
+
+    private func probeOpCLI() async -> String {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        task.arguments = ["op", "--version"]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+        do { try task.run() } catch { return "op CLI not found. brew install --cask 1password-cli" }
+        task.waitUntilExit()
+        if task.terminationStatus == 0 {
+            let v = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return "op CLI \(v) detected. If import fails, sign in: `op signin`."
+        }
+        return "op CLI present but not signed in. Run `op signin` in your terminal."
     }
 }
