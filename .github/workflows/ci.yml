@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test-lint:
+    runs-on: macos-14
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 15
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Test with coverage
+        run: swift test --enable-code-coverage --parallel
+
+      - name: Coverage report
+        run: bash scripts/coverage.sh
+
+      - name: 200-LOC lint
+        run: bash scripts/check-loc.sh
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dependency scan (audit Package.resolved)
+        run: |
+          if [ -f Package.resolved ]; then
+            cat Package.resolved
+          fi
+          # Placeholder: integrate `swift-deps-audit` or equivalent when available.
+          echo "dep audit placeholder OK"
