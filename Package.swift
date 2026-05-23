@@ -6,7 +6,8 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "VaultCore", targets: ["VaultCore"]),
-        .executable(name: "lunavault", targets: ["lunavault"])
+        .executable(name: "lunavault", targets: ["lunavault"]),
+        .executable(name: "LunaVaultApp", targets: ["LunaVaultApp"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0")
@@ -33,6 +34,12 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "cli/lunavault"
+        ),
+        .executableTarget(
+            name: "LunaVaultApp",
+            dependencies: ["VaultCore"],
+            path: "apps/LunaVaultApp",
+            exclude: ["Info.plist", "LunaVault.entitlements", "Resources"]
         )
     ]
 )

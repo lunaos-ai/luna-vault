@@ -62,9 +62,30 @@ See `CLAUDE.md` for engineering rules. See `/Users/shaharsolomon/.claude/plans/r
 
 ## Build
 
+### CLI only
+
 ```bash
 swift build -c release
 .build/release/lunavault --help
+```
+
+### App (quick — SwiftPM-bundled .app)
+
+```bash
+bash scripts/bundle-app.sh debug          # or `release`
+open build/LunaVault.app
+```
+
+Ad-hoc signed, no notarization, runs locally. MenuBarExtra works.
+Touch ID prompt will request Keychain access on first read.
+
+### App (proper — Xcode project for shipping)
+
+```bash
+brew install xcodegen
+xcodegen generate
+open LunaVault.xcodeproj
+# build / archive / notarize from Xcode
 ```
 
 ## License

@@ -73,4 +73,3 @@ struct AuditLogView: View {
     }
 }
 
-extension AuditEvent: Identifiable {}
