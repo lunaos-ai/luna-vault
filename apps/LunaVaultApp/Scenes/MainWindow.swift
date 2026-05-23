@@ -6,12 +6,18 @@ struct MainWindow: View {
     @State private var selection: SidebarItem = .vault
 
     enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-        case vault, projects, audit, providers, settings
+        case vault, importSecrets = "import", projects, audit, providers, settings
         var id: String { rawValue }
-        var label: String { rawValue.capitalized }
+        var label: String {
+            switch self {
+            case .importSecrets: return "Import"
+            default: return rawValue.capitalized
+            }
+        }
         var systemImage: String {
             switch self {
             case .vault: return "key.fill"
+            case .importSecrets: return "square.and.arrow.down"
             case .projects: return "folder.badge.questionmark"
             case .audit: return "list.bullet.rectangle"
             case .providers: return "icloud.and.arrow.up"
@@ -38,6 +44,7 @@ struct MainWindow: View {
     private var detail: some View {
         switch selection {
         case .vault: VaultListView()
+        case .importSecrets: ImportView()
         case .projects: ProjectScannerView()
         case .audit: AuditLogView()
         case .providers: ProviderSyncView()
@@ -51,12 +58,35 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Biometric session") {
+            Section("Touch ID session") {
                 Stepper(
-                    "Touch ID re-prompt every \(Int(env.biometricSessionMinutes)) minute(s)",
+                    "Re-prompt every \(Int(env.biometricSessionMinutes)) minute(s)",
                     value: $env.biometricSessionMinutes,
                     in: 1...60
                 )
+                Text("Lower = safer; higher = fewer prompts during long sessions.")
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Color.textSecondary)
+
+                HStack(spacing: Tokens.Space.md) {
+                    Button {
+                        Task { await env.testBiometric() }
+                    } label: {
+                        Label("Test Touch ID", systemImage: "touchid")
+                    }
+                    Button(role: .destructive) {
+                        env.resetBiometricSession()
+                    } label: {
+                        Label("Lock session", systemImage: "lock.fill")
+                    }
+                }
+                HStack {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(Tokens.Color.textSecondary)
+                    Text(env.biometricStatus)
+                        .font(.caption)
+                        .foregroundStyle(Tokens.Color.textSecondary)
+                }
             }
             Section("Audit retention") {
                 Text("Records older than 90 days are auto-purged. Override in CLI: `lunavault purge --days N`.")

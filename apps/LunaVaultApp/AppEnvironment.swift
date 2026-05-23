@@ -8,7 +8,17 @@ final class AppEnvironment: ObservableObject {
     @Published var lastError: String?
     @Published var scanResult: ScanResult?
     @Published var auditEvents: [AuditEvent] = []
-    @Published var biometricSessionMinutes: Double = 5
+    @Published var biometricSessionMinutes: Double {
+        didSet {
+            UserDefaults.standard.set(biometricSessionMinutes, forKey: Self.sessionMinutesKey)
+            service.biometric.setSessionWindow(biometricSessionMinutes * 60)
+        }
+    }
+    @Published var biometricStatus: String = "Idle"
+    @Published var rotatePromptName: String?
+    @Published var importStatus: String?
+
+    static let sessionMinutesKey = "luna-vault.biometric.session-minutes"
 
     let service: VaultService
     let registry: ProviderRegistry
@@ -16,6 +26,9 @@ final class AppEnvironment: ObservableObject {
     init(service: VaultService, registry: ProviderRegistry) {
         self.service = service
         self.registry = registry
+        let stored = UserDefaults.standard.double(forKey: Self.sessionMinutesKey)
+        self.biometricSessionMinutes = stored > 0 ? stored : 5
+        service.biometric.setSessionWindow(self.biometricSessionMinutes * 60)
     }
 
     static func makeLive() -> AppEnvironment {
@@ -32,6 +45,64 @@ final class AppEnvironment: ObservableObject {
         }
     }
 
+    func resetBiometricSession() {
+        service.biometric.resetSession()
+        biometricStatus = "Locked. Touch ID required on next read."
+    }
+
+    func rotate(name: String, newValue: String) async {
+        do {
+            try await service.rotate(name: name, newValue: newValue)
+            refresh()
+        } catch {
+            lastError = "\(error)"
+        }
+    }
+
+    func importDotenv(at url: URL, overwrite: Bool) {
+        do {
+            let items = try DotenvImporter.parseFile(at: url)
+            let r = try service.importSecrets(items, overwrite: overwrite)
+            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count) · failed \(r.failed.count)"
+            refresh()
+        } catch {
+            importStatus = "error: \(error)"
+        }
+    }
+
+    func importEnv(globs: [String], overwrite: Bool) {
+        do {
+            let items = EnvImporter.collect(matching: globs)
+            let r = try service.importSecrets(items, overwrite: overwrite)
+            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
+            refresh()
+        } catch {
+            importStatus = "error: \(error)"
+        }
+    }
+
+    func importClipboard(overwrite: Bool) {
+        do {
+            let items = ClipboardImporter.read()
+            if items.isEmpty { importStatus = "Clipboard had nothing dotenv-shaped"; return }
+            let r = try service.importSecrets(items, overwrite: overwrite)
+            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
+            refresh()
+        } catch {
+            importStatus = "error: \(error)"
+        }
+    }
+
+    func testBiometric() async {
+        biometricStatus = "Waiting for Touch ID…"
+        do {
+            try await service.biometric.authenticate(reason: "Verify Touch ID configuration")
+            biometricStatus = "Unlocked. Re-prompts in \(Int(biometricSessionMinutes)) min."
+        } catch {
+            biometricStatus = "Failed: \(error)"
+        }
+    }
+
     func refresh() {
         do { secrets = try service.list().sorted { $0.name < $1.name } }
         catch { lastError = "\(error)" }
@@ -42,9 +113,15 @@ final class AppEnvironment: ObservableObject {
         catch { lastError = "\(error)" }
     }
 
-    func addSecret(name: String, value: String, notes: String?) {
-        do { try service.add(name: name, value: value, notes: notes); refresh() }
-        catch { lastError = "\(error)" }
+    func addSecret(
+        name: String, value: String, notes: String?,
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil
+    ) {
+        do {
+            try service.add(name: name, value: value, notes: notes,
+                            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays)
+            refresh()
+        } catch { lastError = "\(error)" }
     }
 
     func deleteSecret(name: String) {

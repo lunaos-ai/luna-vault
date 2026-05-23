@@ -27,7 +27,9 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         var query = baseQuery(name: secret.name)
         query[kSecValueData as String] = Data(secret.value.utf8)
         query[kSecAttrModificationDate as String] = secret.updatedAt
-        if let notes = secret.notes { query[kSecAttrComment as String] = notes }
+        if let encoded = Self.encodeMetadata(from: secret) {
+            query[kSecAttrComment as String] = encoded
+        }
         let status = SecItemAdd(query as CFDictionary, nil)
         if status == errSecDuplicateItem { throw SecretError.duplicate(name: secret.name) }
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
@@ -40,7 +42,9 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
             kSecValueData as String: Data(secret.value.utf8),
             kSecAttrModificationDate as String: secret.updatedAt
         ]
-        if let notes = secret.notes { updates[kSecAttrComment as String] = notes }
+        if let encoded = Self.encodeMetadata(from: secret) {
+            updates[kSecAttrComment as String] = encoded
+        }
         let status = SecItemUpdate(query as CFDictionary, updates as CFDictionary)
         if status == errSecItemNotFound { throw SecretError.notFound(name: secret.name) }
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
@@ -60,8 +64,24 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
               let value = String(data: data, encoding: .utf8)
         else { throw SecretError.keychainStatus(status) }
         let updatedAt = dict[kSecAttrModificationDate as String] as? Date ?? Date()
-        let notes = dict[kSecAttrComment as String] as? String
-        return Secret(name: name, value: value, updatedAt: updatedAt, notes: notes)
+        let meta = SecretMetadata.decode(dict[kSecAttrComment as String] as? String)
+        return Secret(
+            name: name, value: value, updatedAt: updatedAt,
+            notes: meta.notes,
+            expiresAt: meta.expiresAt,
+            rotateEveryDays: meta.rotateEveryDays,
+            lastRotatedAt: meta.lastRotatedAt
+        )
+    }
+
+    static func encodeMetadata(from secret: Secret) -> String? {
+        let meta = SecretMetadata(
+            notes: secret.notes,
+            expiresAt: secret.expiresAt,
+            rotateEveryDays: secret.rotateEveryDays,
+            lastRotatedAt: secret.lastRotatedAt
+        )
+        return meta.encode()
     }
 
     public func delete(name: String) throws {
@@ -89,8 +109,14 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         return array.compactMap { dict in
             guard let name = dict[kSecAttrAccount as String] as? String else { return nil }
             let updatedAt = dict[kSecAttrModificationDate as String] as? Date ?? Date()
-            let notes = dict[kSecAttrComment as String] as? String
-            return Secret(name: name, value: "", updatedAt: updatedAt, notes: notes)
+            let meta = SecretMetadata.decode(dict[kSecAttrComment as String] as? String)
+            return Secret(
+                name: name, value: "", updatedAt: updatedAt,
+                notes: meta.notes,
+                expiresAt: meta.expiresAt,
+                rotateEveryDays: meta.rotateEveryDays,
+                lastRotatedAt: meta.lastRotatedAt
+            )
         }
     }
 

@@ -64,6 +64,10 @@ struct AddSecretSheet: View {
     @State private var name = ""
     @State private var value = ""
     @State private var notes = ""
+    @State private var hasExpiry = false
+    @State private var expiresAt = Date().addingTimeInterval(60 * 60 * 24 * 90)
+    @State private var rotateEnabled = false
+    @State private var rotateDays = 90
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.lg) {
@@ -75,11 +79,31 @@ struct AddSecretSheet: View {
                 .textFieldStyle(.roundedBorder)
             TextField("Notes (optional)", text: $notes)
                 .textFieldStyle(.roundedBorder)
+
+            Divider()
+
+            Toggle("Set expiry", isOn: $hasExpiry)
+            if hasExpiry {
+                DatePicker("Expires", selection: $expiresAt, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+            }
+
+            Toggle("Rotate periodically", isOn: $rotateEnabled)
+            if rotateEnabled {
+                Stepper("Every \(rotateDays) days", value: $rotateDays, in: 7...365, step: 7)
+            }
+
             HStack {
                 Button("Cancel") { dismiss() }
                 Spacer()
                 Button("Save") {
-                    env.addSecret(name: name, value: value, notes: notes.isEmpty ? nil : notes)
+                    env.addSecret(
+                        name: name,
+                        value: value,
+                        notes: notes.isEmpty ? nil : notes,
+                        expiresAt: hasExpiry ? expiresAt : nil,
+                        rotateEveryDays: rotateEnabled ? rotateDays : nil
+                    )
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
@@ -88,6 +112,6 @@ struct AddSecretSheet: View {
             }
         }
         .padding(Tokens.Space.xl)
-        .frame(width: 460)
+        .frame(width: 480)
     }
 }

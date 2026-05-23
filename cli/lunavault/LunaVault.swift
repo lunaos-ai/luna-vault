@@ -12,6 +12,8 @@ struct LunaVault: AsyncParsableCommand {
             AddCommand.self,
             ListCommand.self,
             RevokeCommand.self,
+            RotateCommand.self,
+            ImportCommand.self,
             ScanCommand.self,
             RunCommand.self,
             PushCommand.self,

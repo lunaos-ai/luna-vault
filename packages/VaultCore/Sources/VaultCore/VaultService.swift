@@ -32,16 +32,92 @@ public final class VaultService: @unchecked Sendable {
         )
     }
 
-    public func add(name: String, value: String, notes: String? = nil) throws {
-        let secret = Secret(name: name, value: value, notes: notes)
+    public func add(
+        name: String,
+        value: String,
+        notes: String? = nil,
+        expiresAt: Date? = nil,
+        rotateEveryDays: Int? = nil
+    ) throws {
+        let secret = Secret(
+            name: name, value: value, notes: notes,
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays
+        )
         try store.add(secret)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
 
-    public func update(name: String, value: String, notes: String? = nil) throws {
-        let secret = Secret(name: name, value: value, notes: notes)
+    public func update(
+        name: String,
+        value: String,
+        notes: String? = nil,
+        expiresAt: Date? = nil,
+        rotateEveryDays: Int? = nil
+    ) throws {
+        let secret = Secret(
+            name: name, value: value, notes: notes,
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays
+        )
         try store.update(secret)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
+    }
+
+    public func rotate(name: String, newValue: String?) async throws {
+        let existing = try await read(name: name, reason: "Rotate \(name)")
+        let updated = Secret(
+            name: existing.name,
+            value: newValue ?? existing.value,
+            updatedAt: Date(),
+            notes: existing.notes,
+            expiresAt: existing.expiresAt,
+            rotateEveryDays: existing.rotateEveryDays,
+            lastRotatedAt: Date()
+        )
+        try store.update(updated)
+        try recordEvent(name: name, action: .rotate, projectPath: currentProjectPath())
+    }
+
+    public struct ImportItem: Sendable {
+        public let name: String
+        public let value: String
+        public let notes: String?
+        public init(name: String, value: String, notes: String? = nil) {
+            self.name = name; self.value = value; self.notes = notes
+        }
+    }
+
+    public struct ImportResult: Sendable {
+        public let imported: [String]
+        public let updated: [String]
+        public let skipped: [String]
+        public let failed: [(String, String)]
+    }
+
+    public func importSecrets(_ items: [ImportItem], overwrite: Bool) throws -> ImportResult {
+        var imported: [String] = []
+        var updated: [String] = []
+        var skipped: [String] = []
+        var failed: [(String, String)] = []
+        for item in items {
+            do {
+                if try store.exists(name: item.name) {
+                    if overwrite {
+                        try store.update(Secret(name: item.name, value: item.value, notes: item.notes))
+                        updated.append(item.name)
+                    } else {
+                        skipped.append(item.name)
+                        continue
+                    }
+                } else {
+                    try store.add(Secret(name: item.name, value: item.value, notes: item.notes))
+                    imported.append(item.name)
+                }
+                try recordEvent(name: item.name, action: .importEvent, projectPath: currentProjectPath())
+            } catch {
+                failed.append((item.name, "\(error)"))
+            }
+        }
+        return ImportResult(imported: imported, updated: updated, skipped: skipped, failed: failed)
     }
 
     public func delete(name: String) throws {

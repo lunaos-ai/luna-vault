@@ -4,15 +4,25 @@ import LocalAuthentication
 public protocol BiometricGating: Sendable {
     func authenticate(reason: String) async throws
     func resetSession()
+    func setSessionWindow(_ seconds: TimeInterval)
+    func sessionWindowSeconds() -> TimeInterval
 }
 
 public final class BiometricGate: BiometricGating, @unchecked Sendable {
-    private let sessionWindow: TimeInterval
+    private var sessionWindow: TimeInterval
     private var lastSuccess: Date?
     private let queue = DispatchQueue(label: "dev.lunaos.vault.biometric")
 
     public init(sessionWindow: TimeInterval = 300) {
         self.sessionWindow = sessionWindow
+    }
+
+    public func setSessionWindow(_ seconds: TimeInterval) {
+        queue.sync { sessionWindow = max(0, seconds) }
+    }
+
+    public func sessionWindowSeconds() -> TimeInterval {
+        queue.sync { sessionWindow }
     }
 
     public func authenticate(reason: String) async throws {
@@ -43,7 +53,10 @@ public final class BiometricGate: BiometricGating, @unchecked Sendable {
 }
 
 public final class NoopBiometricGate: BiometricGating, @unchecked Sendable {
+    private var window: TimeInterval = 300
     public init() {}
     public func authenticate(reason: String) async throws {}
     public func resetSession() {}
+    public func setSessionWindow(_ seconds: TimeInterval) { window = seconds }
+    public func sessionWindowSeconds() -> TimeInterval { window }
 }

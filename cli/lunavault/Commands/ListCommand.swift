@@ -18,15 +18,29 @@ struct ListCommand: AsyncParsableCommand {
             print("(no secrets)")
         } else {
             let nameWidth = max(4, secrets.map(\.name.count).max() ?? 0)
-            let header = "NAME".padding(toLength: nameWidth, withPad: " ", startingAt: 0) + "  UPDATED"
+            let header = "NAME".padding(toLength: nameWidth, withPad: " ", startingAt: 0) + "  UPDATED              STATUS"
             print(header)
             print(String(repeating: "-", count: header.count))
             let fmt = DateFormatter()
             fmt.dateStyle = .short
             fmt.timeStyle = .short
             for s in secrets {
-                print(s.name.padding(toLength: nameWidth, withPad: " ", startingAt: 0) + "  " + fmt.string(from: s.updatedAt))
+                let line = s.name.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
+                    + "  " + fmt.string(from: s.updatedAt).padding(toLength: 20, withPad: " ", startingAt: 0)
+                    + status(for: s)
+                print(line)
             }
         }
+    }
+
+    private func status(for s: Secret) -> String {
+        var parts: [String] = []
+        if s.isExpired { parts.append("expired") }
+        else if let exp = s.expiresAt {
+            let days = Calendar.current.dateComponents([.day], from: Date(), to: exp).day ?? 0
+            parts.append("expires in \(days)d")
+        }
+        if s.isRotationDue { parts.append("rotate due") }
+        return parts.isEmpty ? "ok" : parts.joined(separator: ", ")
     }
 }

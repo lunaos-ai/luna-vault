@@ -17,7 +17,7 @@ public struct AuditEvent: Equatable, Hashable, Sendable, Identifiable {
     public let timestamp: Date
 
     public enum Action: String, Codable, Sendable {
-        case read, write, delete, push, pull, scan
+        case read, write, delete, push, pull, scan, rotate, importEvent = "import", expire
     }
 
     public init(
