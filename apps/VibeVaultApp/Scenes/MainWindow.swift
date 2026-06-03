@@ -30,19 +30,104 @@ struct MainWindow: View {
             case .settings: return "gearshape"
             }
         }
+        var tint: Color { Tokens.Text.secondary }
+        var section: String {
+            switch self {
+            case .vault, .importSecrets: return "Library"
+            case .projects, .providers, .aiAgents: return "Workflows"
+            case .audit, .settings: return "System"
+            }
+        }
+    }
+
+    private var sections: [String] {
+        ["Library", "Workflows", "System"]
     }
 
     var body: some View {
         NavigationSplitView {
-            List(SidebarItem.allCases, selection: $selection) { item in
-                Label(item.label, systemImage: item.systemImage).tag(item)
-            }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
-            .navigationTitle("Vibe Vault")
+            sidebar
+                .navigationSplitViewColumnWidth(min: 200, ideal: 224, max: 280)
         } detail: {
             detail
+                .background(Tokens.Surface.background.ignoresSafeArea())
         }
         .task { env.refresh(); env.refreshAudit() }
+    }
+
+    private var sidebar: some View {
+        List(selection: $selection) {
+            ForEach(sections, id: \.self) { section in
+                Section {
+                    ForEach(SidebarItem.allCases.filter { $0.section == section }) { item in
+                        sidebarRow(item).tag(item)
+                    }
+                } header: {
+                    Text(section)
+                        .font(.caption2.weight(.semibold))
+                        .textCase(.uppercase)
+                        .tracking(0.6)
+                        .foregroundStyle(Tokens.Text.tertiary)
+                        .padding(.top, Tokens.Space.xs)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(.regularMaterial)
+        .navigationTitle("Vibe Vault")
+        .safeAreaInset(edge: .top) { sidebarBrand }
+        .safeAreaInset(edge: .bottom) { footer }
+    }
+
+    private var sidebarBrand: some View {
+        HStack(spacing: Tokens.Space.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Tokens.Palette.accent.opacity(0.14))
+                    .frame(width: 24, height: 24)
+                Image(systemName: "key.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Tokens.Palette.accent)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Vibe Vault").font(.system(size: 13, weight: .semibold)).tracking(-0.2)
+                Text("Local Keychain")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Tokens.Text.tertiary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, Tokens.Space.md)
+        .padding(.top, Tokens.Space.sm)
+        .padding(.bottom, Tokens.Space.xs)
+    }
+
+    private func sidebarRow(_ item: SidebarItem) -> some View {
+        Label(item.label, systemImage: item.systemImage)
+            .font(.system(size: 13))
+            .padding(.vertical, 1)
+            .accessibilityLabel(item.label)
+    }
+
+    private var footer: some View {
+        let unlocked = env.biometricStatus.lowercased().contains("unlock") || env.biometricStatus == "Idle"
+        return HStack(spacing: Tokens.Space.sm) {
+            Image(systemName: unlocked ? "lock.open.fill" : "lock.fill")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(unlocked ? Tokens.Status.success.opacity(0.85) : Tokens.Status.warning)
+            Text(unlocked ? "Session unlocked" : "Locked. Touch ID required.")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Tokens.Text.secondary)
+            Spacer()
+            Text("v0.1")
+                .font(.system(size: 10))
+                .foregroundStyle(Tokens.Text.tertiary)
+        }
+        .padding(.horizontal, Tokens.Space.md)
+        .padding(.vertical, Tokens.Space.sm)
+        .background(.thinMaterial)
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
@@ -56,67 +141,5 @@ struct MainWindow: View {
         case .aiAgents: AIAgentsView()
         case .settings: SettingsView()
         }
-    }
-}
-
-struct SettingsView: View {
-    @EnvironmentObject var env: AppEnvironment
-
-    var body: some View {
-        Form {
-            Section {
-                Stepper(
-                    "Re-prompt every \(Int(env.biometricSessionMinutes)) minute(s)",
-                    value: $env.biometricSessionMinutes,
-                    in: 1...60
-                )
-                LabeledContent("Status", value: env.biometricStatus)
-                HStack {
-                    Button {
-                        Task { await env.testBiometric() }
-                    } label: {
-                        Label("Test Touch ID", systemImage: "touchid")
-                    }
-                    Button(role: .destructive) {
-                        env.resetBiometricSession()
-                    } label: {
-                        Label("Lock session", systemImage: "lock.fill")
-                    }
-                }
-            } header: {
-                Text("Touch ID session")
-            } footer: {
-                Text("Lower = safer; higher = fewer prompts during long sessions.")
-            }
-            Section {
-                Toggle("Background expiry notifications", isOn: $env.notificationsEnabled)
-                if env.notificationsEnabled {
-                    Stepper("Warn within \(env.warnWithinDays) day\(env.warnWithinDays == 1 ? "" : "s")",
-                            value: $env.warnWithinDays, in: 1...90)
-                }
-                LabeledContent("Last check", value: env.lastNotifierRun)
-                HStack {
-                    Button { Task { await env.runExpiryCheckNow() } } label: {
-                        Label("Check now", systemImage: "bell.badge")
-                    }
-                    Button(role: .destructive) { env.resetNotificationDedupe() } label: {
-                        Label("Reset reminders", systemImage: "arrow.counterclockwise")
-                    }
-                    .help("Clears the delivered-alerts log so previously-sent notifications fire again.")
-                }
-            } header: {
-                Text("Notifications")
-            } footer: {
-                Text("Posts a macOS notification when a secret expires or is due for rotation. Runs hourly while the app is open.")
-            }
-            Section {
-                Text("Records older than 90 days are auto-purged. Override in CLI: `vibevault purge --days N`.")
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Audit retention")
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Settings")
     }
 }

@@ -97,6 +97,8 @@ struct ImportView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Tokens.Surface.background)
         .navigationTitle("Import Secrets")
     }
 

@@ -12,12 +12,12 @@ public protocol KeychainStoring: Sendable {
 
 public final class KeychainStore: KeychainStoring, @unchecked Sendable {
     public static let service = "dev.vibevault"
-    public static let accessGroup: String? = nil
+    public static let sharedAccessGroup = "group.dev.vibevault"
 
     private let serviceName: String
     private let accessGroup: String?
 
-    public init(service: String = KeychainStore.service, accessGroup: String? = KeychainStore.accessGroup) {
+    public init(service: String = KeychainStore.service, accessGroup: String? = nil) {
         self.serviceName = service
         self.accessGroup = accessGroup
     }

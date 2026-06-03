@@ -43,10 +43,25 @@ mkdir -p "$APP_DIR/Contents/Helpers"
 cp "$CLI_BIN" "$APP_DIR/Contents/Helpers/vibevault"
 cp apps/VibeVaultApp/Info.plist "$APP_DIR/Contents/Info.plist"
 
+# App icon — generate if missing, then copy into Resources.
+ICON_SRC="apps/VibeVaultApp/Resources/AppIcon.icns"
+if [ ! -f "$ICON_SRC" ]; then
+    echo "==> AppIcon.icns missing — generating…"
+    bash scripts/make-icon.sh
+fi
+cp "$ICON_SRC" "$APP_DIR/Contents/Resources/AppIcon.icns"
+
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable VibeVault" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
 
-# Ad-hoc sign so MenuBarExtra/LAContext/Keychain work without Developer ID.
-codesign --force --deep --sign - "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'
+# Sign each binary with its own entitlements for shared Keychain access group.
+ENT_APP="apps/VibeVaultApp/VibeVault.entitlements"
+ENT_CLI="cli/vibevault/vibevault.entitlements"
+ENT_MCP="cli/vibevault-mcp/vibevault-mcp.entitlements"
+
+codesign --force --sign - --entitlements "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault" 2>&1 | sed 's/^/  codesign: /'
+codesign --force --sign - --entitlements "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp" 2>&1 | sed 's/^/  codesign: /'
+codesign --force --sign - --entitlements "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault" 2>&1 | sed 's/^/  codesign: /'
+codesign --force --sign - --entitlements "$ENT_APP" "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'
 
 echo ""
 echo "==> Done."

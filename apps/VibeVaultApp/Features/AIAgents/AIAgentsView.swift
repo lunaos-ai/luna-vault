@@ -45,6 +45,8 @@ struct AIAgentsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Tokens.Surface.background)
         .navigationTitle("AI Agents")
         .task { refresh() }
         .toolbar {
@@ -59,19 +61,7 @@ struct AIAgentsView: View {
             HStack {
                 Label(client.displayName, systemImage: client.systemImage)
                 Spacer()
-                if let status = statuses[client] {
-                    if status.installed {
-                        Label("Installed", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                            .labelStyle(.titleAndIcon)
-                    } else if status.configExists {
-                        Text("Not installed").foregroundStyle(.secondary)
-                    } else if status.parentDirExists {
-                        Text("Client detected").foregroundStyle(.secondary)
-                    } else {
-                        Text("Not detected").foregroundStyle(.tertiary)
-                    }
-                }
+                statusPill(for: client)
             }
             HStack {
                 Button(statuses[client]?.installed == true ? "Reinstall" : "Install") {
@@ -86,6 +76,23 @@ struct AIAgentsView: View {
             Text(client.docsHint).font(.caption).foregroundStyle(.secondary)
         } header: {
             Text(client.displayName)
+        }
+    }
+
+    @ViewBuilder
+    private func statusPill(for client: MCPClientKind) -> some View {
+        if let status = statuses[client] {
+            if status.installed {
+                Text("Installed")
+                    .font(.caption2.weight(.semibold))
+                    .tintedChip(Tokens.Status.success)
+            } else if status.configExists {
+                Text("Not installed").font(.caption).foregroundStyle(Tokens.Text.secondary)
+            } else if status.parentDirExists {
+                Text("Client detected").font(.caption).foregroundStyle(Tokens.Text.secondary)
+            } else {
+                Text("Not detected").font(.caption).foregroundStyle(Tokens.Text.tertiary)
+            }
         }
     }
 

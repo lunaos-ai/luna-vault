@@ -80,6 +80,8 @@ struct ProviderSyncView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Tokens.Surface.background)
         .navigationTitle("Provider Sync")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

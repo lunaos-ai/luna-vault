@@ -24,7 +24,7 @@ final class SecretMetadataTests: XCTestCase {
     }
 
     func test_keychain_roundtrip_preserves_metadata() throws {
-        let store = KeychainStore(service: "dev.vibevault.test.\(UUID().uuidString)")
+        let store = KeychainStore(service: "dev.vibevault.test.\(UUID().uuidString)", accessGroup: nil)
         let exp = Date(timeIntervalSinceNow: 86_400 * 30)
         let secret = Secret(
             name: "META_TEST", value: "abc", notes: "from test",

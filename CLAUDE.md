@@ -2,6 +2,15 @@
 
 Extends `/Users/shaharsolomon/dev/projects/CLAUDE.md`. Cannot weaken any portfolio rule.
 
+## Design Context
+
+Before any UI work, read `PRODUCT.md` (strategic: register, users, voice, anti-references, design principles) and `DESIGN.md` (visual: tokens, typography, components, named rules). Both at project root.
+
+- Register: **product**. North Star: **The Locksmith's Bench**.
+- Accent (Graphite Indigo `#4F46E5`) is reserved for action and selection only.
+- Forbidden: 1Password-violet, hero-metric tiles, glassmorphism by default, nested cards, gradient text, em dashes in copy.
+- `/impeccable` skill auto-loads both files; for non-impeccable edits, read them first.
+
 ## Product mission
 
 Native macOS secret manager for AI-coding workflows. Replaces `.env` files and copy-paste from password managers. Local-first via macOS Keychain. AI-agent audit log. One-command sync to cloud providers (Cloudflare, Vercel, pushci.dev, GitHub Actions, AWS).

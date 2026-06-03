@@ -62,38 +62,38 @@ public final class ExpiryWatcher: ExpiryWatching, @unchecked Sendable {
 }
 
 /// Tracks which alerts have been delivered so we don't re-notify on each scan.
+/// Persists into Keychain via PreferenceStoring (no UserDefaults).
 public final class AlertDedupe: @unchecked Sendable {
-    private let userDefaults: UserDefaults
+    private let prefs: PreferenceStoring
     private let key: String
     private let queue = DispatchQueue(label: "dev.vibevault.alertdedupe")
 
-    public init(userDefaults: UserDefaults = .standard, key: String = "vibe-vault.delivered-alerts") {
-        self.userDefaults = userDefaults
+    public init(prefs: PreferenceStoring = KeychainPrefs(), key: String = "delivered-alerts") {
+        self.prefs = prefs
         self.key = key
     }
 
     public func filterNew(_ alerts: [ExpiryAlert]) -> [ExpiryAlert] {
         queue.sync {
-            let delivered = Set(userDefaults.stringArray(forKey: key) ?? [])
+            let delivered = Set(load())
             return alerts.filter { !delivered.contains($0.id) }
         }
     }
 
     public func markDelivered(_ alerts: [ExpiryAlert]) {
         queue.sync {
-            var delivered = Set(userDefaults.stringArray(forKey: key) ?? [])
+            var delivered = Set(load())
             for alert in alerts { delivered.insert(alert.id) }
-            // cap memory: keep last 500 entries
-            if delivered.count > 500 {
-                let trimmed = Array(delivered).suffix(500)
-                userDefaults.set(Array(trimmed), forKey: key)
-            } else {
-                userDefaults.set(Array(delivered), forKey: key)
-            }
+            let arr = delivered.count > 500 ? Array(Array(delivered).suffix(500)) : Array(delivered)
+            prefs.setCodable(arr, forKey: key)
         }
     }
 
     public func reset() {
-        queue.sync { userDefaults.removeObject(forKey: key) }
+        queue.sync { prefs.set(nil, forKey: key) }
+    }
+
+    private func load() -> [String] {
+        prefs.codable([String].self, forKey: key) ?? []
     }
 }

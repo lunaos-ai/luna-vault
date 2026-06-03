@@ -1,16 +1,33 @@
 import SwiftUI
 
+/// HIG-aligned design tokens. SF system font, semantic colors, vibrancy materials.
 enum Tokens {
-    enum Color {
-        static let primary = SwiftUI.Color(red: 0x7C / 255, green: 0x3A / 255, blue: 0xED / 255)   // #7C3AED
-        static let cta = SwiftUI.Color(red: 0xF9 / 255, green: 0x77 / 255, blue: 0x16 / 255)        // #F97316
-        static let surface = SwiftUI.Color(NSColor.windowBackgroundColor)
-        static let surfaceElevated = SwiftUI.Color(NSColor.underPageBackgroundColor)
-        static let textPrimary = SwiftUI.Color(NSColor.labelColor)
-        static let textSecondary = SwiftUI.Color(NSColor.secondaryLabelColor)
+    enum Palette {
+        // Graphite indigo — calmer than 1Password purple, distinct from Bitwarden blue.
+        // L≈48 chroma≈0.13 hue≈262 (OKLCH) — sits between Apple's stock indigo and macOS Mail blue.
+        static let accent = SwiftUI.Color(red: 0x4F / 255, green: 0x46 / 255, blue: 0xE5 / 255)
+        static let warm = SwiftUI.Color(red: 0xF9 / 255, green: 0x77 / 255, blue: 0x16 / 255)
+        static let mint = SwiftUI.Color(red: 0x10 / 255, green: 0xB9 / 255, blue: 0x81 / 255)
+        static let rose = SwiftUI.Color(red: 0xE1 / 255, green: 0x14 / 255, blue: 0x48 / 255)
+    }
+
+    enum Surface {
+        static let background = SwiftUI.Color(NSColor.windowBackgroundColor)
+        static let elevated = SwiftUI.Color(NSColor.controlBackgroundColor)
+        static let separator = SwiftUI.Color(NSColor.separatorColor)
+    }
+
+    enum Text {
+        static let primary = SwiftUI.Color(NSColor.labelColor)
+        static let secondary = SwiftUI.Color(NSColor.secondaryLabelColor)
+        static let tertiary = SwiftUI.Color(NSColor.tertiaryLabelColor)
+    }
+
+    enum Status {
         static let success = SwiftUI.Color.green
         static let warning = SwiftUI.Color.orange
         static let danger = SwiftUI.Color.red
+        static let info = SwiftUI.Color.blue
     }
 
     enum Space {
@@ -20,25 +37,83 @@ enum Tokens {
         static let lg: CGFloat = 16
         static let xl: CGFloat = 24
         static let xxl: CGFloat = 32
+        static let xxxl: CGFloat = 48
     }
 
     enum Radius {
-        static let sm: CGFloat = 6
-        static let md: CGFloat = 10
+        static let xs: CGFloat = 4
+        static let sm: CGFloat = 8
+        static let md: CGFloat = 12
         static let lg: CGFloat = 16
+        static let pill: CGFloat = 999
     }
 
-    enum FontName {
-        static let body = "Inter"
-        static let mono = "JetBrains Mono"
+    enum Stroke {
+        static let hairline: CGFloat = 0.5
+        static let thin: CGFloat = 1
     }
 }
 
 extension View {
-    func cardSurface() -> some View {
+    /// HIG-flavoured card: vibrancy material + hairline stroke + soft radius.
+    func cardSurface(radius: CGFloat = Tokens.Radius.md) -> some View {
         self
             .padding(Tokens.Space.lg)
-            .background(Tokens.Color.surfaceElevated)
-            .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.md))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(Tokens.Surface.separator.opacity(0.6), lineWidth: Tokens.Stroke.hairline)
+            )
+    }
+
+    /// Soft tinted chip background for badges / status pills.
+    func tintedChip(_ color: Color) -> some View {
+        self
+            .padding(.horizontal, Tokens.Space.sm)
+            .padding(.vertical, Tokens.Space.xs)
+            .background(color.opacity(0.12), in: Capsule())
+            .foregroundStyle(color)
+    }
+
+    /// Section header label — small caps, secondary, tracking.
+    func sectionLabel() -> some View {
+        self
+            .font(.caption.weight(.semibold))
+            .textCase(.uppercase)
+            .tracking(0.6)
+            .foregroundStyle(Tokens.Text.secondary)
+    }
+}
+
+/// Indigo-tinted backdrop gradient — barely visible depth that lifts the detail pane
+/// off the canvas. Honors the No-Shadow Rule (gradient is tonal, not lifted).
+struct PremiumBackdrop: View {
+    var body: some View {
+        LinearGradient(
+            stops: [
+                .init(color: Tokens.Palette.accent.opacity(0.04), location: 0),
+                .init(color: Tokens.Surface.background.opacity(1), location: 0.55),
+                .init(color: Tokens.Surface.background.opacity(1), location: 1)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+}
+
+/// A "deep inset" container — one tonal step darker than the elevated card it sits in.
+/// Used for the masked value field on the detail hero.
+extension View {
+    func deepInset(radius: CGFloat = Tokens.Radius.sm) -> some View {
+        self
+            .background(
+                Tokens.Surface.background.opacity(0.7),
+                in: RoundedRectangle(cornerRadius: radius, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(Tokens.Surface.separator.opacity(0.4), lineWidth: Tokens.Stroke.hairline)
+            )
     }
 }

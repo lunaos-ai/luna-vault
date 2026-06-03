@@ -7,11 +7,24 @@ final class AppEnvironment: ObservableObject {
     @Published var secrets: [Secret] = []
     @Published var lastError: String?
     @Published var scanResult: ScanResult?
+    @Published var isScanning: Bool = false
+    @Published var lastScannedURL: URL?
     @Published var auditEvents: [AuditEvent] = []
     @Published var biometricSessionMinutes: Double {
         didSet {
-            UserDefaults.standard.set(biometricSessionMinutes, forKey: Self.sessionMinutesKey)
-            service.biometric.setSessionWindow(biometricSessionMinutes * 60)
+            settings.sessionMinutes = biometricSessionMinutes
+            persistSettings()
+            applyBiometricWindow()
+        }
+    }
+    @Published var trustSession: Bool = false {
+        didSet {
+            applyBiometricWindow()
+            if !trustSession {
+                biometricStatus = "Re-prompts every \(Int(biometricSessionMinutes)) min."
+            } else {
+                biometricStatus = "Trusted until app quits."
+            }
         }
     }
     @Published var biometricStatus: String = "Idle"
@@ -19,21 +32,23 @@ final class AppEnvironment: ObservableObject {
     @Published var importStatus: String?
     @Published var notificationsEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(notificationsEnabled, forKey: Self.notificationsEnabledKey)
+            settings.notificationsEnabled = notificationsEnabled
+            persistSettings()
             updateSchedulerState()
         }
     }
     @Published var warnWithinDays: Int {
         didSet {
-            UserDefaults.standard.set(warnWithinDays, forKey: Self.warnWithinDaysKey)
+            settings.warnWithinDays = warnWithinDays
+            persistSettings()
             updateSchedulerState()
         }
     }
     @Published var lastNotifierRun: String = "Never"
 
-    static let sessionMinutesKey = "vibe-vault.biometric.session-minutes"
-    static let notificationsEnabledKey = "vibe-vault.notifications.enabled"
-    static let warnWithinDaysKey = "vibe-vault.notifications.warn-within-days"
+    static let settingsKey = "app-settings"
+    private var settings: AppSettings
+    private let prefs: PreferenceStoring
 
     lazy var scheduler: ExpiryScheduler = ExpiryScheduler(
         secretsProvider: { [weak self] in self?.secrets ?? [] }
@@ -42,16 +57,28 @@ final class AppEnvironment: ObservableObject {
     let service: VaultService
     let registry: ProviderRegistry
 
-    init(service: VaultService, registry: ProviderRegistry) {
+    init(service: VaultService, registry: ProviderRegistry, prefs: PreferenceStoring = KeychainPrefs()) {
         self.service = service
         self.registry = registry
-        let stored = UserDefaults.standard.double(forKey: Self.sessionMinutesKey)
-        self.biometricSessionMinutes = stored > 0 ? stored : 5
-        self.notificationsEnabled = UserDefaults.standard.object(forKey: Self.notificationsEnabledKey) as? Bool ?? true
-        let storedWarn = UserDefaults.standard.integer(forKey: Self.warnWithinDaysKey)
-        self.warnWithinDays = storedWarn > 0 ? storedWarn : 14
-        service.biometric.setSessionWindow(self.biometricSessionMinutes * 60)
+        self.prefs = prefs
+        let loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey) ?? AppSettings.migrateLegacy(into: prefs, settingsKey: Self.settingsKey)
+        self.settings = loaded
+        self.biometricSessionMinutes = loaded.sessionMinutes
+        self.notificationsEnabled = loaded.notificationsEnabled
+        self.warnWithinDays = loaded.warnWithinDays
+        service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
         Task { @MainActor [weak self] in self?.updateSchedulerState() }
+    }
+
+    private func persistSettings() {
+        prefs.setCodable(settings, forKey: Self.settingsKey)
+    }
+
+    private func applyBiometricWindow() {
+        let seconds: TimeInterval = trustSession
+            ? .greatestFiniteMagnitude
+            : biometricSessionMinutes * 60
+        service.biometric.setSessionWindow(seconds)
     }
 
     private func updateSchedulerState() {
@@ -113,13 +140,28 @@ final class AppEnvironment: ObservableObject {
     }
 
     func importEnv(globs: [String], overwrite: Bool) {
-        do {
-            let items = EnvImporter.collect(matching: globs)
-            let r = try service.importSecrets(items, overwrite: overwrite)
-            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
-            refresh()
-        } catch {
-            importStatus = "error: \(error)"
+        importStatus = "Reading shell environment…"
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let shellEnv = LoginShellEnv.snapshot()
+            let items = EnvImporter.collect(env: shellEnv, matching: globs)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                if shellEnv.isEmpty {
+                    self.importStatus = "Could not read shell env. Open Terminal and run: open -a VibeVault"
+                    return
+                }
+                if items.isEmpty {
+                    self.importStatus = "No env vars matched: \(globs.joined(separator: " "))"
+                    return
+                }
+                do {
+                    let r = try self.service.importSecrets(items, overwrite: overwrite)
+                    self.importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
+                    self.refresh()
+                } catch {
+                    self.importStatus = "error: \(error)"
+                }
+            }
         }
     }
 
@@ -129,6 +171,28 @@ final class AppEnvironment: ObservableObject {
             let r = try service.importSecrets(items, overwrite: overwrite)
             importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
             refresh()
+        } catch {
+            importStatus = "error: \(error)"
+        }
+    }
+
+    func importMissing(projectURL: URL, missing: Set<String>, overwrite: Bool) {
+        let r = ProjectMissingImporter.collect(projectURL: projectURL, missing: missing)
+        if r.items.isEmpty {
+            importStatus = r.stillMissing.isEmpty
+                ? "No missing secrets."
+                : "No values found in project dotenv for: \(r.stillMissing.sorted().joined(separator: ", "))"
+            return
+        }
+        do {
+            let res = try service.importSecrets(r.items, overwrite: overwrite)
+            var msg = "Imported \(res.imported.count) · updated \(res.updated.count) · skipped \(res.skipped.count)"
+            if !r.stillMissing.isEmpty {
+                msg += " · no value for \(r.stillMissing.count)"
+            }
+            importStatus = msg
+            refresh()
+            if let url = lastScannedURL { scan(projectURL: url) }
         } catch {
             importStatus = "error: \(error)"
         }
@@ -192,9 +256,26 @@ final class AppEnvironment: ObservableObject {
     }
 
     func scan(projectURL: URL) {
-        do {
-            let known = Set(secrets.map(\.name))
-            scanResult = try ProjectScanner().scan(projectURL: projectURL, knownSecrets: known)
-        } catch { lastError = "\(error)" }
+        let known = Set(secrets.map(\.name))
+        scanResult = nil
+        isScanning = true
+        lastScannedURL = projectURL
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let result: Result<ScanResult, Error>
+            do {
+                let scan = try ProjectScanner().scan(projectURL: projectURL, knownSecrets: known)
+                result = .success(scan)
+            } catch {
+                result = .failure(error)
+            }
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.isScanning = false
+                switch result {
+                case .success(let r): self.scanResult = r
+                case .failure(let e): self.lastError = "\(e)"
+                }
+            }
+        }
     }
 }

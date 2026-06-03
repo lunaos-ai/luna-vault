@@ -48,9 +48,10 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
     public func scan(projectURL: URL, knownSecrets: Set<String>) throws -> ScanResult {
         var sources: [String: [String]] = [:]
         var required = Set<String>()
+        let wanted = Set(parsers.map(\.filename))
+        let filesByName = findFiles(matching: wanted, under: projectURL)
         for parser in parsers {
-            let candidates = findFiles(matching: parser.filename, under: projectURL)
-            for fileURL in candidates {
+            for fileURL in filesByName[parser.filename] ?? [] {
                 guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
                 let names = parser.parse(content: content).filter { isLikelySecret($0) }
                 if names.isEmpty { continue }
@@ -64,21 +65,32 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
         return ScanResult(required: required, missing: missing, extra: extra, sources: sources)
     }
 
-    private func findFiles(matching name: String, under root: URL) -> [URL] {
-        var results: [URL] = []
+    private static let skipDirs: Set<String> = [
+        "node_modules", ".git", ".build", "DerivedData", "build", "dist", ".next", ".vercel"
+    ]
+    private static let maxDepth = 8
+
+    private func findFiles(matching names: Set<String>, under root: URL) -> [String: [URL]] {
+        var results: [String: [URL]] = [:]
         let enumerator = fileManager.enumerator(
             at: root,
-            includingPropertiesForKeys: nil,
+            includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsPackageDescendants]
         )
-        let skipDirs: Set<String> = ["node_modules", ".git", ".build", "DerivedData", "build", "dist", ".next", ".vercel"]
+        let rootDepth = root.pathComponents.count
         while let url = enumerator?.nextObject() as? URL {
             let last = url.lastPathComponent
-            if skipDirs.contains(last) {
+            if Self.skipDirs.contains(last) {
                 enumerator?.skipDescendants()
                 continue
             }
-            if last == name { results.append(url) }
+            if url.pathComponents.count - rootDepth > Self.maxDepth {
+                enumerator?.skipDescendants()
+                continue
+            }
+            if names.contains(last) {
+                results[last, default: []].append(url)
+            }
         }
         return results
     }

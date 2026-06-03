@@ -7,7 +7,7 @@ final class KeychainStoreTests: XCTestCase {
 
     override func setUpWithError() throws {
         serviceName = "dev.vibevault.test.\(UUID().uuidString)"
-        store = KeychainStore(service: serviceName)
+        store = KeychainStore(service: serviceName, accessGroup: nil)
     }
 
     override func tearDownWithError() throws {

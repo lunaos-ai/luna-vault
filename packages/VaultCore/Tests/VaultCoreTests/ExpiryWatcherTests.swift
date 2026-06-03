@@ -49,8 +49,7 @@ final class ExpiryWatcherTests: XCTestCase {
     }
 
     func test_dedupe_filters_already_delivered() {
-        let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
-        let dedupe = AlertDedupe(userDefaults: defaults, key: "test-key")
+        let dedupe = AlertDedupe(prefs: InMemoryPrefs(), key: "test-key")
         let alert = ExpiryAlert(secretName: "X", kind: .expired, dueDate: nil)
         XCTAssertEqual(dedupe.filterNew([alert]).count, 1)
         dedupe.markDelivered([alert])

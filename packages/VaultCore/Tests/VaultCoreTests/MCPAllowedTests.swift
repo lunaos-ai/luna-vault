@@ -8,7 +8,7 @@ final class MCPAllowedTests: XCTestCase {
     }
 
     func test_keychain_roundtrip_preserves_mcpAllowed_true() throws {
-        let store = KeychainStore(service: "dev.vibevault.test.\(UUID().uuidString)")
+        let store = KeychainStore(service: "dev.vibevault.test.\(UUID().uuidString)", accessGroup: nil)
         let secret = Secret(name: "MCP_ON", value: "v", mcpAllowed: true)
         try store.add(secret)
         let read = try store.read(name: "MCP_ON")
@@ -17,7 +17,7 @@ final class MCPAllowedTests: XCTestCase {
     }
 
     func test_keychain_roundtrip_preserves_mcpAllowed_false() throws {
-        let store = KeychainStore(service: "dev.vibevault.test.\(UUID().uuidString)")
+        let store = KeychainStore(service: "dev.vibevault.test.\(UUID().uuidString)", accessGroup: nil)
         let secret = Secret(name: "MCP_OFF", value: "v")
         try store.add(secret)
         let read = try store.read(name: "MCP_OFF")
