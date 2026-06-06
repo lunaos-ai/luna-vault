@@ -9,9 +9,19 @@ struct RunCommand: AsyncParsableCommand {
         usage: "vibevault run [--only NAME] [--exclude NAME] -- <command> [args...]"
     )
 
-    @Option(name: .long, parsing: .upToNextOption, help: "Only inject these named secrets.") var only: [String] = []
-    @Option(name: .long, parsing: .upToNextOption, help: "Exclude these named secrets.") var exclude: [String] = []
-    @Argument(parsing: .captureForPassthrough, help: "Command to run.") var command: [String] = []
+    // Repeatable single-value options (`--only A --only B`). NOT `.upToNextOption`:
+    // that strategy greedily swallows the trailing command (e.g. `--only X sh -c …`
+    // captured `sh` into `only`, leaving `-c` as the command → "command not found: -c").
+    @Option(name: .long, help: "Only inject these named secrets (repeatable).") var only: [String] = []
+    @Option(name: .long, help: "Exclude these named secrets (repeatable).") var exclude: [String] = []
+    @Argument(parsing: .captureForPassthrough, help: "Command to run after `--`.") var rawCommand: [String] = []
+
+    /// The command to exec. `.captureForPassthrough` retains the leading `--`
+    /// terminator, so strip a single one — otherwise EnvInjector tries to exec
+    /// "--" and reports "command not found: --".
+    var command: [String] {
+        rawCommand.first == "--" ? Array(rawCommand.dropFirst()) : rawCommand
+    }
 
     mutating func run() async throws {
         guard !command.isEmpty else {

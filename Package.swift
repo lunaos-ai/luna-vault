@@ -36,6 +36,14 @@ let package = Package(
             ],
             path: "cli/vibevault"
         ),
+        .testTarget(
+            name: "vibevaultTests",
+            dependencies: [
+                "vibevault",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            path: "cli/vibevaultTests"
+        ),
         .executableTarget(
             name: "vibevault-mcp",
             dependencies: ["VaultCore"],
