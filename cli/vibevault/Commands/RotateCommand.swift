@@ -30,6 +30,11 @@ struct RotateCommand: AsyncParsableCommand {
             newValue = line
         }
         do {
+            // Save the prior value to history before changing it (within the
+            // biometric session window, so this adds no extra Touch ID prompt).
+            if newValue != nil, let old = try? await service.read(name: name, reason: "Rotate \(name)") {
+                try? SecretHistoryStore().record(name: name, value: old.value)
+            }
             try await service.rotate(name: name, newValue: newValue)
             print(markOnly ? "rotation recorded for \(name)" : "rotated \(name)")
         } catch SecretError.notFound {

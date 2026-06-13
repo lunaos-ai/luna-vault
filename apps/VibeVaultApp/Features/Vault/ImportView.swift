@@ -9,97 +9,139 @@ struct ImportView: View {
     @State private var opCLIStatus: String?
 
     var body: some View {
-        Form {
-            Section {
-                Toggle("Overwrite existing", isOn: $overwrite)
-            } header: {
-                Text("Options")
-            } footer: {
-                Text("When off, secrets that already exist in your vault are skipped.")
-            }
-
-            Section {
-                LabeledContent(".env file") {
-                    Button("Choose…") { pickDotenv() }
-                }
-                Text("Comments and `export` prefixes handled.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Files")
-            }
-
-            Section {
-                TextField("Globs", text: $envGlobs, prompt: Text("CF_* STRIPE_*"))
-                    .font(.system(.body, design: .monospaced))
-                Button("Import from environment") {
-                    let globs = envGlobs.split(separator: " ").map(String.init)
-                    env.importEnv(globs: globs, overwrite: overwrite)
-                }
-            } header: {
-                Text("Shell environment")
-            } footer: {
-                Text("Pulls secrets from your current shell env matching any glob.")
-            }
-
-            Section {
-                Button {
-                    env.importClipboard(overwrite: overwrite)
-                } label: {
-                    Label("Import from clipboard", systemImage: "doc.on.clipboard")
-                }
-            } header: {
-                Text("Clipboard")
-            } footer: {
-                Text("Copy KEY=VALUE lines to your clipboard first, then click.")
-            }
-
-            Section {
-                HStack {
-                    TextField("Item reference", text: $opItemRef, prompt: Text("Cloudflare API"))
-                    Button("Import") {
-                        env.importOnePassword(itemRef: opItemRef, overwrite: overwrite)
-                    }
-                    .disabled(opItemRef.isEmpty)
-                }
-                Button {
-                    Task { opCLIStatus = await probeOpCLI() }
-                } label: {
-                    Label("Check op CLI", systemImage: "checkmark.circle")
-                }
-                if let s = opCLIStatus {
-                    Text(s).font(.caption).foregroundStyle(.secondary)
-                }
-            } header: {
-                Text("1Password")
-            } footer: {
-                Text("Requires the 1Password CLI signed in. Install: `brew install --cask 1password-cli`. Item reference is the name shown in 1Password (e.g. \"Cloudflare API\").")
-            }
-
-            Section {
-                LabeledContent("System Keychain") {
-                    Text("`vibevault import --from keychain`")
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                Text("Other CLI sources")
-            } footer: {
-                Text("These sources need terminal access; CLI only for now.")
-            }
-
-            if let status = env.importStatus {
-                Section {
-                    Text(status).font(.callout)
-                } header: {
-                    Text("Last result")
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Space.xl) {
+                optionsCard
+                filesCard
+                shellCard
+                clipboardCard
+                onePasswordCard
+                cliSourcesCard
+                if let status = env.importStatus {
+                    resultCard(status)
                 }
             }
+            .padding(Tokens.Space.xxl)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Tokens.Surface.background)
+        .background(LiquidBackdrop())
         .navigationTitle("Import Secrets")
+    }
+
+    // MARK: - Cards
+
+    private var optionsCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Options").sectionLabel()
+            Toggle("Overwrite existing", isOn: $overwrite)
+                .toggleStyle(.switch)
+            Text("When off, secrets that already exist in your vault are skipped.")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private var filesCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Files").sectionLabel()
+            LabeledContent(".env file") {
+                Button("Choose…") { pickDotenv() }
+                    .buttonStyle(.glass)
+            }
+            Text("Comments and `export` prefixes handled.")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private var shellCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Shell environment").sectionLabel()
+            TextField("Globs", text: $envGlobs, prompt: Text("CF_* STRIPE_*"))
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+            Button("Import from environment") {
+                let globs = envGlobs.split(separator: " ").map(String.init)
+                env.importEnv(globs: globs, overwrite: overwrite)
+            }
+            .buttonStyle(.glassProminent)
+            Text("Pulls secrets from your current shell env matching any glob.")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private var clipboardCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Clipboard").sectionLabel()
+            Button {
+                env.importClipboard(overwrite: overwrite)
+            } label: {
+                Label("Import from clipboard", systemImage: "doc.on.clipboard")
+            }
+            .buttonStyle(.glass)
+            Text("Copy KEY=VALUE lines to your clipboard first, then click.")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private var onePasswordCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("1Password").sectionLabel()
+            HStack {
+                TextField("Item reference", text: $opItemRef, prompt: Text("Cloudflare API"))
+                    .textFieldStyle(.roundedBorder)
+                Button("Import") {
+                    env.importOnePassword(itemRef: opItemRef, overwrite: overwrite)
+                }
+                .buttonStyle(.glassProminent)
+                .disabled(opItemRef.isEmpty)
+            }
+            Button {
+                Task { opCLIStatus = await probeOpCLI() }
+            } label: {
+                Label("Check op CLI", systemImage: "checkmark.circle")
+            }
+            .buttonStyle(.glass)
+            if let s = opCLIStatus {
+                Text(s).font(.caption).foregroundStyle(Tokens.Text.secondary)
+            }
+            Text("Requires the 1Password CLI signed in. Install: `brew install --cask 1password-cli`. Item reference is the name shown in 1Password (e.g. \"Cloudflare API\").")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private var cliSourcesCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Other CLI sources").sectionLabel()
+            LabeledContent("System Keychain") {
+                Text("`vibevault import --from keychain`")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+            Text("These sources need terminal access; CLI only for now.")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private func resultCard(_ status: String) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Last result").sectionLabel()
+            Text(status)
+                .font(.callout)
+                .glassChip(Tokens.Palette.accent)
+        }
+        .glassCard()
     }
 
     private func pickDotenv() {

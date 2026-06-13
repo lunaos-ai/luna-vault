@@ -32,8 +32,8 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
     public func record(_ event: AuditEvent) throws {
         try queue.sync {
             let sql = """
-                INSERT INTO events (secret_name, agent, agent_confidence, session_id, project_path, action, ts)
-                VALUES (?, ?, ?, ?, ?, ?, ?);
+                INSERT INTO events (secret_name, agent, agent_confidence, session_id, project_path, action, granted, ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
             """
             var stmt: OpaquePointer?
             guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { throw SecretError.keychainStatus(-2) }
@@ -44,7 +44,8 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
             sqlite3_bind_text(stmt, 4, event.sessionId, -1, Self.SQLITE_TRANSIENT)
             if let p = event.projectPath { sqlite3_bind_text(stmt, 5, p, -1, Self.SQLITE_TRANSIENT) } else { sqlite3_bind_null(stmt, 5) }
             sqlite3_bind_text(stmt, 6, event.action.rawValue, -1, Self.SQLITE_TRANSIENT)
-            sqlite3_bind_double(stmt, 7, event.timestamp.timeIntervalSince1970)
+            sqlite3_bind_int(stmt, 7, event.granted ? 1 : 0)
+            sqlite3_bind_double(stmt, 8, event.timestamp.timeIntervalSince1970)
             guard sqlite3_step(stmt) == SQLITE_DONE else { throw SecretError.keychainStatus(-3) }
         }
     }
@@ -58,8 +59,9 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
             if let s = filter.secretName { clauses.append("secret_name = ?"); stringParams.append(s) }
             if let p = filter.projectPath { clauses.append("project_path = ?"); stringParams.append(p) }
             if let act = filter.action { clauses.append("action = ?"); stringParams.append(act.rawValue) }
+            if let g = filter.granted { clauses.append("granted = \(g ? 1 : 0)") }
             if let since = filter.since { clauses.append("ts >= ?"); doubleParams.append(since.timeIntervalSince1970) }
-            var sql = "SELECT id, secret_name, agent, agent_confidence, session_id, project_path, action, ts FROM events"
+            var sql = "SELECT id, secret_name, agent, agent_confidence, session_id, project_path, action, granted, ts FROM events"
             if !clauses.isEmpty { sql += " WHERE " + clauses.joined(separator: " AND ") }
             sql += " ORDER BY id DESC LIMIT \(max(1, filter.limit));"
             var stmt: OpaquePointer?
@@ -95,9 +97,11 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
         let session = String(cString: sqlite3_column_text(stmt, 4))
         let project = sqlite3_column_type(stmt, 5) == SQLITE_NULL ? nil : String(cString: sqlite3_column_text(stmt, 5))
         let action = AuditEvent.Action(rawValue: String(cString: sqlite3_column_text(stmt, 6))) ?? .read
-        let ts = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 7))
+        let granted = sqlite3_column_int(stmt, 7) != 0
+        let ts = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 8))
         return AuditEvent(id: id, secretName: secret, agent: agent, agentConfidence: conf,
-                          sessionId: session, projectPath: project, action: action, timestamp: ts)
+                          sessionId: session, projectPath: project, action: action,
+                          granted: granted, timestamp: ts)
     }
 
     private func migrate() throws {
@@ -110,6 +114,7 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
                 session_id TEXT NOT NULL,
                 project_path TEXT,
                 action TEXT NOT NULL,
+                granted INTEGER NOT NULL DEFAULT 1,
                 ts REAL NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
@@ -119,5 +124,19 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
         var err: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(db, sql, nil, nil, &err)
         if rc != SQLITE_OK { sqlite3_free(err); throw SecretError.keychainStatus(-99) }
+        // Existing DBs created before `granted` existed: add the column once.
+        if !hasColumn("granted", in: "events") {
+            sqlite3_exec(db, "ALTER TABLE events ADD COLUMN granted INTEGER NOT NULL DEFAULT 1;", nil, nil, nil)
+        }
+    }
+
+    private func hasColumn(_ column: String, in table: String) -> Bool {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "PRAGMA table_info(\(table));", -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let c = sqlite3_column_text(stmt, 1), String(cString: c) == column { return true }
+        }
+        return false
     }
 }

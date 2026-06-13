@@ -19,7 +19,12 @@ struct AddCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         let service = try VaultService.live()
-        let secretValue = try resolveValue()
+        let secretValue = try Self.resolveSecretValue(
+            explicit: value,
+            isTTY: isatty(fileno(stdin)) == 1,
+            readPiped: { readLine(strippingNewline: true) },
+            promptHidden: { Self.promptHidden(name: name) }
+        )
         let expiresAt = try expires.map { try parseExpiry($0) }
         do {
             try service.add(name: name, value: secretValue, notes: notes, expiresAt: expiresAt, rotateEveryDays: rotateEvery)
@@ -47,10 +52,44 @@ struct AddCommand: AsyncParsableCommand {
         throw ValidationError("invalid --expires; use ISO-8601 date or 30d/12w/6mo/1y")
     }
 
-    private func resolveValue() throws -> String {
-        if let v = value { return v }
-        FileHandle.standardError.write(Data("Enter value for \(name) (input hidden via terminal): ".utf8))
-        guard let line = readLine() else { throw ValidationError("no value provided") }
-        return line
+    /// Resolve the secret value from (in order): an explicit `--value`, piped
+    /// stdin (non-interactive), or a hidden interactive prompt. Pure + injectable
+    /// so both branches are unit-testable. Rejects empty so a blank secret is
+    /// never silently stored.
+    static func resolveSecretValue(
+        explicit: String?,
+        isTTY: Bool,
+        readPiped: () -> String?,
+        promptHidden: () -> String?
+    ) throws -> String {
+        if let v = explicit { return v }
+        if !isTTY {
+            guard let line = readPiped(), !line.isEmpty else {
+                throw ValidationError("no value on stdin (pipe a value or pass --value)")
+            }
+            return line
+        }
+        guard let secret = promptHidden(), !secret.isEmpty else {
+            throw ValidationError("no value provided")
+        }
+        return secret
+    }
+
+    /// Prompt on stderr and read a line with terminal echo disabled, so the
+    /// secret is not visible on screen (the old prompt claimed "hidden" but
+    /// `readLine()` echoes). Falls back to a plain read if the tty can't be configured.
+    private static func promptHidden(name: String) -> String? {
+        FileHandle.standardError.write(Data("Enter value for \(name) (hidden): ".utf8))
+        let fd = fileno(stdin)
+        var orig = termios()
+        guard tcgetattr(fd, &orig) == 0 else { return readLine(strippingNewline: true) }
+        var raw = orig
+        raw.c_lflag &= ~tcflag_t(ECHO)
+        tcsetattr(fd, TCSANOW, &raw)
+        defer {
+            tcsetattr(fd, TCSANOW, &orig)
+            FileHandle.standardError.write(Data("\n".utf8))
+        }
+        return readLine(strippingNewline: true)
     }
 }

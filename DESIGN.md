@@ -136,13 +136,15 @@ The system rejects the saturated purple-on-black reflex of consumer password man
 
 The palette is intentional silence: tonal layering on system surfaces, a graphite-indigo accent reserved for action and selection only, and status colors that arrive only when something needs attention. Type is system SF, with SF Mono carrying every identifier so secret names never get mistaken for prose.
 
+> **Doctrine update (2026-06):** Vibe Vault now ships a **Liquid Glass** treatment across every scene — translucent floating surfaces, an ambient drifting backdrop, soft depth shadows, and spring motion. This intentionally supersedes the original flat "Locksmith's Bench" calm where the two conflict (the No-Shadow Rule, the no-glass-by-default rule, and the no-floating stance below are retired). What survives: monospace identifiers, accent-on-action for the *primary* control, status-earns-color, native macOS controls, and full accessibility. Apple's `glassEffect()` is macOS 26 only; we reproduce Liquid Glass on macOS 14+ via `.ultraThinMaterial` + specular edge + tint + floating shadow (see `Theme/GlassKit.swift`).
+
 **Key Characteristics:**
-- Tonal layering over shadows — depth comes from semantic surface stacking, not box-shadows.
-- Accent on action only — indigo `#4F46E5` appears on primary buttons, selection, and active focus; nowhere else.
+- Liquid Glass surfaces — cards and panels are translucent `.ultraThinMaterial` with a specular top sheen, a white edge stroke, a faint accent tint, and a soft floating shadow. They lift off an ambient backdrop.
+- Floating objects — a drifting orb backdrop (`LiquidBackdrop`), a circular floating action button (`FloatingActionButton`), and detached glass capsules (`FloatingBar`). Surfaces hover-lift on pointer.
+- Accent on the primary action — indigo `#4F46E5` carries the single prominent button per region and selection; glass *tints* may use accent/mint/warm subtly.
 - Monospace for identifiers — every secret name, value, and command renders in SF Mono.
-- Content is the chrome — no hero tiles, no dashboard widgets, no "welcome back" cards.
-- One material surface per detail pane — never stack cards inside cards.
 - Status earns its color — red only for expired, orange only for rotation-due, green only for live session.
+- Motion respects Reduce Motion — every spring/drift/hover is gated on `@Environment(\.accessibilityReduceMotion)`.
 
 ## 2. Colors
 
@@ -217,9 +219,9 @@ The original design used `.regularMaterial` for vibrancy on cards. As of this sp
 
 ### Named Rules
 
-**The No-Shadow Rule.** No `box-shadow` or `dropShadow` modifiers anywhere in the app. Drop shadows are the first move of a SaaS dashboard and the first sign of "AI made that." Depth is built with semantic surfaces and 0.5pt strokes.
+**The Floating-Glass Rule (replaces No-Shadow).** Glass surfaces float: each carries a soft shadow keyed to `Tokens.Elevation` (`.resting` / `.floating` / `.lifted`) and lifts further on hover. Depth is now real — material translucency + specular edge + drop shadow — not just tonal stacking. Shadows are sanctioned; use the `Tokens.Elevation` scale, never ad-hoc radii.
 
-**The One-Elevation-Per-Pane Rule.** A detail pane carries one elevated surface, never two. Sections inside it are separated by hairlines, not by additional cards. Nested cards are always wrong.
+**The One-Card-Per-Concept Rule (replaces One-Elevation-Per-Pane).** Scenes are composed of multiple floating glass cards, one per logical group (a former `Form` Section becomes one `.glassCard()`). Still never nest a glass card directly inside another glass card — group with spacing, not recursion.
 
 ## 5. Components
 
@@ -286,10 +288,10 @@ The detail pane opens with **Large Title Mono** (the secret name itself) on a tr
 ### Don't:
 - **Don't** use saturated purple-on-black or any 1Password-violet `#7C3AED`-style hue. We refused that category-reflex on purpose.
 - **Don't** use gradients on text (`background-clip: text` or its SwiftUI equivalents). The Graphite Indigo is a solid color, always.
-- **Don't** use glassmorphism as default. Materials belong on the sidebar and toolbar by macOS convention; cards use the elevated semantic background.
+- **Do** use Liquid Glass (`.glassCard()` / `.glassPanel()`) as the default surface. (This reverses the prior no-glass rule.) Reach for `Theme/GlassKit.swift` helpers, never hand-rolled blur.
 - **Don't** build hero-metric tiles. "Total / Rotate due / Expired / MCP" as four colored boxes is the SaaS-dashboard cliché. Inline counts in a single text line instead.
-- **Don't** stack cards inside cards. The detail pane is one elevated surface.
-- **Don't** add box-shadows. Depth is tonal, not lifted.
+- **Don't** nest a glass card inside another glass card. Group with spacing.
+- **Do** add floating shadows via the `Tokens.Elevation` scale. (This reverses the prior No-Shadow rule.) Don't invent one-off shadow radii.
 - **Don't** put a TextField inside a toolbar (current AuditLogView regression). Filters belong in popovers or column headers on macOS.
 - **Don't** use colored icon tiles in the sidebar. Glyphs are tertiary monochrome until the row is selected.
 - **Don't** use the Bitwarden / LastPass consumer chrome vocabulary — gradient buttons, in-app upsell, "Premium" badges. There is no upsell surface.

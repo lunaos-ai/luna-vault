@@ -14,10 +14,14 @@ public struct AuditEvent: Equatable, Hashable, Sendable, Identifiable {
     public let sessionId: String
     public let projectPath: String?
     public let action: Action
+    /// Whether the requester was granted access. `false` records a denied read
+    /// (biometric declined / unavailable) so refusals are auditable, not silent.
+    public let granted: Bool
     public let timestamp: Date
 
     public enum Action: String, Codable, Sendable {
         case read, write, delete, push, pull, scan, rotate, importEvent = "import", expire
+        case export, rollback
     }
 
     public init(
@@ -28,6 +32,7 @@ public struct AuditEvent: Equatable, Hashable, Sendable, Identifiable {
         sessionId: String,
         projectPath: String?,
         action: Action,
+        granted: Bool = true,
         timestamp: Date = Date()
     ) {
         self.id = id
@@ -37,6 +42,7 @@ public struct AuditEvent: Equatable, Hashable, Sendable, Identifiable {
         self.sessionId = sessionId
         self.projectPath = projectPath
         self.action = action
+        self.granted = granted
         self.timestamp = timestamp
     }
 }
@@ -46,6 +52,7 @@ public struct AuditFilter: Sendable {
     public var secretName: String?
     public var projectPath: String?
     public var action: AuditEvent.Action?
+    public var granted: Bool?
     public var since: Date?
     public var limit: Int
 
@@ -54,6 +61,7 @@ public struct AuditFilter: Sendable {
         secretName: String? = nil,
         projectPath: String? = nil,
         action: AuditEvent.Action? = nil,
+        granted: Bool? = nil,
         since: Date? = nil,
         limit: Int = 500
     ) {
@@ -61,6 +69,7 @@ public struct AuditFilter: Sendable {
         self.secretName = secretName
         self.projectPath = projectPath
         self.action = action
+        self.granted = granted
         self.since = since
         self.limit = limit
     }

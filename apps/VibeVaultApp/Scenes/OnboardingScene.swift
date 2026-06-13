@@ -4,6 +4,18 @@ struct OnboardingScene: View {
     @Binding var done: Bool
 
     var body: some View {
+        VStack {
+            Spacer(minLength: Tokens.Space.xl)
+            card
+            Spacer(minLength: Tokens.Space.xl)
+        }
+        .padding(.horizontal, Tokens.Space.xxxl)
+        .padding(.vertical, Tokens.Space.xxl)
+        .frame(minWidth: 540, minHeight: 480)
+        .background(LiquidBackdrop())
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.xxl) {
             VStack(alignment: .leading, spacing: Tokens.Space.md) {
                 HStack(spacing: Tokens.Space.md) {
@@ -15,6 +27,7 @@ struct OnboardingScene: View {
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(Tokens.Palette.accent)
                     }
+                    .accessibilityHidden(true)
                     Text("Vibe Vault")
                         .font(.system(size: 38, weight: .semibold))
                         .tracking(-1.2)
@@ -52,23 +65,22 @@ struct OnboardingScene: View {
             HStack {
                 Spacer()
                 Button("Get started") { done = true }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.glassProminent)
                     .controlSize(.large)
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(.horizontal, Tokens.Space.xxxl)
-        .padding(.vertical, Tokens.Space.xxl)
-        .frame(minWidth: 540, minHeight: 480)
-        .background(PremiumBackdrop())
+        .glassCard(radius: Tokens.Radius.lg, padding: Tokens.Space.xxl, elevation: .lifted)
+        .frame(maxWidth: 600)
     }
 
     private func row(icon: String, title: String, body: String) -> some View {
         HStack(alignment: .top, spacing: Tokens.Space.lg) {
             Image(systemName: icon)
-                .foregroundStyle(Tokens.Text.primary)
+                .foregroundStyle(Tokens.Palette.accent)
                 .font(.title2.weight(.regular))
                 .frame(width: 32, alignment: .leading)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.headline)
                 Text(body).foregroundStyle(Tokens.Text.secondary)

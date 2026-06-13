@@ -12,6 +12,7 @@ build/
 *.profdata
 .env
 .env.local
+node_modules/
 *.keychain
 xcuserdata/
 .vscode/
@@ -20,3 +21,6 @@ audit.db
 audit.db-journal
 *.log
 LunaVault.xcodeproj/
+
+# Impeccable design-skill scratch
+.impeccable/

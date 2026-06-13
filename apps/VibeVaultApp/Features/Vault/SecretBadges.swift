@@ -30,7 +30,7 @@ struct SecretBadgeStrip: View {
             out.append(Badge(text: "Rotate due", icon: "arrow.triangle.2.circlepath", tint: .red))
         }
         if secret.mcpAllowed {
-            out.append(Badge(text: "MCP", icon: "sparkles", tint: .purple))
+            out.append(Badge(text: "MCP", icon: "sparkles", tint: Tokens.Palette.accent))
         }
         return out
     }
@@ -40,10 +40,6 @@ struct SecretBadgeStrip: View {
             Image(systemName: b.icon)
             Text(b.text)
         }
-        .font(.caption2)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(b.tint.opacity(0.15), in: Capsule())
-        .foregroundStyle(b.tint)
+        .glassChip(b.tint)
     }
 }

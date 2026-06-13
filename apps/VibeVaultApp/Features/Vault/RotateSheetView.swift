@@ -13,16 +13,36 @@ struct RotateSheetView: View {
     @State private var status: String?
 
     var body: some View {
-        Form {
-            Section {
-                SecureField("New value", text: $newValue)
-            } header: {
-                Text("Rotate \(secret.name)")
-            } footer: {
-                Text("Audit log records who rotated and when.")
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            Text("Rotate \(secret.name)")
+                .font(.system(.title2, design: .rounded).weight(.semibold))
+                .foregroundStyle(Tokens.Text.primary)
+
+            ScrollView {
+                fields.glassCard()
             }
-            Section {
+
+            actionBar
+        }
+        .padding(Tokens.Space.xl)
+        .frame(width: 480)
+        .frame(minHeight: 360)
+        .background(CompactLiquidBackdrop())
+    }
+
+    private var fields: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            field("New value") {
+                SecureField("New value", text: $newValue)
+                    .textFieldStyle(.roundedBorder)
+                footnote("Audit log records who rotated and when.")
+            }
+
+            Divider().overlay(Tokens.Surface.separator)
+
+            field("Cloud sync") {
                 Toggle("Also push to a provider", isOn: $alsoPush)
+                    .toggleStyle(.switch)
                 if alsoPush {
                     Picker("Provider", selection: $providerId) {
                         ForEach(env.registry.all, id: \.id) { Text($0.displayName).tag($0.id) }
@@ -33,39 +53,58 @@ struct RotateSheetView: View {
                                 get: { scope[key] ?? "" },
                                 set: { scope[key] = $0 }
                             ), prompt: Text(key))
+                            .textFieldStyle(.roundedBorder)
                         }
                     }
                 }
-            } header: {
-                Text("Cloud sync")
-            } footer: {
-                Text(alsoPush
+                footnote(alsoPush
                      ? "Vault is updated first; if the push fails, the local change still sticks (you can retry from Providers)."
                      : "Local-only rotation. Push later from Providers if needed.")
             }
+
             if let status = status {
-                Section { Text(status).font(.callout) } header: { Text("Result") }
+                Divider().overlay(Tokens.Surface.separator)
+                field("Result") {
+                    Text(status).font(.callout).foregroundStyle(Tokens.Text.primary)
+                }
             }
         }
-        .formStyle(.grouped)
-        .frame(minWidth: 480, minHeight: 360)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { isPresented = false }
+    }
+
+    @ViewBuilder
+    private func field<Content: View>(
+        _ title: String, @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+            Text(title).sectionLabel()
+            content()
+        }
+    }
+
+    private func footnote(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(Tokens.Text.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var actionBar: some View {
+        HStack {
+            Button("Cancel") { isPresented = false }
+                .buttonStyle(.glass)
+            Spacer()
+            Button("Rotate") {
+                Task { await perform() }
             }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Rotate") {
-                    Task { await perform() }
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(newValue.isEmpty)
-            }
+            .buttonStyle(.glassProminent)
+            .keyboardShortcut(.defaultAction)
+            .disabled(newValue.isEmpty)
         }
     }
 
     @MainActor
     private func perform() async {
-        await env.rotate(name: secret.name, newValue: newValue)
+        await env.rotateSaving(name: secret.name, newValue: newValue)
         status = "Rotated in vault."
         if alsoPush, let provider = env.registry.provider(id: providerId) {
             do {

@@ -1,6 +1,10 @@
-# vibe-vault
+# 🔐 Vibe Vault
 
-Native macOS secret manager for AI coding workflows. Lives in your menu bar.
+<p align="center">
+  <img src="Resources/VibeVaultLogo.svg" width="128" height="128" alt="Vibe Vault Logo">
+</p>
+
+**Vibe Vault** — Native macOS secret manager for AI coding workflows. Lives in your menu bar.
 
 ```bash
 # instead of this:

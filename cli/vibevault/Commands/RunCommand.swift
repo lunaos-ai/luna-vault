@@ -9,9 +9,19 @@ struct RunCommand: AsyncParsableCommand {
         usage: "vibevault run [--only NAME] [--exclude NAME] -- <command> [args...]"
     )
 
-    @Option(name: .long, parsing: .upToNextOption, help: "Only inject these named secrets.") var only: [String] = []
-    @Option(name: .long, parsing: .upToNextOption, help: "Exclude these named secrets.") var exclude: [String] = []
-    @Argument(parsing: .captureForPassthrough, help: "Command to run.") var command: [String] = []
+    // Repeatable single-value options (`--only A --only B`). NOT `.upToNextOption`:
+    // that strategy greedily swallows the trailing command (e.g. `--only X sh -c …`
+    // captured `sh` into `only`, leaving `-c` as the command → "command not found: -c").
+    @Option(name: .long, help: "Only inject these named secrets (repeatable).") var only: [String] = []
+    @Option(name: .long, help: "Exclude these named secrets (repeatable).") var exclude: [String] = []
+    @Argument(parsing: .captureForPassthrough, help: "Command to run after `--`.") var rawCommand: [String] = []
+
+    /// The command to exec. `.captureForPassthrough` retains the leading `--`
+    /// terminator, so strip a single one — otherwise EnvInjector tries to exec
+    /// "--" and reports "command not found: --".
+    var command: [String] {
+        rawCommand.first == "--" ? Array(rawCommand.dropFirst()) : rawCommand
+    }
 
     mutating func run() async throws {
         guard !command.isEmpty else {
@@ -25,9 +35,28 @@ struct RunCommand: AsyncParsableCommand {
         let selected = names.filter { name in
             (onlySet.isEmpty || onlySet.contains(name)) && !excludeSet.contains(name)
         }
+        
+        guard !selected.isEmpty else {
+            FileHandle.standardError.write(Data("error: no secrets match the filter criteria\n".utf8))
+            throw ExitCode(64)
+        }
+        
+        // Warn when injecting all secrets without explicit selection
+        if onlySet.isEmpty && excludeSet.isEmpty && selected.count > 1 {
+            FileHandle.standardError.write(Data("""
+                Warning: Injecting all \(selected.count) secrets from vault.
+                Use --only SECRET_NAME to inject specific secrets.
+                
+                Secrets that will be injected:
+                \(selected.sorted().joined(separator: "\n"))
+                
+                """.utf8))
+        }
+        
         var env = ProcessInfo.processInfo.environment
+        let fullCommand = command.joined(separator: " ")
         for name in selected {
-            let secret = try await service.read(name: name, reason: "Inject \(name) for \(command[0])")
+            let secret = try await service.read(name: name, reason: "Inject '\(name)' for command: \(fullCommand)")
             env[name] = secret.value
         }
         let exitCode = try EnvInjector.spawn(args: command, env: env)
