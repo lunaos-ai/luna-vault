@@ -31,7 +31,7 @@ final class MCPServer {
             if let params = request.params?.asObject(),
                let info = params["clientInfo"] as? [String: Any],
                let name = info["name"] as? String {
-                context.clientName = "mcp:\(name)"
+                context.detector.name = "mcp:\(name)"
             }
             respond(request: request, result: AnyCodable([
                 "protocolVersion": MCP.protocolVersion,

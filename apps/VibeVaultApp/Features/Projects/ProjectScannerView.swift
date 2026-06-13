@@ -25,7 +25,7 @@ struct ProjectScannerView: View {
                         importBar(missing: result.missing, projectURL: url)
                     }
                     if let s = env.importStatus {
-                        Text(s).font(.caption).foregroundStyle(Tokens.Text.secondary)
+                        ScanStatusBanner(text: s)
                     }
                     filterPicker
                     ProjectScanResultCard(
@@ -40,7 +40,7 @@ struct ProjectScannerView: View {
             .padding(Tokens.Space.xxl)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Tokens.Surface.background)
+        .background(LiquidBackdrop())
         .navigationTitle("Projects")
     }
 
@@ -73,25 +73,17 @@ struct ProjectScannerView: View {
                     Button { if let u = projectURL { env.scan(projectURL: u) } } label: {
                         Label("Rescan", systemImage: "arrow.clockwise")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.glass)
                     .disabled(env.isScanning)
                 }
                 Button { pickFolder() } label: {
                     Label(projectURL == nil ? "Choose project" : "Change",
                           systemImage: "folder.badge.plus")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Tokens.Palette.accent)
+                .buttonStyle(.glassProminent)
             }
         }
-        .padding(Tokens.Space.lg)
-        .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: Tokens.Radius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Tokens.Radius.lg, style: .continuous)
-                .strokeBorder(Tokens.Surface.separator.opacity(0.6),
-                              lineWidth: Tokens.Stroke.hairline)
-        )
+        .glassCard(radius: Tokens.Radius.lg, padding: Tokens.Space.lg, elevation: .lifted)
     }
 
     private var scanningRow: some View {
@@ -101,6 +93,7 @@ struct ProjectScannerView: View {
             Spacer()
         }
         .font(.subheadline)
+        .glassCard(radius: Tokens.Radius.md, padding: Tokens.Space.md, elevation: .resting)
     }
 
     private var emptyHint: some View {
@@ -118,6 +111,7 @@ struct ProjectScannerView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Tokens.Space.xxxl)
+        .glassCard(radius: Tokens.Radius.lg, padding: Tokens.Space.lg, elevation: .floating)
     }
 
     private func summaryLine(_ result: ScanResult) -> some View {
@@ -155,16 +149,13 @@ struct ProjectScannerView: View {
             } label: {
                 Label("Import missing", systemImage: "square.and.arrow.down")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Tokens.Palette.accent)
+            .buttonStyle(.glassProminent)
         }
-        .padding(Tokens.Space.md)
-        .background(Tokens.Palette.accent.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous)
-                .strokeBorder(Tokens.Palette.accent.opacity(0.2),
-                              lineWidth: Tokens.Stroke.hairline)
+        .glassCard(
+            radius: Tokens.Radius.md,
+            padding: Tokens.Space.md,
+            elevation: .floating,
+            tint: Tokens.Palette.accent.opacity(0.10)
         )
     }
 

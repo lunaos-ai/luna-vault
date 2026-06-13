@@ -6,75 +6,100 @@ struct MenuBarScene: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "key.viewfinder")
-                    .foregroundStyle(.tint)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Vibe Vault").font(.headline)
-                    Text("\(env.secrets.count) secret\(env.secrets.count == 1 ? "" : "s")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            header
+
+            secretList
+                .glassPanel(radius: Tokens.Radius.md, elevation: .floating)
+
+            actions
+        }
+        .padding(Tokens.Space.md)
+        .frame(width: 300)
+        .background(CompactLiquidBackdrop())
+        .task { env.refresh() }
+    }
+
+    private var header: some View {
+        HStack(spacing: Tokens.Space.sm) {
+            Image(systemName: "key.viewfinder")
+                .foregroundStyle(Tokens.Palette.accent)
+                .font(.title3)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Vibe Vault").font(.headline)
+                Text("\(env.secrets.count) secret\(env.secrets.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Text.secondary)
             }
+            Spacer()
+        }
+    }
 
-            Divider()
-
+    private var secretList: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
             if env.secrets.isEmpty {
-                HStack {
-                    Image(systemName: "tray").foregroundStyle(.secondary)
+                HStack(spacing: Tokens.Space.sm) {
+                    Image(systemName: "tray").foregroundStyle(Tokens.Text.secondary)
                     Text("No secrets yet")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Tokens.Text.secondary)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, Tokens.Space.xs)
             } else {
                 ForEach(env.secrets.prefix(5)) { secret in
-                    HStack {
-                        Text(secret.name)
-                            .font(.system(.callout, design: .monospaced))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Spacer()
-                        if secret.isExpired || secret.isRotationDue {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.red)
-                                .font(.caption)
-                        }
-                        Text(secret.maskedValue)
-                            .foregroundStyle(.secondary)
-                            .font(.system(.caption, design: .monospaced))
-                    }
+                    secretRow(secret)
                 }
                 if env.secrets.count > 5 {
                     Text("+ \(env.secrets.count - 5) more…")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Tokens.Text.secondary)
                         .font(.caption)
                 }
             }
+        }
+        .padding(Tokens.Space.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-            Divider()
+    private func secretRow(_ secret: Secret) -> some View {
+        HStack {
+            Text(secret.name)
+                .font(.system(.callout, design: .monospaced))
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer()
+            if secret.isExpired || secret.isRotationDue {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Tokens.Status.danger)
+                    .font(.caption)
+                    .accessibilityLabel("Needs attention")
+            }
+            Text(secret.maskedValue)
+                .foregroundStyle(Tokens.Text.secondary)
+                .font(.system(.caption, design: .monospaced))
+        }
+    }
 
+    private var actions: some View {
+        VStack(spacing: Tokens.Space.sm) {
             Button {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             } label: {
                 Label("Open Vibe Vault…", systemImage: "macwindow")
+                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.glassProminent)
+            .accessibilityLabel("Open Vibe Vault")
 
             Button {
                 NSApp.terminate(nil)
             } label: {
                 Label("Quit", systemImage: "power")
+                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.secondary)
+            .buttonStyle(.glass)
+            .accessibilityLabel("Quit")
         }
-        .padding(12)
-        .frame(width: 300)
-        .task { env.refresh() }
     }
 }
 

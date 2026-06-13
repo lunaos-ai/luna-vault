@@ -54,6 +54,11 @@ let package = Package(
             dependencies: ["VaultCore"],
             path: "apps/VibeVaultApp",
             exclude: ["Info.plist", "VibeVault.entitlements", "Resources"]
+        ),
+        .testTarget(
+            name: "VibeVaultAppTests",
+            dependencies: ["VibeVaultApp", "VaultCore"],
+            path: "apps/VibeVaultAppTests"
         )
     ]
 )

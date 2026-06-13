@@ -12,7 +12,7 @@ struct SecretDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.xl) {
-                hero
+                hero.glassCard(radius: Tokens.Radius.lg, elevation: .lifted)
                 detailSurface
                 actions
             }
@@ -22,7 +22,7 @@ struct SecretDetailView: View {
             .frame(maxWidth: 720, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
-        .background(PremiumBackdrop())
+        .background(LiquidBackdrop())
         .navigationTitle(secret.name)
         .navigationSubtitle(secret.updatedAt.formatted(.relative(presentation: .named)))
         .confirmationDialog(
@@ -39,6 +39,14 @@ struct SecretDetailView: View {
             RotateSheetView(secret: secret, isPresented: $showRotateSheet)
                 .environmentObject(env)
         }
+        // Never let a revealed value bleed across to another secret.
+        .onChange(of: secret.id) { _, _ in hideValue() }
+        .onDisappear { hideValue() }
+    }
+
+    private func hideValue() {
+        revealed = false
+        revealedValue = ""
     }
 
     private var hero: some View {
@@ -119,11 +127,7 @@ struct SecretDetailView: View {
             Divider().padding(.leading, Tokens.Space.md)
             accessRow
         }
-        .background(Tokens.Surface.elevated, in: RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous)
-                .strokeBorder(Tokens.Surface.separator.opacity(0.6), lineWidth: Tokens.Stroke.hairline)
-        )
+        .glassPanel(radius: Tokens.Radius.lg)
     }
 
     private func row(_ label: String, _ value: String) -> some View {
@@ -157,22 +161,28 @@ struct SecretDetailView: View {
             Button { showRotateSheet = true } label: {
                 Label("Rotate value…", systemImage: "arrow.triangle.2.circlepath")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.glassProminent)
             Button { Task { await markRotated() } } label: {
                 Label("Mark rotated now", systemImage: "checkmark.circle")
             }
+            .buttonStyle(.glass)
             .help("Records rotation without changing the value.")
             Spacer()
             Button(role: .destructive) { deleteConfirm = true } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .buttonStyle(.glass(tint: Tokens.Status.danger))
         }
     }
 
     private func reveal() async {
         if revealed { revealed = false; revealedValue = ""; return }
+        let target = secret.id
         do {
             let fresh = try await env.service.read(name: secret.name, reason: "Reveal \(secret.name)")
+            // Guard against a selection change while Touch ID was pending —
+            // otherwise the prior secret's plaintext would surface under the new one.
+            guard target == secret.id else { return }
             revealedValue = fresh.value
             revealed = true
         } catch { env.lastError = "\(error)" }

@@ -10,13 +10,14 @@ struct VibeVaultMCP {
             FileHandle.standardError.write(Data("vibevault-mcp: failed to open audit DB\n".utf8))
             exit(1)
         }
+        let detector = MCPClientDetector()
         let service = VaultService(
             store: store,
             audit: audit,
-            detector: StubAgentDetector(DetectedAgent(name: "mcp:unknown", confidence: .medium, source: "mcp-client")),
+            detector: detector,
             biometric: NoopBiometricGate()
         )
-        let context = MCPContext(service: service, clientName: "mcp:unknown")
+        let context = MCPContext(service: service, detector: detector)
         let server = MCPServer(context: context)
         await server.run()
     }

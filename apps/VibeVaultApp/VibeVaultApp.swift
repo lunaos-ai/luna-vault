@@ -4,11 +4,13 @@ import VaultCore
 @main
 struct VibeVaultApp: App {
     @StateObject private var env = AppEnvironment.makeLive()
+    @StateObject private var nav = Navigator()
 
     var body: some Scene {
         WindowGroup("Vibe Vault", id: "main") {
             MainWindow()
                 .environmentObject(env)
+                .environmentObject(nav)
                 .frame(minWidth: 880, minHeight: 560)
         }
         .windowStyle(.titleBar)

@@ -3,7 +3,8 @@ import VaultCore
 
 struct MainWindow: View {
     @EnvironmentObject var env: AppEnvironment
-    @State private var selection: SidebarItem = .vault
+    @EnvironmentObject var nav: Navigator
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         case vault, importSecrets = "import", projects, audit, providers, aiAgents = "ai-agents", settings
@@ -50,13 +51,25 @@ struct MainWindow: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 224, max: 280)
         } detail: {
             detail
-                .background(Tokens.Surface.background.ignoresSafeArea())
+                .background(LiquidBackdrop())
         }
+        .background {
+            Button("") { nav.togglePalette() }
+                .keyboardShortcut("k", modifiers: .command)
+                .opacity(0)
+                .accessibilityHidden(true)
+        }
+        .overlay {
+            if nav.paletteOpen {
+                CommandPaletteView()
+            }
+        }
+        .animation(reduceMotion ? nil : Tokens.Motion.snappy, value: nav.paletteOpen)
         .task { env.refresh(); env.refreshAudit() }
     }
 
     private var sidebar: some View {
-        List(selection: $selection) {
+        List(selection: $nav.section) {
             ForEach(sections, id: \.self) { section in
                 Section {
                     ForEach(SidebarItem.allCases.filter { $0.section == section }) { item in
@@ -132,7 +145,7 @@ struct MainWindow: View {
 
     @ViewBuilder
     private var detail: some View {
-        switch selection {
+        switch nav.section {
         case .vault: VaultListView()
         case .importSecrets: ImportView()
         case .projects: ProjectScannerView()

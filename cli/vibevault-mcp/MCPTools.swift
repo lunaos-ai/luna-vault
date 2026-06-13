@@ -9,7 +9,8 @@ struct MCPToolDef {
 
 struct MCPContext {
     let service: VaultService
-    var clientName: String
+    let detector: MCPClientDetector
+    var clientName: String { detector.name }
 }
 
 enum MCPTools {

@@ -6,82 +6,25 @@ struct ProviderSyncView: View {
     @State private var selectedProviderId = "cloudflare"
     @State private var scopeFields: [String: String] = [:]
     @State private var selectedSecrets: Set<String> = []
+    @State private var secretSearch = ""
     @State private var pushing = false
     @State private var status: String?
 
     var body: some View {
-        Form {
-            Section {
-                Picker("Provider", selection: $selectedProviderId) {
-                    ForEach(env.registry.all, id: \.id) { provider in
-                        Text(provider.displayName).tag(provider.id)
-                    }
-                }
-            } header: {
-                Text("Destination")
-            }
-
-            if let provider = env.registry.provider(id: selectedProviderId) {
-                Section {
-                    ForEach(provider.requiredScopeKeys, id: \.self) { key in
-                        TextField(key, text: Binding(
-                            get: { scopeFields[key] ?? "" },
-                            set: { scopeFields[key] = $0 }
-                        ), prompt: Text(key))
-                    }
-                } header: {
-                    Text("Scope")
-                } footer: {
-                    Text("Provider-specific identifiers required to target the right resource.")
-                }
-
-                Section {
-                    if env.secrets.isEmpty {
-                        Text("Vault is empty. Add or import secrets first.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ScrollView {
-                            LazyVStack(alignment: .leading, spacing: 0) {
-                                ForEach(env.secrets) { secret in
-                                    HStack {
-                                        Toggle(isOn: Binding(
-                                            get: { selectedSecrets.contains(secret.name) },
-                                            set: { on in
-                                                if on { selectedSecrets.insert(secret.name) }
-                                                else { selectedSecrets.remove(secret.name) }
-                                            }
-                                        )) {
-                                            Text(secret.name).font(.system(.body, design: .monospaced))
-                                        }
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                            }
-                        }
-                        .frame(maxHeight: 240)
-                    }
-                } header: {
-                    HStack {
-                        Text("Secrets to push")
-                        Spacer()
-                        Text("\(selectedSecrets.count) selected")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if let status = status {
-                    Section {
-                        Text(status).font(.callout)
-                    } header: {
-                        Text("Result")
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Space.xl) {
+                destinationCard
+                if let provider = env.registry.provider(id: selectedProviderId) {
+                    scopeCard(provider)
+                    secretsCard
+                    if let status = status { resultCard(status) }
                 }
             }
+            .padding(Tokens.Space.xxl)
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Tokens.Surface.background)
+        .background(LiquidBackdrop())
         .navigationTitle("Provider Sync")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -95,6 +38,60 @@ struct ProviderSyncView: View {
                 .disabled(pushing || selectedSecrets.isEmpty)
             }
         }
+    }
+
+    private var destinationCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Destination").sectionLabel()
+            Picker("Provider", selection: $selectedProviderId) {
+                ForEach(env.registry.all, id: \.id) { provider in
+                    Text(provider.displayName).tag(provider.id)
+                }
+            }
+        }
+        .glassCard()
+    }
+
+    private func scopeCard(_ provider: SecretProvider) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Scope").sectionLabel()
+            ForEach(provider.requiredScopeKeys, id: \.self) { key in
+                TextField(key, text: Binding(
+                    get: { scopeFields[key] ?? "" },
+                    set: { scopeFields[key] = $0 }
+                ), prompt: Text(key))
+            }
+            Text("Provider-specific identifiers required to target the right resource.")
+                .font(.caption)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .glassCard()
+    }
+
+    private var secretsCard: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            HStack {
+                Text("Secrets to push").sectionLabel()
+                Spacer()
+                Text("\(selectedSecrets.count) selected")
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+            ProviderSecretPicker(
+                secrets: env.secrets,
+                secretSearch: $secretSearch,
+                selectedSecrets: $selectedSecrets
+            )
+        }
+        .glassCard()
+    }
+
+    private func resultCard(_ status: String) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Result").sectionLabel()
+            Text(status).font(.callout)
+        }
+        .glassCard()
     }
 
     @MainActor

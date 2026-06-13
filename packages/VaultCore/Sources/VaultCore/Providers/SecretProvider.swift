@@ -71,6 +71,7 @@ public final class ProviderRegistry: @unchecked Sendable {
 
     public static func defaults() -> ProviderRegistry {
         ProviderRegistry(builtin: [
+            WranglerCloudflareProvider(),
             CloudflareProvider(),
             VercelProvider(),
             PushciProvider()

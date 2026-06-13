@@ -142,25 +142,50 @@ public final class VaultService: @unchecked Sendable {
     }
 
     public func read(name: String, reason: String = "Read secret") async throws -> Secret {
-        try await biometric.authenticate(reason: reason)
+        // Identify the requester BEFORE prompting, so the Touch ID dialog names
+        // the actual agent and a denial can still be attributed in the audit log.
+        let agent = detector.detect()
+        let project = currentProjectPath()
+        do {
+            try await biometric.authenticate(reason: authReason(for: name, agent: agent, fallback: reason))
+        } catch {
+            // Record the refusal (best effort) so denied access is auditable.
+            try? recordEvent(name: name, action: .read, projectPath: project, granted: false, agent: agent)
+            throw error
+        }
         let secret = try store.read(name: name)
-        try recordEvent(name: name, action: .read, projectPath: currentProjectPath())
+        try recordEvent(name: name, action: .read, projectPath: project, granted: true, agent: agent)
         return secret
+    }
+
+    /// Names the requesting agent in the biometric prompt. External agents
+    /// (Claude Code, Cursor, …) are surfaced; direct app/user reads fall back
+    /// to the caller's own reason.
+    func authReason(for name: String, agent: DetectedAgent, fallback: String) -> String {
+        let isExternal = agent.confidence != .low && agent.name != "unknown"
+        return isExternal ? "allow \(agent.name) to read \(name)" : fallback
     }
 
     public func list() throws -> [Secret] {
         try store.list()
     }
 
-    public func recordEvent(name: String, action: AuditEvent.Action, projectPath: String?) throws {
-        let agent = detector.detect()
+    public func recordEvent(
+        name: String,
+        action: AuditEvent.Action,
+        projectPath: String?,
+        granted: Bool = true,
+        agent: DetectedAgent? = nil
+    ) throws {
+        let a = agent ?? detector.detect()
         let event = AuditEvent(
             secretName: name,
-            agent: agent.name,
-            agentConfidence: agent.confidence,
+            agent: a.name,
+            agentConfidence: a.confidence,
             sessionId: sessionId,
             projectPath: projectPath,
-            action: action
+            action: action,
+            granted: granted
         )
         try audit.record(event)
     }

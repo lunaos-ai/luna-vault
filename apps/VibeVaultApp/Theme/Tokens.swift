@@ -52,6 +52,37 @@ enum Tokens {
         static let hairline: CGFloat = 0.5
         static let thin: CGFloat = 1
     }
+
+    /// Liquid Glass tints — translucent fills layered over `.ultraThinMaterial`
+    /// to give surfaces depth and a faint colored cast.
+    enum Glass {
+        static let tint = Palette.accent.opacity(0.06)
+        static let highlight = SwiftUI.Color.white.opacity(0.22)
+        static let edge = SwiftUI.Color.white.opacity(0.30)
+        static let shadow = SwiftUI.Color.black.opacity(0.18)
+    }
+
+    /// Spring motion vocabulary. All consumers must gate on Reduce Motion.
+    enum Motion {
+        static let spring = SwiftUI.Animation.spring(response: 0.42, dampingFraction: 0.78)
+        static let snappy = SwiftUI.Animation.spring(response: 0.30, dampingFraction: 0.82)
+        static let gentle = SwiftUI.Animation.easeInOut(duration: 0.45)
+    }
+
+    /// Floating elevation — drives shadow radius/offset for glass objects.
+    enum Elevation {
+        case resting, floating, lifted
+
+        var radius: CGFloat {
+            switch self { case .resting: 6; case .floating: 18; case .lifted: 30 }
+        }
+        var y: CGFloat {
+            switch self { case .resting: 2; case .floating: 8; case .lifted: 16 }
+        }
+        var opacity: Double {
+            switch self { case .resting: 0.10; case .floating: 0.18; case .lifted: 0.26 }
+        }
+    }
 }
 
 extension View {

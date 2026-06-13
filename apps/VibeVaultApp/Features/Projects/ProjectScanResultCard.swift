@@ -46,13 +46,8 @@ struct ProjectScanResultCard: View {
             }
             if isEmpty { emptyState }
         }
-        .background(Tokens.Surface.elevated,
-                    in: RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous)
-                .strokeBorder(Tokens.Surface.separator.opacity(0.6),
-                              lineWidth: Tokens.Stroke.hairline)
-        )
+        .glassPanel(radius: Tokens.Radius.lg)
+        .glassHover()
     }
 
     private var showMissing: Bool { filter == .all || filter == .missing }
@@ -99,8 +94,8 @@ struct ProjectScanResultCard: View {
                     .foregroundStyle(Tokens.Text.secondary)
                 Spacer()
                 Text("\(count)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(Tokens.Text.tertiary)
+                    .monospacedDigit()
+                    .glassChip(tint)
             }
             .padding(.horizontal, Tokens.Space.md)
             .padding(.top, Tokens.Space.md)
@@ -140,6 +135,7 @@ struct ProjectScanResultCard: View {
             .buttonStyle(.borderless)
             .foregroundStyle(Tokens.Text.tertiary)
             .help("Copy name")
+            .accessibilityLabel("Copy \(name)")
         }
         .padding(.horizontal, Tokens.Space.md)
         .padding(.vertical, Tokens.Space.sm)

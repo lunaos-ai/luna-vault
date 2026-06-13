@@ -20,3 +20,6 @@ audit.db
 audit.db-journal
 *.log
 LunaVault.xcodeproj/
+
+# Impeccable design-skill scratch
+.impeccable/

@@ -14,67 +14,103 @@ struct AddSecretSheet: View {
     @State private var mcpAllowed = false
 
     var body: some View {
-        Form {
-            Section {
-                TextField("NAME", text: $name, prompt: Text("CF_API_TOKEN"))
-                    .font(.system(.body, design: .monospaced))
-                SecureField("Value", text: $value)
-                TextField("Notes", text: $notes, prompt: Text("Optional"))
-            } header: {
-                Text("Secret")
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            Text("New Secret")
+                .font(.system(.title2, design: .rounded).weight(.semibold))
+                .foregroundStyle(Tokens.Text.primary)
+
+            ScrollView {
+                fields.glassCard()
             }
 
-            Section {
+            actionBar
+        }
+        .padding(Tokens.Space.xl)
+        .frame(width: 480)
+        .frame(minHeight: 480)
+        .background(CompactLiquidBackdrop())
+    }
+
+    private var fields: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            field("Secret") {
+                TextField("NAME", text: $name, prompt: Text("CF_API_TOKEN"))
+                    .font(.system(.body, design: .monospaced))
+                    .textFieldStyle(.roundedBorder)
+                SecureField("Value", text: $value)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Notes", text: $notes, prompt: Text("Optional"))
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            Divider().overlay(Tokens.Surface.separator)
+
+            field("Expiry") {
                 Toggle("Set expiry", isOn: $hasExpiry)
+                    .toggleStyle(.switch)
                 if hasExpiry {
                     DatePicker("Expires on", selection: $expiresAt, displayedComponents: .date)
                 }
-            } header: {
-                Text("Expiry")
-            } footer: {
-                Text("Vibe Vault warns you when secrets are about to expire.")
+                footnote("Vibe Vault warns you when secrets are about to expire.")
             }
 
-            Section {
+            Divider().overlay(Tokens.Surface.separator)
+
+            field("Rotation") {
                 Toggle("Rotate periodically", isOn: $rotateEnabled)
+                    .toggleStyle(.switch)
                 if rotateEnabled {
                     Stepper("Every \(rotateDays) days", value: $rotateDays, in: 7...365, step: 7)
                 }
-            } header: {
-                Text("Rotation")
-            } footer: {
-                Text("Tracks when each secret was last rotated. CLI: `vibevault rotate <NAME>`.")
+                footnote("Tracks when each secret was last rotated. CLI: `vibevault rotate <NAME>`.")
             }
 
-            Section {
+            Divider().overlay(Tokens.Surface.separator)
+
+            field("Access") {
                 Toggle("Allow AI agents", isOn: $mcpAllowed)
-            } header: {
-                Text("Access")
-            } footer: {
-                Text("When on, AI agents using the Vibe Vault MCP server (Claude Code, Cursor, etc.) can read this secret. Every read is audited.")
+                    .toggleStyle(.switch)
+                footnote("When on, AI agents using the Vibe Vault MCP server (Claude Code, Cursor, etc.) can read this secret. Every read is audited.")
             }
         }
-        .formStyle(.grouped)
-        .frame(minWidth: 480, minHeight: 480)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
+    }
+
+    @ViewBuilder
+    private func field<Content: View>(
+        _ title: String, @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+            Text(title).sectionLabel()
+            content()
+        }
+    }
+
+    private func footnote(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(Tokens.Text.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var actionBar: some View {
+        HStack {
+            Button("Cancel") { dismiss() }
+                .buttonStyle(.glass)
+            Spacer()
+            Button("Save") {
+                env.addSecret(
+                    name: name,
+                    value: value,
+                    notes: notes.isEmpty ? nil : notes,
+                    expiresAt: hasExpiry ? expiresAt : nil,
+                    rotateEveryDays: rotateEnabled ? rotateDays : nil,
+                    mcpAllowed: mcpAllowed
+                )
+                dismiss()
             }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    env.addSecret(
-                        name: name,
-                        value: value,
-                        notes: notes.isEmpty ? nil : notes,
-                        expiresAt: hasExpiry ? expiresAt : nil,
-                        rotateEveryDays: rotateEnabled ? rotateDays : nil,
-                        mcpAllowed: mcpAllowed
-                    )
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(name.isEmpty || value.isEmpty)
-            }
+            .buttonStyle(.glassProminent)
+            .keyboardShortcut(.defaultAction)
+            .disabled(name.isEmpty || value.isEmpty)
         }
     }
 }

@@ -4,7 +4,10 @@ import VaultCore
 
 @MainActor
 final class AppNotifications {
-    private let center = UNUserNotificationCenter.current()
+    // Resolved lazily: UNUserNotificationCenter.current() aborts when the
+    // process has no app bundle proxy (e.g. a unit-test host), so we defer it
+    // until a notification is actually requested or delivered.
+    private lazy var center = UNUserNotificationCenter.current()
     private var authorized = false
 
     func requestAuthorization() async -> Bool {

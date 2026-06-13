@@ -3,6 +3,7 @@ import VaultCore
 
 struct VaultListView: View {
     @EnvironmentObject var env: AppEnvironment
+    @EnvironmentObject var nav: Navigator
     @State private var selection: Secret.ID?
     @State private var showAdd = false
     @State private var search = ""
@@ -31,7 +32,20 @@ struct VaultListView: View {
             }
         }
         guard !search.isEmpty else { return base }
-        return base.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        // Deep search: name, notes, and value, ranked by best field match.
+        return SecretSearch.rank(base, query: search, limit: base.count).map(\.secret)
+    }
+
+    /// Autocomplete: key names matching the query, prefix matches first, capped.
+    private var suggestions: [String] {
+        guard !search.isEmpty else { return [] }
+        let names = env.secrets.map(\.name)
+            .filter { $0.localizedCaseInsensitiveContains(search) }
+        guard !(names.count == 1 && names[0].caseInsensitiveCompare(search) == .orderedSame)
+        else { return [] }
+        let prefixed = names.filter { $0.lowercased().hasPrefix(search.lowercased()) }.sorted()
+        let rest = names.filter { !$0.lowercased().hasPrefix(search.lowercased()) }.sorted()
+        return Array((prefixed + rest).prefix(8))
     }
 
     var body: some View {
@@ -39,11 +53,26 @@ struct VaultListView: View {
             sidebar
         } detail: {
             detail
+                .overlay(alignment: .bottomTrailing) {
+                    FloatingActionButton(systemImage: "plus", label: "Add secret (⌘N)") {
+                        showAdd = true
+                    }
+                    .padding(Tokens.Space.xl)
+                }
         }
         .toolbar { toolbar }
         .sheet(isPresented: $showAdd) {
             AddSecretSheet().environmentObject(env)
         }
+        .onAppear(perform: consumePending)
+        .onChange(of: nav.pendingSecret) { _, _ in consumePending() }
+    }
+
+    /// Honor a secret reveal requested by the command palette.
+    private func consumePending() {
+        guard let id = nav.pendingSecret else { return }
+        selection = id
+        nav.pendingSecret = nil
     }
 
     private var sidebar: some View {
@@ -63,9 +92,16 @@ struct VaultListView: View {
             }
             .listStyle(.inset)
             .scrollContentBackground(.hidden)
-            .searchable(text: $search, placement: .sidebar, prompt: "Search secrets")
+            .searchable(text: $search, placement: .sidebar, prompt: "Search keys")
+            .searchSuggestions {
+                ForEach(suggestions, id: \.self) { name in
+                    Label(name, systemImage: "key")
+                        .font(.system(.body, design: .monospaced))
+                        .searchCompletion(name)
+                }
+            }
         }
-        .background(.regularMaterial)
+        .background(.ultraThinMaterial)
         .navigationTitle("Vault")
         .navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 460)
     }
@@ -145,16 +181,17 @@ struct VaultEmptyState: View {
             }
             Button(action: onAdd) {
                 Label("New Secret", systemImage: "plus")
-                    .font(.body.weight(.medium))
-                    .padding(.horizontal, Tokens.Space.lg)
-                    .padding(.vertical, 4)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.glassProminent)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(PremiumBackdrop())
+        .padding(Tokens.Space.xxl)
+        .glassCard(radius: Tokens.Radius.lg, padding: Tokens.Space.xxxl, elevation: .lifted)
+        .padding(Tokens.Space.xxl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(LiquidBackdrop())
     }
 }
 

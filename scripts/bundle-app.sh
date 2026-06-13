@@ -58,10 +58,25 @@ ENT_APP="apps/VibeVaultApp/VibeVault.entitlements"
 ENT_CLI="cli/vibevault/vibevault.entitlements"
 ENT_MCP="cli/vibevault-mcp/vibevault-mcp.entitlements"
 
-codesign --force --sign - --entitlements "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign - --entitlements "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign - --entitlements "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign - --entitlements "$ENT_APP" "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'
+# Prefer a stable self-signed dev identity so Keychain "Always Allow" persists
+# across rebuilds. Falls back to ad-hoc if the identity isn't installed.
+SIGN_ID="-"
+if security find-identity -p codesigning ~/Library/Keychains/login.keychain-db 2>/dev/null \
+   | grep -q "VibeVault Dev"; then
+  SIGN_ID="VibeVault Dev"
+  echo "==> Signing with stable identity \"$SIGN_ID\"."
+else
+  echo "==> No stable identity found. Using ad-hoc (Keychain prompt every rebuild)."
+  echo "    Run: scripts/dev-codesign-setup.sh"
+fi
+
+# Pin stable bundle identifiers. Without --identifier, codesign derives one from
+# the binary's content hash (e.g. vibevault-mcp-5555...), which changes every
+# build and breaks the Keychain ACL match — so "Always Allow" never sticks.
+codesign --force --sign "$SIGN_ID" --identifier dev.vibevault.cli --entitlements "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault" 2>&1 | sed 's/^/  codesign: /'
+codesign --force --sign "$SIGN_ID" --identifier dev.vibevault.mcp --entitlements "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp" 2>&1 | sed 's/^/  codesign: /'
+codesign --force --sign "$SIGN_ID" --identifier dev.vibevault --entitlements "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault" 2>&1 | sed 's/^/  codesign: /'
+codesign --force --sign "$SIGN_ID" --identifier dev.vibevault --entitlements "$ENT_APP" "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'
 
 echo ""
 echo "==> Done."
