@@ -58,29 +58,76 @@ ENT_APP="apps/VibeVaultApp/VibeVault.entitlements"
 ENT_CLI="cli/vibevault/vibevault.entitlements"
 ENT_MCP="cli/vibevault-mcp/vibevault-mcp.entitlements"
 
-# Prefer a stable self-signed dev identity so Keychain "Always Allow" persists
-# across rebuilds. Falls back to ad-hoc if the identity isn't installed.
-SIGN_ID="-"
-if security find-identity -p codesigning ~/Library/Keychains/login.keychain-db 2>/dev/null \
+# Signing identity selection:
+#   - For distribution, export DEVELOPER_ID="Developer ID Application: Name (TEAMID)".
+#     The build is then signed with the hardened runtime + secure timestamp so it
+#     can be notarized by Apple.
+#   - Otherwise prefer the stable self-signed dev identity ("VibeVault Dev") so
+#     Keychain "Always Allow" persists across rebuilds.
+#   - Otherwise fall back to ad-hoc (Keychain re-prompts every rebuild).
+EXTRA_OPTS=()
+if [ -n "${DEVELOPER_ID:-}" ]; then
+  SIGN_ID="$DEVELOPER_ID"
+  EXTRA_OPTS=(--options runtime --timestamp)
+  echo "==> Signing for distribution with \"$SIGN_ID\" (hardened runtime + timestamp)."
+elif security find-identity -p codesigning ~/Library/Keychains/login.keychain-db 2>/dev/null \
    | grep -q "VibeVault Dev"; then
   SIGN_ID="VibeVault Dev"
-  echo "==> Signing with stable identity \"$SIGN_ID\"."
+  echo "==> Signing with stable dev identity \"$SIGN_ID\"."
 else
-  echo "==> No stable identity found. Using ad-hoc (Keychain prompt every rebuild)."
-  echo "    Run: scripts/dev-codesign-setup.sh"
+  SIGN_ID="-"
+  echo "==> No identity found. Using ad-hoc (Keychain prompt every rebuild)."
+  echo "    Run: scripts/dev-codesign-setup.sh  (dev)  or set DEVELOPER_ID (release)."
 fi
 
 # Pin stable bundle identifiers. Without --identifier, codesign derives one from
 # the binary's content hash (e.g. vibevault-mcp-5555...), which changes every
 # build and breaks the Keychain ACL match — so "Always Allow" never sticks.
-codesign --force --sign "$SIGN_ID" --identifier dev.vibevault.cli --entitlements "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign "$SIGN_ID" --identifier dev.vibevault.mcp --entitlements "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign "$SIGN_ID" --identifier dev.vibevault --entitlements "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign "$SIGN_ID" --identifier dev.vibevault --entitlements "$ENT_APP" "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'
+# Inner binaries are signed before the outer bundle (required for a valid seal).
+sign() { codesign --force --sign "$SIGN_ID" "${EXTRA_OPTS[@]}" "$@" 2>&1 | sed 's/^/  codesign: /'; }
+sign --identifier dev.vibevault.cli --entitlements "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault"
+sign --identifier dev.vibevault.mcp --entitlements "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp"
+sign --identifier dev.vibevault     --entitlements "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault"
+sign --identifier dev.vibevault     --entitlements "$ENT_APP" "$APP_DIR"
+
+codesign --verify --deep --strict --verbose=1 "$APP_DIR" 2>&1 | sed 's/^/  verify: /' || true
+
+# Package a compressed DMG with an /Applications drop target.
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_DIR/Contents/Info.plist" 2>/dev/null || echo "0.0.0")
+DMG="build/VibeVault-${VERSION}.dmg"
+echo "==> Building $DMG..."
+STAGE=$(mktemp -d); cp -R "$APP_DIR" "$STAGE/"; ln -s /Applications "$STAGE/Applications"
+rm -f "$DMG"
+hdiutil create -volname "Vibe Vault" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+rm -rf "$STAGE"
+
+# Notarize + staple when distribution credentials are present. Provide EITHER a
+# stored keychain profile (NOTARY_PROFILE, from `xcrun notarytool store-credentials`)
+# OR APPLE_ID + TEAM_ID + APP_PASSWORD (an app-specific password).
+notarize() {
+  if [ -n "${NOTARY_PROFILE:-}" ]; then
+    xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+  elif [ -n "${APPLE_ID:-}" ] && [ -n "${TEAM_ID:-}" ] && [ -n "${APP_PASSWORD:-}" ]; then
+    xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" \
+      --password "$APP_PASSWORD" --wait
+  else
+    return 2
+  fi
+}
+if [ -n "${DEVELOPER_ID:-}" ]; then
+  echo "==> Submitting for notarization..."
+  if notarize; then
+    xcrun stapler staple "$APP_DIR" && xcrun stapler staple "$DMG"
+    echo "==> Notarized and stapled."
+  else
+    echo "==> Skipped notarization (set NOTARY_PROFILE, or APPLE_ID+TEAM_ID+APP_PASSWORD)."
+  fi
+fi
 
 echo ""
 echo "==> Done."
 echo "    open $APP_DIR"
+echo "    $DMG"
 echo ""
 echo "    Bundled binaries:"
 echo "      VibeVault       (app)"
