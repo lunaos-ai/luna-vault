@@ -34,6 +34,12 @@ All notable changes to Vibe Vault are documented here. Format follows
 - Large Cloud and vault view files were split to stay within the 200-line cap
   (CloudAuthService, CloudBackupService, IAPManager, LoginView, VaultListView).
 
+### Security
+- Cloud auth tokens (access, refresh, user id) now live in the Keychain
+  (`dev.vibevault.cloud`) instead of UserDefaults, with a one-time migration that
+  scrubs any previously-stored plist values. Removed a debug log of verification
+  errors.
+
 ## [0.1.0] - 2026-06-09
 
 First public build. Native macOS secret manager for AI-coding workflows:

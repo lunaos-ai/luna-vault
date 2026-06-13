@@ -21,26 +21,45 @@ final class CloudAuthService: ObservableObject {
     let refreshTokenKey = "vibevault_refresh_token"
     let userIdKey = "vibevault_user_id"
 
+    /// Auth tokens live in the Keychain, never in UserDefaults (which is a plain
+    /// plist on disk). Separate service so cloud tokens don't mix with secrets.
+    let tokenStore: PreferenceStoring = KeychainPrefs(service: "dev.vibevault.cloud")
+
     private init() {
+        migrateLegacyTokens()
         loadSavedSession()
     }
 
     // MARK: - Token Management
 
-    var authToken: String? {
-        UserDefaults.standard.string(forKey: tokenKey)
+    func token(forKey key: String) -> String? {
+        tokenStore.data(forKey: key).flatMap { String(data: $0, encoding: .utf8) }
     }
 
+    private func setToken(_ value: String?, forKey key: String) {
+        tokenStore.set(value.flatMap { Data($0.utf8) }, forKey: key)
+    }
+
+    var authToken: String? { token(forKey: tokenKey) }
+
     func saveTokens(token: String, refreshToken: String, userId: String) {
-        UserDefaults.standard.set(token, forKey: tokenKey)
-        UserDefaults.standard.set(refreshToken, forKey: refreshTokenKey)
-        UserDefaults.standard.set(userId, forKey: userIdKey)
+        setToken(token, forKey: tokenKey)
+        setToken(refreshToken, forKey: refreshTokenKey)
+        setToken(userId, forKey: userIdKey)
     }
 
     func clearTokens() {
-        UserDefaults.standard.removeObject(forKey: tokenKey)
-        UserDefaults.standard.removeObject(forKey: refreshTokenKey)
-        UserDefaults.standard.removeObject(forKey: userIdKey)
+        for key in [tokenKey, refreshTokenKey, userIdKey] { setToken(nil, forKey: key) }
+    }
+
+    /// Move any tokens written by an earlier build (UserDefaults) into the
+    /// Keychain once, then scrub them from the plist.
+    private func migrateLegacyTokens() {
+        for key in [tokenKey, refreshTokenKey, userIdKey] {
+            guard let legacy = UserDefaults.standard.string(forKey: key) else { continue }
+            if token(forKey: key) == nil { setToken(legacy, forKey: key) }
+            UserDefaults.standard.removeObject(forKey: key)
+        }
     }
 
     // MARK: - Device Identifier Helper

@@ -9,8 +9,7 @@ extension CloudAuthService {
     // MARK: - Session
 
     func loadSavedSession() {
-        if let token = authToken, let userId = UserDefaults.standard.string(forKey: userIdKey) {
-            _ = token
+        if authToken != nil, let userId = token(forKey: userIdKey) {
             self.userId = userId
             Task {
                 await verifySession()
@@ -48,8 +47,7 @@ extension CloudAuthService {
             self.isAuthenticated = true
 
         } catch {
-            // Network error, don't clear session - might be temporary
-            print("Session verification failed: \(error)")
+            // Network error — keep the session (might be a transient outage).
         }
     }
 
@@ -63,7 +61,7 @@ extension CloudAuthService {
     }
 
     func refreshToken() async -> Bool {
-        guard let refreshToken = UserDefaults.standard.string(forKey: refreshTokenKey) else {
+        guard let refreshToken = token(forKey: refreshTokenKey) else {
             return false
         }
 
