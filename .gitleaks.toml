@@ -1,0 +1,16 @@
+title = "vibe-vault gitleaks config"
+
+# Use gitleaks' built-in rule set, then narrowly allow known-fake test fixtures.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake, non-functional secret values used only in tests."
+regexes = [
+  # Obvious dummy API key used by Smoke.sampleSecrets / ActionsTests.
+  '''sk-live-abcdef123456''',
+]
+paths = [
+  '''apps/VibeVaultAppTests/.*''',
+  '''packages/VaultCore/Tests/.*''',
+]

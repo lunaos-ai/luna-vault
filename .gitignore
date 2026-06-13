@@ -12,6 +12,7 @@ build/
 *.profdata
 .env
 .env.local
+node_modules/
 *.keychain
 xcuserdata/
 .vscode/

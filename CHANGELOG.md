@@ -22,6 +22,17 @@ All notable changes to Vibe Vault are documented here. Format follows
 - **Menu bar quick-access.** Search keys and copy a value straight from the menu
   bar dropdown without opening the main window. Copy is Touch ID-gated and the
   clipboard auto-clears after 45 seconds.
+- **CLI parity.** New `vibevault export` (write secrets to a `.env` with git
+  guard), `vibevault history <name>` (masked previous values), and
+  `vibevault rollback <name> [--index N]`. `vibevault rotate` now records the
+  prior value to history too.
+- **Cloud account (experimental, opt-in).** Sign-in / backup / subscription
+  scaffolding behind a Cloudflare Workers backend (`backend/vibevault-api`).
+  Network only when the user signs in; the local solo flow stays offline.
+
+### Changed
+- Large Cloud and vault view files were split to stay within the 200-line cap
+  (CloudAuthService, CloudBackupService, IAPManager, LoginView, VaultListView).
 
 ## [0.1.0] - 2026-06-09
 

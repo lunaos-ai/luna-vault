@@ -57,7 +57,14 @@ enum Smoke {
     /// Throwing nothing and not crashing IS the assertion ("does it render").
     static func render<V: View>(_ view: V, file: StaticString = #filePath, line: UInt = #line) {
         autoreleasepool {
-            let host = NSHostingView(rootView: view.frame(width: 900, height: 640))
+            // Inject the shared app-wide objects so any view (including cloud and
+            // settings screens that read them) renders without a missing-object crash.
+            let configured = view
+                .environmentObject(ThemeManager.shared)
+                .environmentObject(CloudAuthService.shared)
+                .environmentObject(CloudBackupService.shared)
+                .environmentObject(IAPManager.shared)
+            let host = NSHostingView(rootView: configured.frame(width: 900, height: 640))
             host.frame = NSRect(x: 0, y: 0, width: 900, height: 640)
             let window = NSWindow(
                 contentRect: host.frame,

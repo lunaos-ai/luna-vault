@@ -12,35 +12,43 @@ struct SecretActionsBar: View {
     @Binding var deleteConfirm: Bool
 
     var body: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Button { showRotate = true } label: {
-                Label("Rotate value…", systemImage: "arrow.triangle.2.circlepath")
-            }
-            .buttonStyle(.glassProminent)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Tokens.Space.sm) {
+                Button { showRotate = true } label: {
+                    Label("Rotate", systemImage: "arrow.triangle.2.circlepath")
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .buttonStyle(.glassProminent)
 
-            Button { showHistory = true } label: {
-                Label("History", systemImage: "clock.arrow.circlepath")
-            }
-            .buttonStyle(.glass)
-            .help("View and restore previous values.")
+                Button { showHistory = true } label: {
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .buttonStyle(.glass)
+                .help("View and restore previous values.")
 
-            Button { showExport = true } label: {
-                Label("Export .env", systemImage: "square.and.arrow.down")
-            }
-            .buttonStyle(.glass)
-            .help("Write this secret to a project .env file.")
+                Button { showExport = true } label: {
+                    Label("Export", systemImage: "square.and.arrow.down")
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .buttonStyle(.glass)
+                .help("Write this secret to a project .env file.")
 
-            Button { Task { await markRotated() } } label: {
-                Label("Mark rotated", systemImage: "checkmark.circle")
-            }
-            .buttonStyle(.glass)
-            .help("Records rotation without changing the value.")
+                Button { Task { await markRotated() } } label: {
+                    Label("Mark", systemImage: "checkmark.circle")
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .buttonStyle(.glass)
+                .help("Records rotation without changing the value.")
 
-            Spacer()
-            Button(role: .destructive) { deleteConfirm = true } label: {
-                Label("Delete", systemImage: "trash")
+                Spacer()
+                Button(role: .destructive) { deleteConfirm = true } label: {
+                    Label("Delete", systemImage: "trash")
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .buttonStyle(.glass(tint: Tokens.Status.danger))
             }
-            .buttonStyle(.glass(tint: Tokens.Status.danger))
+            .padding(.vertical, Tokens.Space.xs)
         }
     }
 

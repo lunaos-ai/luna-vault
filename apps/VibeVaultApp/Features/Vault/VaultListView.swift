@@ -37,18 +37,6 @@ struct VaultListView: View {
         return SecretSearch.rank(base, query: search, limit: base.count).map(\.secret)
     }
 
-    /// Autocomplete: key names matching the query, prefix matches first, capped.
-    private var suggestions: [String] {
-        guard !search.isEmpty else { return [] }
-        let names = env.secrets.map(\.name)
-            .filter { $0.localizedCaseInsensitiveContains(search) }
-        guard !(names.count == 1 && names[0].caseInsensitiveCompare(search) == .orderedSame)
-        else { return [] }
-        let prefixed = names.filter { $0.lowercased().hasPrefix(search.lowercased()) }.sorted()
-        let rest = names.filter { !$0.lowercased().hasPrefix(search.lowercased()) }.sorted()
-        return Array((prefixed + rest).prefix(8))
-    }
-
     var body: some View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
             sidebar
@@ -86,29 +74,57 @@ struct VaultListView: View {
                 .padding(.horizontal, Tokens.Space.lg)
                 .padding(.top, Tokens.Space.md)
                 .padding(.bottom, Tokens.Space.sm)
+
+            searchBar
+                .padding(.horizontal, Tokens.Space.lg)
+                .padding(.bottom, Tokens.Space.sm)
+
             Picker("", selection: $filter) {
                 ForEach(Filter.allCases) { Text($0.label).tag($0) }
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, Tokens.Space.lg)
             .padding(.bottom, Tokens.Space.sm)
+
             List(filtered, selection: $selection) { secret in
                 SecretRow(secret: secret).tag(secret.id)
             }
             .listStyle(.inset)
             .scrollContentBackground(.hidden)
-            .searchable(text: $search, placement: .sidebar, prompt: "Search keys")
-            .searchSuggestions {
-                ForEach(suggestions, id: \.self) { name in
-                    Label(name, systemImage: "key")
-                        .font(.system(.body, design: .monospaced))
-                        .searchCompletion(name)
-                }
-            }
+
+            VaultSuggestionsPanel(search: $search, secretNames: env.secrets.map(\.name))
         }
         .background(.ultraThinMaterial)
         .navigationTitle("Vault")
         .navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 460)
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: Tokens.Space.sm) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Tokens.Text.tertiary)
+            TextField("Search by key name...", text: $search)
+                .textFieldStyle(.plain)
+            if !search.isEmpty {
+                Button { search = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Tokens.Text.tertiary)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .padding(.horizontal, Tokens.Space.md)
+        .padding(.vertical, Tokens.Space.sm)
+        .background(
+            RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous)
+                .fill(Tokens.Surface.elevated.opacity(0.5))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous)
+                .stroke(Tokens.Glass.edge, lineWidth: Tokens.Stroke.hairline)
+        )
     }
 
     private var countLine: some View {
@@ -149,59 +165,29 @@ struct VaultListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
+            Button { nav.paletteOpen = true } label: {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            .keyboardShortcut("k", modifiers: .command)
+            .help("Search secrets (⌘K)")
+
             Button { env.refresh() } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
             .help("Reload from Keychain")
+
             Button { showExportAll = true } label: {
                 Label("Export .env", systemImage: "square.and.arrow.down")
             }
             .disabled(env.secrets.isEmpty)
             .help("Export all secrets to a project .env file")
+
             Button { showAdd = true } label: {
                 Label("Add Secret", systemImage: "plus")
             }
             .keyboardShortcut("n", modifiers: .command)
             .help("Add secret (⌘N)")
         }
-    }
-}
-
-struct VaultEmptyState: View {
-    let onAdd: () -> Void
-    var body: some View {
-        VStack(spacing: Tokens.Space.xl) {
-            ZStack {
-                Circle()
-                    .fill(Tokens.Palette.accent.opacity(0.05))
-                    .frame(width: 96, height: 96)
-                Image(systemName: "key.viewfinder")
-                    .font(.system(size: 38, weight: .light))
-                    .foregroundStyle(Tokens.Text.tertiary)
-            }
-            VStack(spacing: Tokens.Space.xs) {
-                Text("Nothing selected")
-                    .font(.title2.weight(.semibold))
-                    .tracking(-0.3)
-                Text("Pick a secret from the list, or add a new one.")
-                    .font(.body)
-                    .foregroundStyle(Tokens.Text.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 320)
-            }
-            Button(action: onAdd) {
-                Label("New Secret", systemImage: "plus")
-            }
-            .buttonStyle(.glassProminent)
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Tokens.Space.xxl)
-        .glassCard(radius: Tokens.Radius.lg, padding: Tokens.Space.xxxl, elevation: .lifted)
-        .padding(Tokens.Space.xxl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(LiquidBackdrop())
     }
 }
 

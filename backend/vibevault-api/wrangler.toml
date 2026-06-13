@@ -1,0 +1,12 @@
+name = "vibevault-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vibevault-db"
+database_id = "your-database-id-here"
+
+[vars]
+JWT_SECRET = "your-jwt-secret-change-this"
+ENCRYPTION_KEY = "your-encryption-key-32-chars-long!!"

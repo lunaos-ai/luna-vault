@@ -35,9 +35,28 @@ struct RunCommand: AsyncParsableCommand {
         let selected = names.filter { name in
             (onlySet.isEmpty || onlySet.contains(name)) && !excludeSet.contains(name)
         }
+        
+        guard !selected.isEmpty else {
+            FileHandle.standardError.write(Data("error: no secrets match the filter criteria\n".utf8))
+            throw ExitCode(64)
+        }
+        
+        // Warn when injecting all secrets without explicit selection
+        if onlySet.isEmpty && excludeSet.isEmpty && selected.count > 1 {
+            FileHandle.standardError.write(Data("""
+                Warning: Injecting all \(selected.count) secrets from vault.
+                Use --only SECRET_NAME to inject specific secrets.
+                
+                Secrets that will be injected:
+                \(selected.sorted().joined(separator: "\n"))
+                
+                """.utf8))
+        }
+        
         var env = ProcessInfo.processInfo.environment
+        let fullCommand = command.joined(separator: " ")
         for name in selected {
-            let secret = try await service.read(name: name, reason: "Inject \(name) for \(command[0])")
+            let secret = try await service.read(name: name, reason: "Inject '\(name)' for command: \(fullCommand)")
             env[name] = secret.value
         }
         let exitCode = try EnvInjector.spawn(args: command, env: env)

@@ -5,12 +5,21 @@ import VaultCore
 struct VibeVaultApp: App {
     @StateObject private var env = AppEnvironment.makeLive()
     @StateObject private var nav = Navigator()
+    @StateObject private var cloudAuth = CloudAuthService.shared
+    @StateObject private var cloudBackup = CloudBackupService.shared
+    @StateObject private var iapManager = IAPManager.shared
+    @StateObject private var themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup("Vibe Vault", id: "main") {
             MainWindow()
                 .environmentObject(env)
                 .environmentObject(nav)
+                .environmentObject(cloudAuth)
+                .environmentObject(cloudBackup)
+                .environmentObject(iapManager)
+                .environmentObject(themeManager)
+                .preferredColorScheme(themeManager.colorScheme)
                 .frame(minWidth: 880, minHeight: 560)
         }
         .windowStyle(.titleBar)
@@ -21,6 +30,7 @@ struct VibeVaultApp: App {
         MenuBarExtra("Vibe Vault", systemImage: "key.viewfinder") {
             MenuBarScene()
                 .environmentObject(env)
+                .environmentObject(cloudAuth)
         }
         .menuBarExtraStyle(.window)
     }

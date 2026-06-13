@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Gradient for the vault background -->
+    <linearGradient id="vaultGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#3730A3"/>
+    </linearGradient>
+    <!-- Gradient for the key -->
+    <linearGradient id="keyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E0E7FF"/>
+    </linearGradient>
+    <!-- Glow effect -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Background rounded square (app icon shape) -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#vaultGrad)"/>
+  
+  <!-- Subtle inner glow ring -->
+  <rect x="56" y="56" width="400" height="400" rx="80" ry="80" 
+        fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
+  
+  <!-- Key icon centered -->
+  <g transform="translate(256, 256)">
+    <!-- Key head (circle) -->
+    <circle cx="0" cy="-40" r="72" fill="none" stroke="url(#keyGrad)" stroke-width="24"/>
+    
+    <!-- Key shaft -->
+    <rect x="-12" y="20" width="24" height="120" rx="6" fill="url(#keyGrad)"/>
+    
+    <!-- Key teeth -->
+    <rect x="-12" y="100" width="48" height="20" rx="4" fill="url(#keyGrad)"/>
+    <rect x="-12" y="130" width="36" height="18" rx="4" fill="url(#keyGrad)"/>
+    
+    <!-- Keyhole in the circle -->
+    <circle cx="0" cy="-40" r="20" fill="#4F46E5"/>
+    <rect x="-8" y="-40" width="16" height="32" rx="4" fill="#4F46E5"/>
+  </g>
+  
+  <!-- Vibe dots (representing vibration/energy) -->
+  <circle cx="140" cy="140" r="12" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="372" cy="140" r="8" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="140" cy="372" r="8" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="372" cy="372" r="12" fill="rgba(255,255,255,0.4)"/>
+</svg>

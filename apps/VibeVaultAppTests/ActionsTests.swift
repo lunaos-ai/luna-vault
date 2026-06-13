@@ -21,7 +21,8 @@ final class ActionsTests: XCTestCase {
 
         let status = await env.exportEnv(to: file, names: ["API_KEY"], mode: .overwrite, addGuard: true)
         let text = try String(contentsOf: file, encoding: .utf8)
-        XCTAssertTrue(text.contains("API_KEY=sk-live-abcdef123456"))
+        let expected = DotenvWriter.line("API_KEY", Smoke.sampleSecrets[0].value)
+        XCTAssertTrue(text.contains(expected))
         XCTAssertTrue(status.contains("Wrote 1 secret"))
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: project.appendingPathComponent(".gitignore").path))

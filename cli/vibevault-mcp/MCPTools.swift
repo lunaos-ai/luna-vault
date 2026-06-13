@@ -49,6 +49,17 @@ enum MCPTools {
                     "limit": ["type": "integer", "default": 50]
                 ]
             ]
+        ),
+        MCPToolDef(
+            name: "get_local_token",
+            description: "Retrieve a local API token (e.g., CF_WRITE_TOKEN, RENDER_API_KEY) from the vault for use by local MCP servers and tools. Requires the secret to be marked as MCP-accessible.",
+            inputSchema: [
+                "type": "object",
+                "properties": [
+                    "name": ["type": "string", "description": "Secret name of the API token to retrieve (e.g., CF_WRITE_TOKEN, RENDER_API_KEY)."]
+                ],
+                "required": ["name"]
+            ]
         )
     ]
 
@@ -59,6 +70,7 @@ enum MCPTools {
             case "read_secret": return try await readSecret(args: arguments, context: context)
             case "scan_project": return try scanProject(args: arguments, context: context)
             case "get_audit_log": return try getAuditLog(args: arguments, context: context)
+            case "get_local_token": return try await getLocalToken(args: arguments, context: context)
             default: return errorResult("Unknown tool: \(name)")
             }
         } catch {
@@ -90,6 +102,23 @@ enum MCPTools {
         let secret = try await context.service.read(name: name, reason: "MCP read via \(context.clientName)")
         try context.service.recordEvent(name: name, action: .read, projectPath: nil)
         return textResult(secret.value)
+    }
+
+    static func getLocalToken(args: [String: Any], context: MCPContext) async throws -> [String: Any] {
+        guard let name = args["name"] as? String else { return errorResult("missing 'name'") }
+        let listEntry = try context.service.list().first { $0.name == name }
+        guard let entry = listEntry else { return errorResult("token '\(name)' not found in vault") }
+        if !entry.mcpAllowed {
+            try context.service.recordEvent(name: name, action: .read, projectPath: nil)
+            return errorResult("token '\(name)' is not enabled for MCP access. Enable 'Allow AI agents' in Vibe Vault.")
+        }
+        let secret = try await context.service.read(name: name, reason: "Local MCP token request via \(context.clientName)")
+        try context.service.recordEvent(name: name, action: .read, projectPath: nil)
+        return [
+            "content": [["type": "text", "text": secret.value]],
+            "token": secret.value,
+            "name": secret.name
+        ]
     }
 
     static func scanProject(args: [String: Any], context: MCPContext) throws -> [String: Any] {

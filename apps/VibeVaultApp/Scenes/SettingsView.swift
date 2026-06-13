@@ -3,10 +3,12 @@ import VaultCore
 
 struct SettingsView: View {
     @EnvironmentObject var env: AppEnvironment
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.xl) {
+                appearanceSection
                 touchIDSection
                 notificationsSection
                 storageSection
@@ -18,6 +20,26 @@ struct SettingsView: View {
         .scrollContentBackground(.hidden)
         .background(LiquidBackdrop())
         .navigationTitle("Settings")
+    }
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Appearance").sectionLabel()
+            
+            Picker("Theme", selection: $themeManager.currentTheme) {
+                ForEach(ThemeManager.Theme.allCases) { theme in
+                    Label(theme.displayName, systemImage: theme.icon)
+                        .tag(theme)
+                }
+            }
+            .pickerStyle(.segmented)
+            
+            Text("Choose between light, dark, or follow system preference.")
+                .font(.footnote)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard()
     }
 
     private var touchIDSection: some View {

@@ -7,12 +7,13 @@ struct MainWindow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-        case vault, importSecrets = "import", projects, audit, providers, aiAgents = "ai-agents", settings
+        case vault, importSecrets = "import", cloudBackup = "cloud", projects, audit, providers, aiAgents = "ai-agents", settings
         var id: String { rawValue }
         var label: String {
             switch self {
             case .vault: return "Vault"
             case .importSecrets: return "Import"
+            case .cloudBackup: return "Cloud"
             case .projects: return "Projects"
             case .audit: return "Audit"
             case .providers: return "Providers"
@@ -24,6 +25,7 @@ struct MainWindow: View {
             switch self {
             case .vault: return "key.fill"
             case .importSecrets: return "square.and.arrow.down"
+            case .cloudBackup: return "icloud"
             case .projects: return "folder.badge.questionmark"
             case .audit: return "list.bullet.rectangle"
             case .providers: return "icloud.and.arrow.up"
@@ -34,7 +36,7 @@ struct MainWindow: View {
         var tint: Color { Tokens.Text.secondary }
         var section: String {
             switch self {
-            case .vault, .importSecrets: return "Library"
+            case .vault, .importSecrets, .cloudBackup: return "Library"
             case .projects, .providers, .aiAgents: return "Workflows"
             case .audit, .settings: return "System"
             }
@@ -110,6 +112,13 @@ struct MainWindow: View {
                     .foregroundStyle(Tokens.Text.tertiary)
             }
             Spacer()
+            Button { nav.togglePalette() } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help("Search (⌘K)")
         }
         .padding(.horizontal, Tokens.Space.md)
         .padding(.top, Tokens.Space.sm)
@@ -148,6 +157,7 @@ struct MainWindow: View {
         switch nav.section {
         case .vault: VaultListView()
         case .importSecrets: ImportView()
+        case .cloudBackup: CloudSettingsView()
         case .projects: ProjectScannerView()
         case .audit: AuditLogView()
         case .providers: ProviderSyncView()
