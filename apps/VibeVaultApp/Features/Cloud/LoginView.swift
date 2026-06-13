@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var cloudAuth: CloudAuthService
+    @Environment(\.dismiss) private var dismiss
     @State private var email = ""
     @State private var password = ""
     @State private var isRegistering = false
@@ -10,6 +11,21 @@ struct LoginView: View {
 
     var body: some View {
         VStack(spacing: Tokens.Space.xl) {
+            // Close button
+            HStack {
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Tokens.Text.secondary)
+                }
+                .buttonStyle(.borderless)
+                .padding(.top, Tokens.Space.sm)
+                .padding(.trailing, Tokens.Space.sm)
+            }
+            
             LoginHeaderView(isRegistering: isRegistering)
 
             LoginFormView(
@@ -107,12 +123,12 @@ struct LoginView: View {
             }
             let success = await cloudAuth.register(email: email, password: password)
             if success {
-                // Dismiss or show success
+                dismiss()
             }
         } else {
             let success = await cloudAuth.login(email: email, password: password)
             if success {
-                // Dismiss or show success
+                dismiss()
             }
         }
     }
