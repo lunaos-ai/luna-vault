@@ -4,6 +4,25 @@ All notable changes to Vibe Vault are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this product uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **.env export + git guard.** Export one secret (detail pane) or all secrets
+  (vault toolbar) to a project `.env` file, merging with existing keys or
+  overwriting. Values are read through the audited, Touch ID-gated path. The
+  optional git guard adds the dotenv patterns to `.gitignore` and installs a
+  pre-commit hook that blocks staged `.env` files and obvious secret patterns —
+  the hook embeds no secret values, matching by filename and key prefix only.
+  Exported files are written `0600`.
+- **Secret history + rollback.** Rotating or editing a secret saves the prior
+  value to a dedicated `dev.vibevault.history` Keychain service (capped, newest
+  first) — never to the audit DB in plaintext. A History sheet lists previous
+  values (masked) with one-click restore; rolling back saves the current value
+  first so it can be undone, and is recorded as a `rollback` audit event.
+- **Menu bar quick-access.** Search keys and copy a value straight from the menu
+  bar dropdown without opening the main window. Copy is Touch ID-gated and the
+  clipboard auto-clears after 45 seconds.
+
 ## [0.1.0] - 2026-06-09
 
 First public build. Native macOS secret manager for AI-coding workflows:

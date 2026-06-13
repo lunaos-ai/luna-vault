@@ -8,13 +8,21 @@ struct SecretDetailView: View {
     @State private var revealedValue = ""
     @State private var deleteConfirm = false
     @State private var showRotateSheet = false
+    @State private var showHistory = false
+    @State private var showExport = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.xl) {
                 hero.glassCard(radius: Tokens.Radius.lg, elevation: .lifted)
                 detailSurface
-                actions
+                SecretActionsBar(
+                    secret: secret,
+                    showRotate: $showRotateSheet,
+                    showHistory: $showHistory,
+                    showExport: $showExport,
+                    deleteConfirm: $deleteConfirm
+                )
             }
             .padding(.horizontal, Tokens.Space.xxl)
             .padding(.top, Tokens.Space.xxl)
@@ -37,6 +45,14 @@ struct SecretDetailView: View {
         }
         .sheet(isPresented: $showRotateSheet) {
             RotateSheetView(secret: secret, isPresented: $showRotateSheet)
+                .environmentObject(env)
+        }
+        .sheet(isPresented: $showHistory) {
+            HistorySheetView(secret: secret, isPresented: $showHistory)
+                .environmentObject(env)
+        }
+        .sheet(isPresented: $showExport) {
+            EnvExportView(names: [secret.name], isPresented: $showExport)
                 .environmentObject(env)
         }
         // Never let a revealed value bleed across to another secret.
@@ -156,25 +172,6 @@ struct SecretDetailView: View {
         .padding(.vertical, Tokens.Space.md)
     }
 
-    private var actions: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Button { showRotateSheet = true } label: {
-                Label("Rotate value…", systemImage: "arrow.triangle.2.circlepath")
-            }
-            .buttonStyle(.glassProminent)
-            Button { Task { await markRotated() } } label: {
-                Label("Mark rotated now", systemImage: "checkmark.circle")
-            }
-            .buttonStyle(.glass)
-            .help("Records rotation without changing the value.")
-            Spacer()
-            Button(role: .destructive) { deleteConfirm = true } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            .buttonStyle(.glass(tint: Tokens.Status.danger))
-        }
-    }
-
     private func reveal() async {
         if revealed { revealed = false; revealedValue = ""; return }
         let target = secret.id
@@ -198,10 +195,4 @@ struct SecretDetailView: View {
         }
     }
 
-    private func markRotated() async {
-        do {
-            try await env.service.rotate(name: secret.name, newValue: nil)
-            env.refresh()
-        } catch { env.lastError = "\(error)" }
-    }
 }

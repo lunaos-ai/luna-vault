@@ -4,10 +4,18 @@ import VaultCore
 struct MenuBarScene: View {
     @EnvironmentObject var env: AppEnvironment
     @Environment(\.openWindow) private var openWindow
+    @State private var query = ""
+
+    private var filtered: [Secret] {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return env.secrets }
+        return env.secrets.filter { $0.name.lowercased().contains(q) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.md) {
             header
+            searchField
 
             secretList
                 .glassPanel(radius: Tokens.Radius.md, elevation: .floating)
@@ -18,6 +26,19 @@ struct MenuBarScene: View {
         .frame(width: 300)
         .background(CompactLiquidBackdrop())
         .task { env.refresh() }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: Tokens.Space.xs) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Tokens.Text.secondary).font(.caption)
+            TextField("Search keys", text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(.callout, design: .monospaced))
+        }
+        .padding(.horizontal, Tokens.Space.sm)
+        .padding(.vertical, Tokens.Space.xs)
+        .deepInset(radius: Tokens.Radius.sm)
     }
 
     private var header: some View {
@@ -38,19 +59,20 @@ struct MenuBarScene: View {
 
     private var secretList: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.sm) {
-            if env.secrets.isEmpty {
+            if filtered.isEmpty {
                 HStack(spacing: Tokens.Space.sm) {
-                    Image(systemName: "tray").foregroundStyle(Tokens.Text.secondary)
-                    Text("No secrets yet")
+                    Image(systemName: query.isEmpty ? "tray" : "magnifyingglass")
+                        .foregroundStyle(Tokens.Text.secondary)
+                    Text(query.isEmpty ? "No secrets yet" : "No match")
                         .foregroundStyle(Tokens.Text.secondary)
                 }
                 .padding(.vertical, Tokens.Space.xs)
             } else {
-                ForEach(env.secrets.prefix(5)) { secret in
+                ForEach(filtered.prefix(6)) { secret in
                     secretRow(secret)
                 }
-                if env.secrets.count > 5 {
-                    Text("+ \(env.secrets.count - 5) more…")
+                if filtered.count > 6 {
+                    Text("+ \(filtered.count - 6) more…")
                         .foregroundStyle(Tokens.Text.secondary)
                         .font(.caption)
                 }
@@ -61,22 +83,27 @@ struct MenuBarScene: View {
     }
 
     private func secretRow(_ secret: Secret) -> some View {
-        HStack {
-            Text(secret.name)
-                .font(.system(.callout, design: .monospaced))
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer()
-            if secret.isExpired || secret.isRotationDue {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(Tokens.Status.danger)
+        Button { Task { await env.copyToClipboard(name: secret.name) } } label: {
+            HStack {
+                Text(secret.name)
+                    .font(.system(.callout, design: .monospaced))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer()
+                if secret.isExpired || secret.isRotationDue {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Tokens.Status.danger)
+                        .font(.caption)
+                        .accessibilityLabel("Needs attention")
+                }
+                Image(systemName: "doc.on.doc")
+                    .foregroundStyle(Tokens.Text.tertiary)
                     .font(.caption)
-                    .accessibilityLabel("Needs attention")
             }
-            Text(secret.maskedValue)
-                .foregroundStyle(Tokens.Text.secondary)
-                .font(.system(.caption, design: .monospaced))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .help("Copy \(secret.name) (Touch ID)")
     }
 
     private var actions: some View {

@@ -6,6 +6,7 @@ struct VaultListView: View {
     @EnvironmentObject var nav: Navigator
     @State private var selection: Secret.ID?
     @State private var showAdd = false
+    @State private var showExportAll = false
     @State private var search = ""
     @State private var filter: Filter = .all
 
@@ -63,6 +64,10 @@ struct VaultListView: View {
         .toolbar { toolbar }
         .sheet(isPresented: $showAdd) {
             AddSecretSheet().environmentObject(env)
+        }
+        .sheet(isPresented: $showExportAll) {
+            EnvExportView(names: env.secrets.map(\.name), isPresented: $showExportAll)
+                .environmentObject(env)
         }
         .onAppear(perform: consumePending)
         .onChange(of: nav.pendingSecret) { _, _ in consumePending() }
@@ -148,6 +153,11 @@ struct VaultListView: View {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
             .help("Reload from Keychain")
+            Button { showExportAll = true } label: {
+                Label("Export .env", systemImage: "square.and.arrow.down")
+            }
+            .disabled(env.secrets.isEmpty)
+            .help("Export all secrets to a project .env file")
             Button { showAdd = true } label: {
                 Label("Add Secret", systemImage: "plus")
             }

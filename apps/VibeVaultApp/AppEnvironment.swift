@@ -56,10 +56,17 @@ final class AppEnvironment: ObservableObject {
 
     let service: VaultService
     let registry: ProviderRegistry
+    let history: SecretHistoryWriting
 
-    init(service: VaultService, registry: ProviderRegistry, prefs: PreferenceStoring = KeychainPrefs()) {
+    init(
+        service: VaultService,
+        registry: ProviderRegistry,
+        prefs: PreferenceStoring = KeychainPrefs(),
+        history: SecretHistoryWriting = InMemoryHistoryStore()
+    ) {
         self.service = service
         self.registry = registry
+        self.history = history
         self.prefs = prefs
         let loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey) ?? AppSettings.migrateLegacy(into: prefs, settingsKey: Self.settingsKey)
         self.settings = loaded
@@ -102,7 +109,11 @@ final class AppEnvironment: ObservableObject {
 
     static func makeLive() -> AppEnvironment {
         do {
-            return AppEnvironment(service: try VaultService.live(), registry: ProviderRegistry.defaults())
+            return AppEnvironment(
+                service: try VaultService.live(),
+                registry: ProviderRegistry.defaults(),
+                history: SecretHistoryStore()
+            )
         } catch {
             let stub = VaultService(
                 store: InMemoryKeychainStore(),

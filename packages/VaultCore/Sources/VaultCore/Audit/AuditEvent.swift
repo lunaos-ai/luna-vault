@@ -21,6 +21,7 @@ public struct AuditEvent: Equatable, Hashable, Sendable, Identifiable {
 
     public enum Action: String, Codable, Sendable {
         case read, write, delete, push, pull, scan, rotate, importEvent = "import", expire
+        case export, rollback
     }
 
     public init(

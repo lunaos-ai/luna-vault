@@ -104,7 +104,7 @@ struct RotateSheetView: View {
 
     @MainActor
     private func perform() async {
-        await env.rotate(name: secret.name, newValue: newValue)
+        await env.rotateSaving(name: secret.name, newValue: newValue)
         status = "Rotated in vault."
         if alsoPush, let provider = env.registry.provider(id: providerId) {
             do {
