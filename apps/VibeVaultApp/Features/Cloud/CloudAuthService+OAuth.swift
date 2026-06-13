@@ -9,6 +9,7 @@ extension CloudAuthService {
     // MARK: - OAuth Methods
 
     func signInWithGoogle() async -> Bool {
+        guard requireCloudEnabled() else { return false }
         isLoading = true
         lastError = nil
         defer { isLoading = false }
@@ -51,6 +52,7 @@ extension CloudAuthService {
     }
 
     func signInWithGitHub() async -> Bool {
+        guard requireCloudEnabled() else { return false }
         isLoading = true
         lastError = nil
         defer { isLoading = false }

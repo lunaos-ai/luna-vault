@@ -4,6 +4,7 @@ import VaultCore
 struct SettingsView: View {
     @EnvironmentObject var env: AppEnvironment
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var cloudAuth: CloudAuthService
 
     var body: some View {
         ScrollView {
@@ -11,6 +12,7 @@ struct SettingsView: View {
                 appearanceSection
                 touchIDSection
                 notificationsSection
+                cloudSection
                 storageSection
             }
             .padding(Tokens.Space.xl)
@@ -108,6 +110,27 @@ struct SettingsView: View {
             .padding(.top, Tokens.Space.xs)
 
             Text("Posts a macOS notification when a secret expires or is due for rotation. Runs hourly while the app is open.")
+                .font(.footnote)
+                .foregroundStyle(Tokens.Text.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard()
+    }
+
+    private var cloudSection: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+            Text("Cloud (optional)").sectionLabel()
+
+            Toggle("Enable cloud features", isOn: Binding(
+                get: { cloudAuth.cloudEnabled },
+                set: { cloudAuth.setCloudEnabled($0) }
+            ))
+            if cloudAuth.cloudEnabled {
+                LabeledContent("Account",
+                               value: cloudAuth.isAuthenticated ? (cloudAuth.userEmail ?? "Signed in") : "Not signed in")
+            }
+
+            Text("Off by default. Vibe Vault makes no network calls until you turn this on; turning it off signs out and stops all cloud activity. Auth tokens are stored in your Keychain.")
                 .font(.footnote)
                 .foregroundStyle(Tokens.Text.secondary)
         }

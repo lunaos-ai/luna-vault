@@ -18,6 +18,7 @@ extension CloudAuthService {
     }
 
     func verifySession() async {
+        guard cloudEnabled else { return }
         guard let token = authToken else {
             isAuthenticated = false
             return
@@ -61,7 +62,7 @@ extension CloudAuthService {
     }
 
     func refreshToken() async -> Bool {
-        guard let refreshToken = token(forKey: refreshTokenKey) else {
+        guard cloudEnabled, let refreshToken = token(forKey: refreshTokenKey) else {
             return false
         }
 

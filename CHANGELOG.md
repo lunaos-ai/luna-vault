@@ -39,6 +39,9 @@ All notable changes to Vibe Vault are documented here. Format follows
   (`dev.vibevault.cloud`) instead of UserDefaults, with a one-time migration that
   scrubs any previously-stored plist values. Removed a debug log of verification
   errors.
+- Cloud is **off by default** behind an explicit Settings toggle. With it off,
+  Vibe Vault makes no cloud network calls at all (register, login, OAuth, verify,
+  refresh, and scheduled backup are all gated); turning it off signs out.
 
 ## [0.1.0] - 2026-06-09
 

@@ -15,6 +15,8 @@ final class CloudAuthService: ObservableObject {
     @Published var backupEnabled = false
     @Published var isLoading = false
     @Published var lastError: String?
+    /// Master opt-in. When false, Vibe Vault makes no cloud network calls at all.
+    @Published var cloudEnabled = false
 
     let apiBaseURL = "https://vibevault-api.your-account.workers.dev" // Update this
     let tokenKey = "vibevault_cloud_token"
@@ -25,9 +27,33 @@ final class CloudAuthService: ObservableObject {
     /// plist on disk). Separate service so cloud tokens don't mix with secrets.
     let tokenStore: PreferenceStoring = KeychainPrefs(service: "dev.vibevault.cloud")
 
+    private static let enabledKey = "vibevault_cloud_enabled"
+
     private init() {
+        cloudEnabled = UserDefaults.standard.bool(forKey: Self.enabledKey)
         migrateLegacyTokens()
-        loadSavedSession()
+        if cloudEnabled { loadSavedSession() }
+    }
+
+    /// Turn cloud features on/off. Disabling signs out and stops all networking.
+    func setCloudEnabled(_ on: Bool) {
+        cloudEnabled = on
+        UserDefaults.standard.set(on, forKey: Self.enabledKey)
+        if on {
+            loadSavedSession()
+        } else {
+            logout()
+        }
+    }
+
+    /// Guard for every networked method. Returns false (and sets lastError) when
+    /// the user hasn't opted in.
+    func requireCloudEnabled() -> Bool {
+        guard cloudEnabled else {
+            lastError = "Cloud features are off. Enable them in Settings."
+            return false
+        }
+        return true
     }
 
     // MARK: - Token Management
@@ -82,6 +108,7 @@ final class CloudAuthService: ObservableObject {
     // MARK: - API Methods
 
     func register(email: String, password: String) async -> Bool {
+        guard requireCloudEnabled() else { return false }
         isLoading = true
         lastError = nil
 
@@ -145,6 +172,7 @@ final class CloudAuthService: ObservableObject {
     }
 
     func login(email: String, password: String) async -> Bool {
+        guard requireCloudEnabled() else { return false }
         isLoading = true
         lastError = nil
 
