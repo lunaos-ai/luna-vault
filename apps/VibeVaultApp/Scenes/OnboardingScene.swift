@@ -37,7 +37,7 @@ struct OnboardingScene: View {
                     .font(.system(size: 34, weight: .semibold))
                     .tracking(-0.8)
             }
-            Text("Local secrets for the AI era. Keychain storage, per-agent audit, MCP for Cursor and VS Code.")
+            Text("Local secrets for the AI era. Encrypted vault, per-agent audit, MCP for Cursor and VS Code.")
                 .font(.title3.weight(.regular))
                 .foregroundStyle(Tokens.Text.secondary)
                 .frame(maxWidth: 520, alignment: .leading)
@@ -48,7 +48,7 @@ struct OnboardingScene: View {
     private var featureRows: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.lg) {
             row(icon: "sparkles", title: "AI-native MCP",
-                body: "Cursor, VS Code Copilot, Devin, Claude Code, Windsurf — opt-in per secret.")
+                body: "Cursor, VS Code Copilot, Devin, Claude Code, Windsurf. Opt-in per secret.")
             row(icon: "touchid", title: "Touch ID on every read",
                 body: "Humans confirm in the app. Agents use MCP with audit only.")
             row(icon: "cloud.fill", title: "Cloudflare Workers",

@@ -9,6 +9,7 @@ struct VercelSyncView: View {
     @State private var selected: Set<String> = []
     @State private var phase: Phase = .idle
     @State private var statusMessage: String?
+    @State private var showTokenSetup = false
 
     enum Phase { case idle, reconciling, pushing }
 
@@ -16,7 +17,10 @@ struct VercelSyncView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.xl) {
                 VercelConnectionCard(
-                    projectId: $projectId, teamId: $teamId, tokenReady: env.hasVercelToken
+                    projectId: $projectId,
+                    teamId: $teamId,
+                    tokenReady: env.hasVercelToken,
+                    onSetup: { showTokenSetup = true }
                 )
                 actionRow
                 if let msg = statusMessage { ImportStatusBanner(message: msg) }
@@ -35,6 +39,18 @@ struct VercelSyncView: View {
         .onAppear { loadScope() }
         .onChange(of: projectId) { _, v in env.setVercelScope(projectId: v, teamId: teamId) }
         .onChange(of: teamId) { _, v in env.setVercelScope(projectId: projectId, teamId: v) }
+        .sheet(isPresented: $showTokenSetup) {
+            ProviderTokenSetupSheet(
+                title: "Vercel API token",
+                prompt: "Paste API token",
+                dashboardURL: URL(string: "https://vercel.com/account/tokens")!,
+                dashboardLabel: "Create token in Vercel dashboard",
+                footer: "Needs access to the target project. Stored in Keychain."
+            ) { token in
+                env.setVercelToken(token)
+                env.toastMessage = "Vercel token saved"
+            }
+        }
     }
 
     private var actionRow: some View {
@@ -54,9 +70,9 @@ struct VercelSyncView: View {
             .disabled(!canSync || selected.isEmpty || phase != .idle)
             Spacer()
             if !env.hasVercelToken {
-                Text("Token in Settings → Vercel")
+                Button("Add API token…") { showTokenSetup = true }
                     .font(.caption)
-                    .foregroundStyle(Tokens.Text.tertiary)
+                    .buttonStyle(.borderless)
             }
         }
     }

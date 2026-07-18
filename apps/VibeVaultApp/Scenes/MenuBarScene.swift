@@ -85,7 +85,7 @@ struct MenuBarScene: View {
                 .accessibilityLabel("Copy \(secret.name)")
             }
             if query.isEmpty, env.secrets.count > 8 {
-                Text("+ \(env.secrets.count - 8) more — type to search")
+                Text("+ \(env.secrets.count - 8) more. Type to search")
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.tertiary)
             }

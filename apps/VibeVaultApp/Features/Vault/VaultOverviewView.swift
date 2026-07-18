@@ -40,9 +40,9 @@ struct VaultOverviewView: View {
                 .foregroundStyle(Tokens.Text.secondary)
             HStack(spacing: Tokens.Space.sm) {
                 statusChip(
-                    env.biometricStatus.lowercased().contains("unlock") || env.biometricStatus == "Idle",
-                    label: "Touch ID",
-                    icon: "touchid"
+                    env.sessionUnlocked,
+                    label: env.sessionUnlocked ? "Session unlocked" : "Locked",
+                    icon: env.sessionUnlocked ? "lock.open.fill" : "lock.fill"
                 )
                 statusChip(env.hasCloudflareToken, label: "Cloudflare", icon: "cloud.fill")
                 statusChip(mcpReady, label: "MCP", icon: "sparkles")
@@ -94,7 +94,7 @@ struct VaultOverviewView: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: Tokens.Space.md) {
                 QuickActionCard(
                     icon: "plus.circle.fill", title: "New secret",
-                    subtitle: "Add to Keychain", tint: Tokens.Palette.accent, action: onAdd
+                    subtitle: "Add to vault", tint: Tokens.Palette.accent, action: onAdd
                 )
                 QuickActionCard(
                     icon: "folder.badge.questionmark", title: "Scan project",

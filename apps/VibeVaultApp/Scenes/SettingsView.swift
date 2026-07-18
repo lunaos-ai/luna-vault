@@ -6,28 +6,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                Toggle("Trust this session (until app quits)", isOn: $env.trustSession)
-                Stepper(
-                    "Re-prompt every \(Int(env.biometricSessionMinutes)) minute(s)",
-                    value: $env.biometricSessionMinutes,
-                    in: 1...60
-                )
-                .disabled(env.trustSession)
-                LabeledContent("Status", value: env.biometricStatus)
-                HStack {
-                    Button { Task { await env.testBiometric() } } label: {
-                        Label("Test Touch ID", systemImage: "touchid")
-                    }
-                    Button(role: .destructive) { env.resetBiometricSession() } label: {
-                        Label("Lock session", systemImage: "lock.fill")
-                    }
-                }
-            } header: {
-                Text("Touch ID session")
-            } footer: {
-                Text("Lower = safer; higher = fewer prompts during long sessions.")
-            }
+            SessionTrustSection()
 
             Section {
                 Toggle("Background expiry notifications", isOn: $env.notificationsEnabled)
@@ -74,6 +53,7 @@ struct SettingsView: View {
             PushciSettingsSection()
 
             Section {
+                LabeledContent("Secrets", value: "Encrypted vault (master key in Keychain)")
                 LabeledContent("Settings storage", value: "Keychain (\(KeychainPrefs.service))")
                 LabeledContent("Audit DB", value: "~/Library/Application Support/vibe-vault/audit.db")
                 Text("Records older than 90 days are auto-purged. Override in CLI: `vibevault purge --days N`.")
@@ -81,7 +61,7 @@ struct SettingsView: View {
             } header: {
                 Text("Storage")
             } footer: {
-                Text("Secrets and preferences live in your login Keychain, encrypted by macOS. The audit log lives on disk as SQLite for fast queries.")
+                Text("Ciphertext on disk (excluded from iCloud backup). Master key and prefs in Keychain. Audit log is SQLite.")
             }
         }
         .formStyle(.grouped)

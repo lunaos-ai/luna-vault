@@ -3,7 +3,7 @@ import Foundation
 /// Lemon Squeezy checkout + store config (no API phone-home in the app).
 public enum LemonSqueezyConfig {
     public static let defaultCheckoutURL =
-        "https://lunaos.lemonsqueezy.com/checkout/buy/REPLACE_VARIANT_ID"
+        "https://vibevault.lunaos.ai/#pricing"
 
     public static func checkoutURL(prefs: PreferenceStoring? = nil) -> URL {
         if let env = ProcessInfo.processInfo.environment["VIBEVAULT_LS_CHECKOUT"],

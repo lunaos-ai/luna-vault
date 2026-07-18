@@ -43,7 +43,7 @@ struct SecretValueRow: View {
         .buttonStyle(.borderless)
         .foregroundStyle(Tokens.Text.secondary)
         .pressableScale()
-        .help(revealed ? "Hide value" : "Reveal value (Touch ID)")
+        .help(revealed ? "Hide value" : (env.sessionUnlocked ? "Reveal value" : "Reveal value (Touch ID)"))
         .accessibilityLabel(revealed ? "Hide value" : "Reveal value")
     }
 
@@ -57,7 +57,7 @@ struct SecretValueRow: View {
         }
         .buttonStyle(.borderless)
         .pressableScale()
-        .help("Copy value (Touch ID)")
+        .help(env.sessionUnlocked ? "Copy value" : "Copy value (Touch ID)")
         .accessibilityLabel(copiedFlash ? "Copied" : "Copy value")
     }
 

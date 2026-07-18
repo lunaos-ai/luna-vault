@@ -48,6 +48,28 @@ final class VaultServiceTests: XCTestCase {
         let events = try audit.query(AuditFilter())
         XCTAssertTrue(events.contains { $0.action == .delete })
     }
+
+    func test_read_cache_invalidated_on_delete() async throws {
+        try service.add(name: "CACHED", value: "old")
+        _ = try await service.read(name: "CACHED")
+        try service.delete(name: "CACHED")
+        do {
+            _ = try await service.read(name: "CACHED")
+            XCTFail("expected notFound after delete")
+        } catch SecretError.notFound {
+            // expected
+        } catch {
+            XCTFail("unexpected \(error)")
+        }
+    }
+
+    func test_read_cache_invalidated_on_update() async throws {
+        try service.add(name: "CACHED", value: "old")
+        _ = try await service.read(name: "CACHED")
+        try service.update(name: "CACHED", value: "new")
+        let secret = try await service.read(name: "CACHED")
+        XCTAssertEqual(secret.value, "new")
+    }
 }
 
 private final class InMemoryStore: KeychainStoring, @unchecked Sendable {

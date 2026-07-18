@@ -13,6 +13,8 @@ public protocol KeychainStoring: Sendable {
 public final class KeychainStore: KeychainStoring, @unchecked Sendable {
     public static let service = "dev.vibevault"
     public static let sharedAccessGroup = "group.dev.vibevault"
+    /// Marks items rewritten with an open ACL (no login-password sheet).
+    static let openACLLabel = "vv.open-acl"
 
     private let serviceName: String
     private let accessGroup: String?
@@ -27,9 +29,11 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         var query = baseQuery(name: secret.name)
         query[kSecValueData as String] = Data(secret.value.utf8)
         query[kSecAttrModificationDate as String] = secret.updatedAt
+        query[kSecAttrLabel as String] = Self.openACLLabel
         if let encoded = Self.encodeMetadata(from: secret) {
             query[kSecAttrComment as String] = encoded
         }
+        KeychainAccess.applyOpenAccess(&query)
         let status = SecItemAdd(query as CFDictionary, nil)
         if status == errSecDuplicateItem { throw SecretError.duplicate(name: secret.name) }
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
@@ -37,17 +41,9 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
 
     public func update(_ secret: Secret) throws {
         try Self.validateName(secret.name)
-        let query = baseQuery(name: secret.name)
-        var updates: [String: Any] = [
-            kSecValueData as String: Data(secret.value.utf8),
-            kSecAttrModificationDate as String: secret.updatedAt
-        ]
-        if let encoded = Self.encodeMetadata(from: secret) {
-            updates[kSecAttrComment as String] = encoded
-        }
-        let status = SecItemUpdate(query as CFDictionary, updates as CFDictionary)
-        if status == errSecItemNotFound { throw SecretError.notFound(name: secret.name) }
-        guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
+        // Rewrite so ACL + label stay open (SecItemUpdate of ACL prompts).
+        _ = SecItemDelete(baseQuery(name: secret.name) as CFDictionary)
+        try add(secret)
     }
 
     public func read(name: String) throws -> Secret {
@@ -63,16 +59,13 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
               let data = dict[kSecValueData as String] as? Data,
               let value = String(data: data, encoding: .utf8)
         else { throw SecretError.keychainStatus(status) }
-        let updatedAt = dict[kSecAttrModificationDate as String] as? Date ?? Date()
-        let meta = SecretMetadata.decode(dict[kSecAttrComment as String] as? String)
-        return Secret(
-            name: name, value: value, updatedAt: updatedAt,
-            notes: meta.notes,
-            expiresAt: meta.expiresAt,
-            rotateEveryDays: meta.rotateEveryDays,
-            lastRotatedAt: meta.lastRotatedAt,
-            mcpAllowed: meta.mcpAllowed ?? false
-        )
+        let secret = secretFrom(name: name, value: value, attrs: dict)
+        // After the user already authorized this decrypt, heal ACL once so later
+        // reveals only hit Touch ID (BiometricGate), never the login-password sheet.
+        if (dict[kSecAttrLabel as String] as? String) != Self.openACLLabel {
+            try? update(secret)
+        }
+        return secret
     }
 
     static func encodeMetadata(from secret: Secret) -> String? {
@@ -88,8 +81,7 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
 
     public func delete(name: String) throws {
         try Self.validateName(name)
-        let query = baseQuery(name: name)
-        let status = SecItemDelete(query as CFDictionary)
+        let status = SecItemDelete(baseQuery(name: name) as CFDictionary)
         if status == errSecItemNotFound { throw SecretError.notFound(name: name) }
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
     }
@@ -110,22 +102,31 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         }
         return array.compactMap { dict in
             guard let name = dict[kSecAttrAccount as String] as? String else { return nil }
-            let updatedAt = dict[kSecAttrModificationDate as String] as? Date ?? Date()
-            let meta = SecretMetadata.decode(dict[kSecAttrComment as String] as? String)
-            return Secret(
-                name: name, value: "", updatedAt: updatedAt,
-                notes: meta.notes,
-                expiresAt: meta.expiresAt,
-                rotateEveryDays: meta.rotateEveryDays,
-                lastRotatedAt: meta.lastRotatedAt,
-                mcpAllowed: meta.mcpAllowed ?? false
-            )
+            return secretFrom(name: name, value: "", attrs: dict)
         }
     }
 
     public func exists(name: String) throws -> Bool {
-        do { _ = try read(name: name); return true }
-        catch SecretError.notFound { return false }
+        try Self.validateName(name)
+        var query = baseQuery(name: name)
+        query[kSecReturnAttributes as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        if status == errSecItemNotFound { return false }
+        guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
+        return true
+    }
+
+    private func secretFrom(name: String, value: String, attrs: [String: Any]) -> Secret {
+        let updatedAt = attrs[kSecAttrModificationDate as String] as? Date ?? Date()
+        let meta = SecretMetadata.decode(attrs[kSecAttrComment as String] as? String)
+        return Secret(
+            name: name, value: value, updatedAt: updatedAt,
+            notes: meta.notes, expiresAt: meta.expiresAt,
+            rotateEveryDays: meta.rotateEveryDays, lastRotatedAt: meta.lastRotatedAt,
+            mcpAllowed: meta.mcpAllowed ?? false
+        )
     }
 
     private func baseQuery(name: String) -> [String: Any] {

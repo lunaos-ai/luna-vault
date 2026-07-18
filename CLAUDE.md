@@ -13,7 +13,7 @@ Before any UI work, read `PRODUCT.md` (strategic: register, users, voice, anti-r
 
 ## Product mission
 
-Native macOS secret manager for AI-coding workflows. Replaces `.env` files and copy-paste from password managers. Local-first via macOS Keychain. AI-agent audit log. One-command sync to cloud providers (Cloudflare, Vercel, pushci.dev, GitHub Actions, AWS).
+Native macOS secret manager for AI-coding workflows. Replaces `.env` files and copy-paste from password managers. Local-first encrypted vault (master key in Keychain, Touch ID gated). AI-agent audit log. One-command sync to cloud providers (Cloudflare, Vercel, pushci.dev, GitHub Actions, AWS).
 
 ## Target user
 
@@ -28,7 +28,8 @@ Solo developer or small team using AI coding tools (Cursor, Claude Code, Windsur
 - **Platform**: macOS 14 Sonoma minimum. No iOS, no Linux, no Windows in v0.1.
 - **Stack**: Native SwiftUI (App), Swift CLI (`vibevault`), shared `VaultCore` SwiftPM framework.
 - **No third-party dependencies** in VaultCore except `swift-argument-parser` (CLI only) and system frameworks (Security, LocalAuthentication, sqlite3, Foundation).
-- **Keychain service**: `kSecAttrService = "dev.vibevault"`.
+- **Keychain service**: `kSecAttrService = "dev.vibevault"` (master key + prefs; legacy secret migration).
+- **Vault files**: `~/Library/Application Support/vibe-vault/secrets.vault` (AES-GCM ciphertext).
 - **Audit DB**: `~/Library/Application Support/vibe-vault/audit.db` (SQLite via system sqlite3).
 - **App Group**: `group.dev.vibevault` for App↔CLI Keychain sharing.
 - **File size cap**: 200 LOC per Swift file (non-blank, non-comment). Enforced by `scripts/check-loc.sh` in CI.
@@ -38,7 +39,8 @@ Solo developer or small team using AI coding tools (Cursor, Claude Code, Windsur
 
 | Layer | Coverage target | Tool |
 |-------|----------------|------|
-| `KeychainStore` (secret read path) | 100% line + branch | XCTest |
+| `EncryptedVaultStore` / `VaultService` read path | 100% line + branch | XCTest |
+| `KeychainStore` (legacy migration path) | 90% line | XCTest |
 | `AuditDB` (write path) | 100% line | XCTest |
 | `AgentDetector` | 100% line | XCTest |
 | `ProjectScanner` + parsers | 90% line | XCTest |
@@ -50,8 +52,9 @@ Overall: **>=90% line, >=85% branch** per portfolio rules.
 
 ## Product-specific security controls
 
-- Every Keychain read **must** call `AuditDB.record(event:)` before returning the secret.
-- Biometric (Touch ID) prompt required on every read unless within a session-unlock window (configurable, default 5 min).
+- Every secret read via `VaultService` **must** call `AuditDB.record(event:)` before returning the secret.
+- Biometric (Touch ID) prompt required on every App/CLI read unless within a session-unlock window (configurable, default 5 min). MCP uses allowlist only (`mcpAllowed`); agents may revoke access but cannot enable it.
+- Solo is full-featured; Team/Studio/Company add multi-seat offline VV1 licenses and support tiers (not a feature lock for Solo).
 - Provider adapters must verify HTTPS, use Bearer-token or HMAC-signed requests, and never log secret values.
 - CLI `run` subcommand spawns child processes with `posix_spawn` and clears parent env of injected secrets after exec.
 - No telemetry. No analytics. No crash reporting in solo tier.
@@ -60,7 +63,7 @@ Overall: **>=90% line, >=85% branch** per portfolio rules.
 ## Release checklist
 
 - [ ] All Swift files ≤200 LOC (`scripts/check-loc.sh`).
-- [ ] Coverage gates pass (90% line / 85% branch overall, 100% on KeychainStore/AuditDB read paths).
+- [ ] Coverage gates pass (90% line / 85% branch overall, 100% on EncryptedVaultStore/VaultService read + AuditDB write paths).
 - [ ] SAST clean (`swift package plugin --allow-network-connections all sast` or equivalent).
 - [ ] Dep scan clean (no CVEs in `swift-argument-parser` version).
 - [ ] Secret scan clean (gitleaks on full repo, no test fixtures with real keys).

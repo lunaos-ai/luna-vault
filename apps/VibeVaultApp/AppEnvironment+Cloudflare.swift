@@ -13,11 +13,6 @@ extension AppEnvironment {
         !settings.cloudflareAccountId.isEmpty && !settings.cloudflareScriptName.isEmpty
     }
 
-    var hasCloudflareToken: Bool {
-        ProviderCredentialStore.cloudflareToken(prefs: prefs) != nil
-            || ProcessInfo.processInfo.environment["CLOUDFLARE_API_TOKEN"]?.isEmpty == false
-    }
-
     func updateCloudflareScope(from projectURL: URL) {
         let cfg = WranglerConfig.load(from: projectURL)
         if let id = cfg.accountId { settings.cloudflareAccountId = id }
@@ -33,6 +28,9 @@ extension AppEnvironment {
 
     func setCloudflareToken(_ token: String) {
         ProviderCredentialStore.setCloudflareToken(token.nilIfEmpty, prefs: prefs)
+        cachedHasCloudflareToken =
+            token.nilIfEmpty != nil
+            || ProcessInfo.processInfo.environment["CLOUDFLARE_API_TOKEN"]?.isEmpty == false
     }
 
     func cloudflareProvider() -> CloudflareProvider? {

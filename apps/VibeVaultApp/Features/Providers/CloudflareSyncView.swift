@@ -9,6 +9,7 @@ struct CloudflareSyncView: View {
     @State private var selectedWorkerNames: Set<String> = []
     @State private var phase: SyncPhase = .idle
     @State private var statusMessage: String?
+    @State private var showTokenSetup = false
 
     enum SyncPhase { case idle, reconciling, pushing }
 
@@ -19,7 +20,8 @@ struct CloudflareSyncView: View {
                     accountId: $accountId,
                     scriptName: $scriptName,
                     tokenReady: env.hasCloudflareToken,
-                    wranglerDetected: env.cloudflareScopeComplete
+                    wranglerDetected: env.cloudflareScopeComplete,
+                    onSetup: { showTokenSetup = true }
                 )
                 actionRow
                 if let msg = statusMessage { ImportStatusBanner(message: msg) }
@@ -34,6 +36,18 @@ struct CloudflareSyncView: View {
         .onAppear { loadScope() }
         .onChange(of: accountId) { _, v in env.setCloudflareScope(accountId: v, scriptName: scriptName) }
         .onChange(of: scriptName) { _, v in env.setCloudflareScope(accountId: accountId, scriptName: v) }
+        .sheet(isPresented: $showTokenSetup) {
+            ProviderTokenSetupSheet(
+                title: "Cloudflare API token",
+                prompt: "Paste API token",
+                dashboardURL: URL(string: "https://dash.cloudflare.com/profile/api-tokens")!,
+                dashboardLabel: "Create token in Cloudflare dashboard",
+                footer: "Needs Workers Scripts:Edit for the target script. Stored in Keychain."
+            ) { token in
+                env.setCloudflareToken(token)
+                env.toastMessage = "Cloudflare token saved"
+            }
+        }
     }
 
     private var actionRow: some View {
@@ -53,9 +67,9 @@ struct CloudflareSyncView: View {
             .disabled(!canSync || selectedWorkerNames.isEmpty || phase != .idle)
             Spacer()
             if !env.hasCloudflareToken {
-                Text("Token in Settings → Cloudflare")
+                Button("Add API token…") { showTokenSetup = true }
                     .font(.caption)
-                    .foregroundStyle(Tokens.Text.tertiary)
+                    .buttonStyle(.borderless)
             }
         }
     }

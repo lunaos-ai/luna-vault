@@ -35,23 +35,13 @@ struct ProvidersHubView: View {
         }
         .background(PremiumBackdrop())
         .navigationTitle("Providers")
-        .onChange(of: env.openVercel) { _, open in
-            if open {
-                tab = .vercel
-                env.openVercel = false
-            }
-        }
-        .onChange(of: env.openPushci) { _, open in
-            if open {
-                tab = .pushci
-                env.openPushci = false
-            }
-        }
-        .onChange(of: env.openCloudflare) { _, open in
-            if open {
-                tab = .cloudflare
-                // MainWindow also clears; keep hub in sync when already selected
-            }
-        }
+        .onAppear { applyPendingTab() }
+        .onChange(of: env.pendingProviderTab) { _, _ in applyPendingTab() }
+    }
+
+    private func applyPendingTab() {
+        guard let raw = env.pendingProviderTab, let next = Tab(rawValue: raw) else { return }
+        tab = next
+        env.pendingProviderTab = nil
     }
 }

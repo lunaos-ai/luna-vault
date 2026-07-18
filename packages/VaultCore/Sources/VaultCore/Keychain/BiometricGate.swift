@@ -6,6 +6,7 @@ public protocol BiometricGating: Sendable {
     func resetSession()
     func setSessionWindow(_ seconds: TimeInterval)
     func sessionWindowSeconds() -> TimeInterval
+    func hasValidSession() -> Bool
 }
 
 public final class BiometricGate: BiometricGating, @unchecked Sendable {
@@ -23,6 +24,10 @@ public final class BiometricGate: BiometricGating, @unchecked Sendable {
 
     public func sessionWindowSeconds() -> TimeInterval {
         queue.sync { sessionWindow }
+    }
+
+    public func hasValidSession() -> Bool {
+        isSessionValid()
     }
 
     public func authenticate(reason: String) async throws {
@@ -54,9 +59,11 @@ public final class BiometricGate: BiometricGating, @unchecked Sendable {
 
 public final class NoopBiometricGate: BiometricGating, @unchecked Sendable {
     private var window: TimeInterval = 300
+    private var unlocked = false
     public init() {}
-    public func authenticate(reason: String) async throws {}
-    public func resetSession() {}
+    public func authenticate(reason: String) async throws { unlocked = true }
+    public func resetSession() { unlocked = false }
     public func setSessionWindow(_ seconds: TimeInterval) { window = seconds }
     public func sessionWindowSeconds() -> TimeInterval { window }
+    public func hasValidSession() -> Bool { unlocked }
 }

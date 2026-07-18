@@ -6,6 +6,7 @@ struct CloudflareConnectionCard: View {
     @Binding var scriptName: String
     let tokenReady: Bool
     let wranglerDetected: Bool
+    var onSetup: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.md) {
@@ -49,22 +50,35 @@ struct CloudflareConnectionCard: View {
         if tokenReady && !accountId.isEmpty && !scriptName.isEmpty {
             return "Ready to sync secrets to \(scriptName)"
         }
-        if !tokenReady { return "Add API token in Settings" }
+        if !tokenReady { return "Add API token to connect" }
         return "Enter account ID and script name"
     }
 
     @ViewBuilder
     private var statusChip: some View {
         let ready = tokenReady && !accountId.isEmpty && !scriptName.isEmpty
-        Text(ready ? "Connected" : "Setup")
+        if ready {
+            chipLabel("Connected", color: Tokens.Status.success)
+        } else if !tokenReady, let onSetup {
+            Button(action: onSetup) {
+                chipLabel("Setup", color: Tokens.Status.warning)
+            }
+            .buttonStyle(.plain)
+            .help("Add Cloudflare API token")
+            .accessibilityLabel("Setup Cloudflare")
+        } else {
+            chipLabel("Incomplete", color: Tokens.Status.warning)
+                .help("Enter account ID and script name")
+        }
+    }
+
+    private func chipLabel(_ title: String, color: Color) -> some View {
+        Text(title)
             .font(.caption.weight(.semibold))
             .padding(.horizontal, Tokens.Space.sm)
             .padding(.vertical, Tokens.Space.xs)
-            .background(
-                (ready ? Tokens.Status.success : Tokens.Status.warning).opacity(0.12),
-                in: Capsule()
-            )
-            .foregroundStyle(ready ? Tokens.Status.success : Tokens.Status.warning)
+            .background(color.opacity(0.12), in: Capsule())
+            .foregroundStyle(color)
     }
 
     private func field(_ label: String, text: Binding<String>) -> some View {

@@ -9,7 +9,7 @@ Luxury marketing site + Lemon Squeezy webhook.
 | `GET /assets/*` | Product imagery |
 | `GET /download` | 302 → DMG |
 | `GET /health` | `{ ok: true }` |
-| `POST /webhooks/lemonsqueezy` | Sign `VV1` + optional email |
+| `POST /webhooks/lemonsqueezy` | Sign `VV1` + email via Resend or return key for manual delivery |
 
 ## Deploy
 
@@ -26,7 +26,7 @@ npx wrangler deploy
 ```bash
 npx wrangler secret put VIBEVAULT_WEBHOOK_SECRET
 npx wrangler secret put VIBEVAULT_LICENSE_PRIVATE_KEY
-npx wrangler secret put VIBEVAULT_RESEND_API_KEY   # optional
+npx wrangler secret put VIBEVAULT_RESEND_API_KEY   # recommended for customer delivery
 ```
 
 Legacy `LEMONSQUEEZY_WEBHOOK_SECRET` / `RESEND_API_KEY` still accepted.
@@ -35,3 +35,4 @@ Legacy `LEMONSQUEEZY_WEBHOOK_SECRET` / `RESEND_API_KEY` still accepted.
 
 - **Callback:** `https://vibevault.lunaos.ai/webhooks/lemonsqueezy`
 - **Events:** `order_created`, `subscription_created`
+- If `VIBEVAULT_RESEND_API_KEY` is set, the Worker sends the license email before acknowledging the webhook. If it is not set, the JSON response includes `licenseKey` for manual delivery/testing.

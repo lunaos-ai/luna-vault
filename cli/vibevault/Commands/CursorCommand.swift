@@ -40,20 +40,7 @@ struct CursorPrepareCommand: AsyncParsableCommand {
     }
 
     private func locateMCPBinary() -> String? {
-        let bundled = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/MacOS/vibevault-mcp").path
-        if FileManager.default.isExecutableFile(atPath: bundled) { return bundled }
-        let candidates = [
-            ".build/release/vibevault-mcp",
-            ".build/debug/vibevault-mcp",
-            "/usr/local/bin/vibevault-mcp"
-        ]
-        let cwd = FileManager.default.currentDirectoryPath
-        for c in candidates {
-            let p = (c as NSString).isAbsolutePath ? c : (cwd as NSString).appendingPathComponent(c)
-            if FileManager.default.isExecutableFile(atPath: p) { return p }
-        }
-        return nil
+        MCPBinaryResolver.resolve()
     }
 }
 

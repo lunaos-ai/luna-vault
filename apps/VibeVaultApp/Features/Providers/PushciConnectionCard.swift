@@ -4,6 +4,7 @@ struct PushciConnectionCard: View {
     @Binding var projectPath: String
     let cliReady: Bool
     let lastScannedPath: String?
+    var onSetup: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.md) {
@@ -22,15 +23,18 @@ struct PushciConnectionCard: View {
                         .foregroundStyle(Tokens.Text.secondary)
                 }
                 Spacer()
-                Text(ready ? "Ready" : "Setup")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, Tokens.Space.sm)
-                    .padding(.vertical, Tokens.Space.xs)
-                    .background(
-                        (ready ? Tokens.Status.success : Tokens.Status.warning).opacity(0.12),
-                        in: Capsule()
-                    )
-                    .foregroundStyle(ready ? Tokens.Status.success : Tokens.Status.warning)
+                if ready {
+                    chipLabel("Ready", color: Tokens.Status.success)
+                } else if let onSetup {
+                    Button(action: onSetup) {
+                        chipLabel("Setup", color: Tokens.Status.warning)
+                    }
+                    .buttonStyle(.plain)
+                    .help(projectPath.isEmpty ? "Use last scanned project or enter a path" : "Install PushCI CLI")
+                    .accessibilityLabel("Setup PushCI")
+                } else {
+                    chipLabel("Setup", color: Tokens.Status.warning)
+                }
             }
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text("Project path").font(.caption.weight(.semibold)).foregroundStyle(Tokens.Text.secondary)
@@ -61,5 +65,14 @@ struct PushciConnectionCard: View {
         if ready { return "Sync local PushCI secrets for this machine" }
         if projectPath.isEmpty { return "Choose a project with `pushci init`" }
         return "Install PushCI CLI: brew install pushci"
+    }
+
+    private func chipLabel(_ title: String, color: Color) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, Tokens.Space.sm)
+            .padding(.vertical, Tokens.Space.xs)
+            .background(color.opacity(0.12), in: Capsule())
+            .foregroundStyle(color)
     }
 }

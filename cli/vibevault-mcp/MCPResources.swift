@@ -96,7 +96,7 @@ enum MCPResources {
                 ""
             ]
         }
-        lines.append("Next: import missing in Vibe Vault, then `set_mcp_allowed` for agent reads.")
+        lines.append("Next: import missing in Vibe Vault, then enable AI access in the app for agent reads.")
         return lines.joined(separator: "\n")
     }
 
@@ -109,7 +109,7 @@ enum MCPResources {
 
     1. **Scan** — `scan_project` or resource `vibevault://project-setup?path=…`
     2. **Import** — user imports missing secrets in Vibe Vault app (not in chat)
-    3. **Allow** — `set_mcp_allowed` for secrets agents may read
+    3. **Allow** — enable AI access in the Vibe Vault app (agents may only revoke via `set_mcp_allowed`)
     4. **Push** — MCP `push_secrets` or Providers UI
     5. **Audit** — `get_audit_log`
 

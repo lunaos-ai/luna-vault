@@ -21,11 +21,13 @@ struct LicenseStatusCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         let prefs = KeychainPrefs()
-        guard let lic = LicenseStore.load(prefs: prefs) else {
+        guard let lic = TeamEntitlement.current(prefs: prefs) else {
+            print("licensed: false")
             print("tier: solo")
             print("checkout: \(LemonSqueezyConfig.checkoutURL(prefs: prefs).absoluteString)")
             return
         }
+        print("licensed: true")
         print("tier: \(lic.tier)")
         print("email: \(lic.email)")
         print("seats: \(lic.seats)")
@@ -70,16 +72,26 @@ struct LicenseIssueCommand: AsyncParsableCommand {
     @Option(name: .long) var seats: Int = 5
     @Option(name: .long) var orderId: String
     @Option(name: .long) var productId: String = "team"
+    @Option(name: .long, help: "License tier: team, studio, or company.")
+    var tier: String = "team"
     @Option(name: .long, help: "Days until expiry; omit for never.")
     var days: Int?
     @Option(name: .long, help: "Override VIBEVAULT_LICENSE_PRIVATE_KEY / private.b64.")
     var privateKey: String?
 
     mutating func run() async throws {
+        let normalized = tier.lowercased()
+        guard TeamLicense.paidTiers.contains(normalized) else {
+            throw ValidationError("tier must be one of: team, studio, company")
+        }
+        guard seats > 0 else {
+            throw ValidationError("seats must be greater than 0")
+        }
         let priv = try loadPrivateKey()
         var expires: Date?
         if let days { expires = Date().addingTimeInterval(TimeInterval(days * 86_400)) }
         let license = TeamLicense(
+            tier: normalized,
             email: email,
             seats: seats,
             expiresAt: expires,

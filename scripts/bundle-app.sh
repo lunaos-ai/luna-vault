@@ -53,15 +53,30 @@ cp "$ICON_SRC" "$APP_DIR/Contents/Resources/AppIcon.icns"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable VibeVault" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
 
-# Sign each binary with its own entitlements for shared Keychain access group.
+# Sign with a stable identity when possible. Ad-hoc (-s -) changes the CDHash
+# every rebuild, so Keychain re-prompts "Always Allow" and never accepts Touch ID
+# on that dialog (it wants the login keychain password).
 ENT_APP="apps/VibeVaultApp/VibeVault.entitlements"
 ENT_CLI="cli/vibevault/vibevault.entitlements"
 ENT_MCP="cli/vibevault-mcp/vibevault-mcp.entitlements"
 
-codesign --force --sign - --entitlements "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign - --entitlements "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign - --entitlements "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault" 2>&1 | sed 's/^/  codesign: /'
-codesign --force --sign - --entitlements "$ENT_APP" "$APP_DIR" 2>&1 | sed 's/^/  codesign: /'
+IDENTITY="$(bash scripts/ensure-debug-codesign.sh)"
+echo "  codesign identity: $IDENTITY"
+if [ "$IDENTITY" = "-" ]; then
+    echo "  warning: ad-hoc signature — Keychain will re-prompt after every rebuild."
+    echo "           Create 'Vibe Vault Debug' (Code Signing) in Keychain Access, or"
+    echo "           renew Apple Development in Xcode, then rebuild."
+fi
+
+sign() {
+    local entitlements="$1" target="$2"
+    codesign --force --sign "$IDENTITY" --entitlements "$entitlements" "$target" 2>&1 | sed 's/^/  codesign: /'
+}
+
+sign "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault"
+sign "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp"
+sign "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault"
+sign "$ENT_APP" "$APP_DIR"
 
 echo ""
 echo "==> Done."

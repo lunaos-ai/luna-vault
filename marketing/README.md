@@ -2,7 +2,7 @@
 
 | Path | Purpose |
 |------|---------|
-| `landing/index.html` | Public pitch page → deploy as `lunaos.ai/vibevault` |
+| `landing/index.html` | Public pitch page -> deploy as `vibevault.lunaos.ai` |
 | `../docs/launch/LAUNCH_PACK.md` | Show HN / X / Reddit paste pack |
 | `../dist/homebrew/` | Homebrew formula |
 | `../dist/cursor-directory/` | Cursor Directory submission draft |

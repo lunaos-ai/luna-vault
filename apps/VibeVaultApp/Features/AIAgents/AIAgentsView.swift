@@ -20,6 +20,7 @@ struct AIAgentsView: View {
                 AISkillSection()
                 ShadowMCPPanel()
                 clientGrid
+                CLICommandsReference()
                 AIPluginSection(manifests: PluginManifestLoader.loadAll())
                 allowedSection
                 if let err = lastError { errorBanner(err) }

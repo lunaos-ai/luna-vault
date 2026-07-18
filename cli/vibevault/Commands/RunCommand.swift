@@ -18,6 +18,12 @@ struct RunCommand: AsyncParsableCommand {
             FileHandle.standardError.write(Data("error: missing command after --\n".utf8))
             throw ExitCode(64)
         }
+        // ArgumentParser may leave the "--" separator in the passthrough argv.
+        let argv = command.first == "--" ? Array(command.dropFirst()) : command
+        guard !argv.isEmpty else {
+            FileHandle.standardError.write(Data("error: missing command after --\n".utf8))
+            throw ExitCode(64)
+        }
         let service = try VaultService.live()
         let names = try service.list().map(\.name)
         let onlySet = Set(only)
@@ -27,10 +33,10 @@ struct RunCommand: AsyncParsableCommand {
         }
         var env = ProcessInfo.processInfo.environment
         for name in selected {
-            let secret = try await service.read(name: name, reason: "Inject \(name) for \(command[0])")
+            let secret = try await service.read(name: name, reason: "Inject \(name) for \(argv[0])")
             env[name] = secret.value
         }
-        let exitCode = try EnvInjector.spawn(args: command, env: env)
+        let exitCode = try EnvInjector.spawn(args: argv, env: env)
         if exitCode != 0 { throw ExitCode(Int32(exitCode)) }
     }
 }

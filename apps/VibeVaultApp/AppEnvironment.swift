@@ -17,23 +17,20 @@ final class AppEnvironment: ObservableObject {
             applyBiometricWindow()
         }
     }
+    /// Opt-in: after Touch ID unlock, keep vault trusted until quit or Lock.
     @Published var trustSession: Bool = false {
-        didSet {
-            applyBiometricWindow()
-            if !trustSession {
-                biometricStatus = "Re-prompts every \(Int(biometricSessionMinutes)) min."
-            } else {
-                biometricStatus = "Trusted until app quits."
-            }
-        }
+        didSet { applyBiometricWindow() }
     }
-    @Published var biometricStatus: String = "Idle"
+    /// True after a successful Unlock-for-session (cleared by Lock).
+    @Published var sessionUnlocked: Bool = false
+    @Published var biometricStatus: String = "Locked"
     @Published var rotatePromptName: String?
     @Published var importStatus: String?
     @Published var onboardingOpenProjects = false
     @Published var openCloudflare = false
-    @Published var openVercel = false
     @Published var openPushci = false
+    /// Tab to select when Providers hub appears (survives navigation race).
+    @Published var pendingProviderTab: String?
     @Published var openVaultHighlight: String?
     @Published var openAIAgents = false
     @Published var openAddSecret = false
@@ -46,6 +43,11 @@ final class AppEnvironment: ObservableObject {
             persistSettings()
         }
     }
+
+    /// Cached Keychain flags — never re-query Keychain from SwiftUI body.
+    @Published var cachedHasCloudflareToken = false
+    @Published var cachedHasVercelToken = false
+    @Published var cachedTeamLicense: TeamLicense?
 
     @Published var notificationsEnabled: Bool {
         didSet {
@@ -78,44 +80,18 @@ final class AppEnvironment: ObservableObject {
         self.service = service
         self.registry = registry
         self.prefs = prefs
-        let loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey) ?? AppSettings.migrateLegacy(into: prefs, settingsKey: Self.settingsKey)
+        let loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey)
+            ?? AppSettings.migrateLegacy(into: prefs, settingsKey: Self.settingsKey)
         self.settings = loaded
         self.biometricSessionMinutes = loaded.sessionMinutes
         self.notificationsEnabled = loaded.notificationsEnabled
         self.uiSoundsEnabled = loaded.uiSoundsEnabled
         self.warnWithinDays = loaded.warnWithinDays
         service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
-        Task { @MainActor [weak self] in self?.updateSchedulerState() }
-    }
-
-    func persistSettings() {
-        prefs.setCodable(settings, forKey: Self.settingsKey)
-    }
-
-    private func applyBiometricWindow() {
-        let seconds: TimeInterval = trustSession
-            ? .greatestFiniteMagnitude
-            : biometricSessionMinutes * 60
-        service.biometric.setSessionWindow(seconds)
-    }
-
-    private func updateSchedulerState() {
-        if notificationsEnabled {
-            scheduler.start(intervalMinutes: 60, warnWithinDays: warnWithinDays)
-        } else {
-            scheduler.stop()
+        Task { @MainActor [weak self] in
+            self?.reloadProviderCaches()
+            self?.updateSchedulerState()
         }
-    }
-
-    func runExpiryCheckNow() async {
-        await scheduler.runOnce(warnWithinDays: warnWithinDays)
-        if let last = scheduler.lastRunAt {
-            lastNotifierRun = "\(scheduler.lastAlertCount) alert\(scheduler.lastAlertCount == 1 ? "" : "s") at \(last.formatted(date: .omitted, time: .standard))"
-        }
-    }
-
-    func resetNotificationDedupe() {
-        scheduler.resetDedupe()
     }
 
     static func makeLive() -> AppEnvironment {
@@ -139,86 +115,5 @@ final class AppEnvironment: ObservableObject {
                 prefs: prefs
             )
         }
-    }
-
-    func resetBiometricSession() {
-        service.biometric.resetSession()
-        biometricStatus = "Locked. Touch ID required on next read."
-    }
-
-    func rotate(name: String, newValue: String) async {
-        do {
-            try await service.rotate(name: name, newValue: newValue)
-            refresh()
-        } catch {
-            lastError = "\(error)"
-        }
-    }
-
-    func testBiometric() async {
-        biometricStatus = "Waiting for Touch ID…"
-        do {
-            try await service.biometric.authenticate(reason: "Verify Touch ID configuration")
-            biometricStatus = "Unlocked. Re-prompts in \(Int(biometricSessionMinutes)) min."
-        } catch {
-            biometricStatus = "Failed: \(error)"
-        }
-    }
-
-    func refresh() {
-        do { secrets = try service.list().sorted { $0.name < $1.name } }
-        catch { lastError = "\(error)" }
-    }
-
-    func refreshAudit(filter: AuditFilter = AuditFilter()) {
-        do { auditEvents = try service.audit.query(filter) }
-        catch { lastError = "\(error)" }
-    }
-
-    func addSecret(
-        name: String, value: String, notes: String?,
-        expiresAt: Date? = nil, rotateEveryDays: Int? = nil,
-        mcpAllowed: Bool = false
-    ) {
-        do {
-            try service.add(name: name, value: value, notes: notes,
-                            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
-                            mcpAllowed: mcpAllowed)
-            refresh()
-        } catch { lastError = "\(error)" }
-    }
-
-    func setMCPAllowed(name: String, allowed: Bool) async {
-        do {
-            try await service.setMCPAllowed(name: name, allowed: allowed)
-            refresh()
-        } catch { lastError = "\(error)" }
-    }
-
-    func deleteSecret(name: String) {
-        do { try service.delete(name: name); refresh() }
-        catch { lastError = "\(error)" }
-    }
-
-    func projectPrefix(for url: URL) -> String {
-        let path = url.standardizedFileURL.path
-        if let saved = settings.projectPrefixes[path], !saved.isEmpty { return saved }
-        return SecretNaming.defaultProjectPrefix(from: url)
-    }
-
-    func saveProjectPrefix(_ prefix: String, for url: URL) {
-        settings.projectPrefixes[url.standardizedFileURL.path] = prefix
-        persistSettings()
-    }
-
-    func focusVault(secretName: String) {
-        openVaultHighlight = secretName
-    }
-
-    func allowMCPAccess(for names: Set<String>) async {
-        for name in names {
-            try? await service.setMCPAllowed(name: name, allowed: true)
-        }
-        refresh()
     }
 }

@@ -2,7 +2,7 @@
   "store": "lunaos",
   "landing_url": "https://vibevault.lunaos.ai/",
   "webhook_url": "https://vibevault.lunaos.ai/webhooks/lemonsqueezy",
-  "checkout_base": "https://lunaos.lemonsqueezy.com/checkout/buy",
+  "checkout_base": "https://finsavvy.lemonsqueezy.com/checkout/buy",
   "worker": "workers/vibevault",
   "public_vars": {
     "VIBEVAULT_STORE_ID": "from LS Settings → Stores",
@@ -14,7 +14,7 @@
   "secrets": {
     "VIBEVAULT_WEBHOOK_SECRET": "same signing secret as LS webhook",
     "VIBEVAULT_LICENSE_PRIVATE_KEY": "base64 Ed25519 from dist/lemonsqueezy/private.b64",
-    "VIBEVAULT_RESEND_API_KEY": "optional — emails VV1 keys"
+    "VIBEVAULT_RESEND_API_KEY": "recommended — emails VV1 keys to customers"
   },
   "webhook_events": ["order_created", "subscription_created", "subscription_updated", "order_refunded"],
   "license_format": "VV1.<base64url-json>.<base64url-ed25519-sig>",

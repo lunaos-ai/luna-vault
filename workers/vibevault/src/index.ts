@@ -46,6 +46,10 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    if (request.method === "OPTIONS" && url.pathname === "/api/checkout") {
+      return new Response(null, { status: 204, headers: checkoutCorsHeaders() });
+    }
+
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ ok: true, host: "vibevault.lunaos.ai" });
     }
@@ -53,10 +57,11 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/checkout") {
       return json(checkoutConfig(env), 200, {
         "cache-control": "public, max-age=60",
+        ...checkoutCorsHeaders(),
       });
     }
 
-    if (request.method === "GET" && url.pathname === "/download") {
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/download") {
       return Response.redirect(env.DOWNLOAD_URL || "https://lunaos.ai/download/vibevault", 302);
     }
 
@@ -71,7 +76,7 @@ export default {
 function checkoutConfig(env: Env) {
   const base =
     pick(env, "VIBEVAULT_CHECKOUT_BASE", "vibevault_checkout_base") ||
-    "https://lunaos.lemonsqueezy.com/checkout/buy";
+    "https://finsavvy.lemonsqueezy.com/checkout/buy";
   const team = pick(env, "VIBEVAULT_VARIANT_TEAM", "vibevault_variant_team");
   const studio = pick(env, "VIBEVAULT_VARIANT_STUDIO", "vibevault_variant_studio");
   const company = pick(env, "VIBEVAULT_VARIANT_COMPANY", "vibevault_variant_company");
@@ -84,6 +89,14 @@ function checkoutConfig(env: Env) {
     company: buy(company),
     seats: { team: 5, studio: 20, company: 100 },
     configured: Boolean(team && studio && company),
+  };
+}
+
+function checkoutCorsHeaders(): Record<string, string> {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-headers": "content-type",
   };
 }
 
@@ -150,12 +163,31 @@ async function handleLemonWebhook(
     return json({ error: "sign_failed" }, 500);
   }
 
-  console.log(JSON.stringify({ event, email, orderId, variantId, seats, issued: true }));
-
   const resend = pick(env, "VIBEVAULT_RESEND_API_KEY", "RESEND_API_KEY", "vibevault_resend_api_key");
-  if (resend) ctx.waitUntil(emailLicense(env, resend, email, licenseKey, seats));
+  if (resend) {
+    try {
+      await emailLicense(env, resend, email, licenseKey, seats);
+    } catch (e) {
+      console.error(JSON.stringify({ err: "email_failed", message: String(e) }));
+      return json({ error: "email_failed" }, 502);
+    }
+  }
 
-  return json({ ok: true, emailed: Boolean(resend) });
+  const response: Record<string, unknown> = { ok: true, emailed: Boolean(resend) };
+  if (!resend) response.licenseKey = licenseKey;
+
+  console.log(JSON.stringify({
+    event,
+    email,
+    orderId,
+    variantId,
+    seats,
+    issued: true,
+    emailed: Boolean(resend),
+    manualDelivery: !resend,
+  }));
+
+  return json(response);
 }
 
 function seatsForVariant(env: Env, variantId: string, quantity?: number): number {
@@ -167,7 +199,7 @@ function seatsForVariant(env: Env, variantId: string, quantity?: number): number
   if (variantId && company && variantId === company) return 100;
   try {
     const map = JSON.parse(String(env.VARIANT_SEATS_JSON || "{}")) as Record<string, number>;
-    if (variantId && map[variantId]) return Number(map[variantId]);
+    if (variantId && Object.prototype.hasOwnProperty.call(map, variantId)) return Number(map[variantId]);
   } catch {
     /* ignore */
   }
@@ -204,14 +236,17 @@ async function issueLicense(opts: {
   privateKeyB64: string;
   days?: number;
 }): Promise<string> {
+  if (opts.seats <= 0) throw new Error("seats must be positive");
   const issuedAt = new Date();
+  const tier =
+    opts.seats >= 100 ? "company" : opts.seats >= 20 ? "studio" : "team";
   const payload: Record<string, unknown> = {
     email: opts.email,
     issuedAt: issuedAt.toISOString().replace(/\.\d{3}Z$/, "Z"),
     orderId: opts.orderId,
     productId: opts.productId,
     seats: opts.seats,
-    tier: "team",
+    tier,
   };
   if (opts.days) {
     const exp = new Date(issuedAt.getTime() + opts.days * 86_400_000);
@@ -221,9 +256,20 @@ async function issueLicense(opts: {
   const bytes = new TextEncoder().encode(jsonStr);
   const priv = base64Decode(opts.privateKeyB64);
   if (priv.byteLength !== 32) throw new Error("private key must be 32 bytes");
-  const key = await crypto.subtle.importKey("raw", priv, { name: "Ed25519" }, false, ["sign"]);
+  const key = await crypto.subtle.importKey("pkcs8", ed25519Pkcs8FromSeed(priv), { name: "Ed25519" }, false, ["sign"]);
   const sig = new Uint8Array(await crypto.subtle.sign("Ed25519", key, bytes));
   return `VV1.${b64url(bytes)}.${b64url(sig)}`;
+}
+
+function ed25519Pkcs8FromSeed(seed: Uint8Array): Uint8Array {
+  const prefix = new Uint8Array([
+    0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06,
+    0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20,
+  ]);
+  const out = new Uint8Array(prefix.length + seed.length);
+  out.set(prefix);
+  out.set(seed, prefix.length);
+  return out;
 }
 
 async function emailLicense(
@@ -260,7 +306,7 @@ async function emailLicense(
       ].join("\n"),
     }),
   });
-  if (!res.ok) console.error(JSON.stringify({ err: "email_failed", status: res.status }));
+  if (!res.ok) throw new Error(`resend returned ${res.status}`);
 }
 
 function b64url(data: Uint8Array): string {

@@ -29,3 +29,12 @@ final class MCPClientInstallerTests: XCTestCase {
         XCTAssertFalse(env["LUNA_SESSION"]?.isEmpty ?? true)
     }
 }
+
+final class MCPBinaryResolverTests: XCTestCase {
+    func test_app_helpers_cli_resolves_macos_sibling() {
+        let helpersCLI = "/tmp/Fake.app/Contents/Helpers/vibevault"
+        let candidates = MCPBinaryResolver.candidates(cliArgument: helpersCLI)
+        XCTAssertTrue(candidates.contains("/tmp/Fake.app/Contents/MacOS/vibevault-mcp"))
+        XCTAssertTrue(candidates.contains("/tmp/Fake.app/Contents/Helpers/vibevault-mcp"))
+    }
+}

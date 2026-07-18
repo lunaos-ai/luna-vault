@@ -3,26 +3,37 @@ import Foundation
 import VaultCore
 
 extension AppEnvironment {
-    var teamLicense: TeamLicense? { LicenseStore.load(prefs: prefs) }
+    /// One Keychain hit per credential, then memory — SwiftUI must not re-query on every paint.
+    func reloadProviderCaches() {
+        let env = ProcessInfo.processInfo.environment
+        cachedHasCloudflareToken =
+            ProviderCredentialStore.cloudflareToken(prefs: prefs) != nil
+            || env["CLOUDFLARE_API_TOKEN"]?.isEmpty == false
+        cachedHasVercelToken =
+            ProviderCredentialStore.vercelToken(prefs: prefs) != nil
+            || env["VERCEL_TOKEN"]?.isEmpty == false
+        cachedTeamLicense = LicenseStore.load(prefs: prefs)
+    }
 
-    var isTeamLicensed: Bool { teamLicense?.isTeam == true }
+    var hasCloudflareToken: Bool { cachedHasCloudflareToken }
+    var hasVercelToken: Bool { cachedHasVercelToken }
+    var teamLicense: TeamLicense? { cachedTeamLicense }
+    var isTeamLicensed: Bool { cachedTeamLicense?.isLicensed == true }
 
     var licenseStatusLine: String {
-        guard let lic = teamLicense else { return "Solo (free)" }
-        if lic.isExpired { return "Team expired" }
+        guard let lic = cachedTeamLicense, lic.isLicensed else { return "Solo (free)" }
         let seats = "\(lic.seats) seat\(lic.seats == 1 ? "" : "s")"
-        return "Team · \(lic.email) · \(seats)"
+        return "\(lic.tier.capitalized) · \(lic.email) · \(seats)"
     }
 
     func activateLicense(_ raw: String) throws {
-        _ = try LicenseStore.activate(raw, prefs: prefs)
-        objectWillChange.send()
+        cachedTeamLicense = try LicenseStore.activate(raw, prefs: prefs)
         showToast("Team license activated", feedback: .success)
     }
 
     func deactivateLicense() {
         LicenseStore.deactivate(prefs: prefs)
-        objectWillChange.send()
+        cachedTeamLicense = nil
         showToast("License removed", feedback: .tick)
     }
 

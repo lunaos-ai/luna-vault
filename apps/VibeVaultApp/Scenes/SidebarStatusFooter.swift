@@ -5,20 +5,19 @@ struct SidebarStatusFooter: View {
     @EnvironmentObject var env: AppEnvironment
 
     var body: some View {
-        VStack(spacing: Tokens.Space.sm) {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+            sessionRow
             HStack(spacing: Tokens.Space.md) {
-                footerDot(
-                    ok: env.biometricStatus.lowercased().contains("unlock") || env.biometricStatus == "Idle",
-                    label: "Session"
-                )
+                footerDot(ok: env.sessionUnlocked, label: "Session")
                 footerDot(ok: env.hasCloudflareToken, label: "CF")
                 footerDot(ok: mcpInstalled, label: "MCP")
             }
             HStack {
-                Text(sessionLabel)
+                Text(sessionCaption)
                     .font(.system(size: 10))
                     .foregroundStyle(Tokens.Text.tertiary)
                     .lineLimit(1)
+                    .accessibilityLabel(sessionCaption)
                 Spacer()
                 if env.isTeamLicensed {
                     Text("Team")
@@ -35,14 +34,42 @@ struct SidebarStatusFooter: View {
         .background(.thinMaterial)
     }
 
+    private var sessionRow: some View {
+        Group {
+            if env.sessionUnlocked && env.trustSession {
+                Button(role: .destructive) { env.lockSession() } label: {
+                    Label("Lock session", systemImage: "lock.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Clear session trust and require Touch ID again.")
+                .accessibilityLabel("Lock session")
+            } else {
+                Button {
+                    Task { await env.unlockForSession() }
+                } label: {
+                    Label("Unlock for this session", systemImage: "lock.open.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Tokens.Palette.accent)
+                .controlSize(.small)
+                .help("One Touch ID — then reveal and copy without re-prompting until quit.")
+                .accessibilityLabel("Unlock for this session")
+            }
+        }
+    }
+
     private var mcpInstalled: Bool {
         MCPClientID.allCases.contains { MCPClientInstaller.status(of: $0).installed }
     }
 
-    private var sessionLabel: String {
-        if env.biometricStatus.lowercased().contains("unlock") || env.biometricStatus == "Idle" {
-            return "Unlocked"
-        }
+    private var sessionCaption: String {
+        if env.sessionUnlocked && env.trustSession { return "Unlocked until quit" }
+        if env.sessionUnlocked { return "Unlocked (timed)" }
         return "Touch ID required"
     }
 

@@ -129,7 +129,7 @@ struct ImportView: View {
                     .foregroundStyle(Tokens.Palette.accent)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Bring secrets into Keychain")
+                Text("Bring secrets into the vault")
                     .font(.headline)
                 Text("Clipboard, dotenv, shell env, or 1Password CLI.")
                     .font(.caption)

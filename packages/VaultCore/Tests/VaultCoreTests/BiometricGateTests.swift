@@ -33,7 +33,17 @@ final class BiometricGateTests: XCTestCase {
         let gate = NoopBiometricGate()
         gate.setSessionWindow(120)
         XCTAssertEqual(gate.sessionWindowSeconds(), 120)
+        XCTAssertFalse(gate.hasValidSession())
         try await gate.authenticate(reason: "test")
+        XCTAssertTrue(gate.hasValidSession())
         gate.resetSession()
+        XCTAssertFalse(gate.hasValidSession())
+    }
+
+    func test_hasValidSession_false_before_auth() {
+        let gate = BiometricGate()
+        XCTAssertFalse(gate.hasValidSession())
+        gate.resetSession()
+        XCTAssertFalse(gate.hasValidSession())
     }
 }

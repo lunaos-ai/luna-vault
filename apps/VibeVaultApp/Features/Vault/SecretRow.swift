@@ -1,7 +1,9 @@
+import AppKit
 import SwiftUI
 import VaultCore
 
 struct SecretRow: View {
+    @EnvironmentObject var env: AppEnvironment
     let secret: Secret
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovering = false
@@ -30,6 +32,9 @@ struct SecretRow: View {
         .contentShape(Rectangle())
         .onHover { hovering in
             Motion.animate(reduceMotion) { isHovering = hovering }
+        }
+        .contextMenu {
+            Button("Copy key name") { env.copySecretName(secret.name) }
         }
         // Do not attach pressableScale here — DragGesture steals List selection on macOS.
     }

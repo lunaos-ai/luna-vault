@@ -31,7 +31,7 @@ struct SecretDetailView: View {
             Button("Delete", role: .destructive) { env.deleteSecret(name: secret.name) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Removes the secret from your local Keychain. Cloud provider copies are not revoked.")
+            Text("Removes the secret from your local vault. Cloud provider copies are not revoked.")
         }
         .sheet(isPresented: $showRotateSheet) {
             RotateSheetView(secret: secret, isPresented: $showRotateSheet)
@@ -48,6 +48,16 @@ struct SecretDetailView: View {
                     .textSelection(.enabled)
                     .lineLimit(1)
                     .minimumScaleFactor(0.55)
+                Button {
+                    env.copySecretName(secret.name)
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(Tokens.Text.secondary)
+                .help("Copy key name")
+                .accessibilityLabel("Copy key name")
                 Spacer()
                 SecretBadgeStrip(secret: secret)
             }

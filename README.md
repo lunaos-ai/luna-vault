@@ -2,7 +2,7 @@
 
 Native macOS secret manager for AI coding workflows. Lives in your menu bar.
 
-[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)](https://lunaos.ai/vibevault)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)](https://vibevault.lunaos.ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.0-indigo)](CHANGELOG.md)
 
@@ -21,8 +21,8 @@ Secrets live in macOS Keychain. Every read is audited per AI agent (Claude Code,
 
 **App (menu bar)**
 
-- https://lunaos.ai/download/vibevault  
-- Pitch page: https://lunaos.ai/vibevault
+- https://vibevault.lunaos.ai/download
+- Pitch page: https://vibevault.lunaos.ai/
 
 **CLI**
 

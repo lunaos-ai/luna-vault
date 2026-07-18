@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import VaultCore
 
 struct PushciSyncView: View {
@@ -17,7 +18,8 @@ struct PushciSyncView: View {
                 PushciConnectionCard(
                     projectPath: $projectPath,
                     cliReady: env.pushciScopeComplete,
-                    lastScannedPath: env.lastScannedURL?.path
+                    lastScannedPath: env.lastScannedURL?.path,
+                    onSetup: handleSetup
                 )
                 actionRow
                 if let msg = statusMessage { ImportStatusBanner(message: msg) }
@@ -57,6 +59,22 @@ struct PushciSyncView: View {
 
     private var canSync: Bool {
         !projectPath.isEmpty && FileManager.default.fileExists(atPath: projectPath)
+    }
+
+    private func handleSetup() {
+        if projectPath.isEmpty, let last = env.lastScannedURL?.path, !last.isEmpty {
+            projectPath = last
+            env.toastMessage = "Using last scanned project"
+            return
+        }
+        if projectPath.isEmpty {
+            env.toastMessage = "Enter a project path (folder with pushci init)"
+            return
+        }
+        if let url = URL(string: "https://pushci.dev/docs") {
+            NSWorkspace.shared.open(url)
+        }
+        env.toastMessage = "Install CLI: brew install pushci"
     }
 
     private func loadScope() {

@@ -6,7 +6,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Added
 
-- Native macOS menu-bar app (Keychain secrets, Touch ID, audit log)
+- Native macOS menu-bar app (encrypted local vault, Touch ID, audit log)
 - CLI: `vibevault` add/list/scan/run/push/pull/mcp/skill/guard/cursor
 - MCP server for Cursor, VS Code, Devin, Claude Code, Windsurf
 - Agent skill + Cursor rules + Prepare for Cursor one-click
@@ -20,9 +20,20 @@ All notable changes to Vibe Vault are documented here.
 
 ### Security
 
-- Every Keychain read audited per agent
-- MCP tools only return values for MCP-allowed secrets
+- Secrets: AES-GCM file vault; master key in Keychain (`WhenUnlockedThisDeviceOnly`)
+- Every vault read via `VaultService` audited per agent
+- MCP tools only return values for MCP-allowed secrets; agents may revoke access but cannot enable it
 - Local-first; no telemetry in solo tier
 - Team license verified offline against embedded public key (no phone-home)
+
+## Unreleased
+
+### Fixed
+
+- Provider Setup sheets (Cloudflare / Vercel / PushCI token paste)
+- Import review: rename rows + project prefix; AI allow default off
+- MCP shares file vault store; `mcp test` finds bundled binary
+- Read-cache invalidation on delete / rotate / update
+- Legacy Keychain items deleted after successful migrate
 
 [0.1.0]: https://github.com/luna-os/luna-vault/releases/tag/v0.1.0

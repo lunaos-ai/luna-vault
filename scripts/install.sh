@@ -14,7 +14,7 @@ if command -v brew >/dev/null 2>&1; then
     echo "Binaries: $ROOT/.build/release/vibevault"
   fi
 else
-  echo "Homebrew not found. Download the app: https://lunaos.ai/download/vibevault"
+  echo "Homebrew not found. Download the app: https://vibevault.lunaos.ai/download"
   exit 1
 fi
 
@@ -23,4 +23,4 @@ echo "Next:"
 echo "  vibevault mcp install --client all"
 echo "  vibevault skill install"
 echo "  vibevault cursor prepare"
-echo "  open https://lunaos.ai/download/vibevault   # menu-bar app"
+echo "  open https://vibevault.lunaos.ai/download   # menu-bar app"

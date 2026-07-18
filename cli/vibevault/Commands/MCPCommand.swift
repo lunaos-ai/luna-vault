@@ -53,10 +53,7 @@ struct MCPInstallCommand: AsyncParsableCommand {
     }
 
     private func resolveBinary() -> String {
-        let exe = URL(fileURLWithPath: CommandLine.arguments[0])
-        let sibling = exe.deletingLastPathComponent().appendingPathComponent("vibevault-mcp").path
-        if FileManager.default.isExecutableFile(atPath: sibling) { return sibling }
-        return "/usr/local/bin/vibevault-mcp"
+        MCPBinaryResolver.resolve() ?? "/usr/local/bin/vibevault-mcp"
     }
 }
 
@@ -67,10 +64,12 @@ struct MCPTestCommand: AsyncParsableCommand {
     var binary: String?
 
     mutating func run() async throws {
-        let path = binary ?? URL(fileURLWithPath: CommandLine.arguments[0])
-            .deletingLastPathComponent().appendingPathComponent("vibevault-mcp").path
+        guard let path = binary ?? MCPBinaryResolver.resolve() else {
+            FileHandle.standardError.write(Data("vibevault-mcp not found\n".utf8))
+            throw ExitCode(2)
+        }
         let ok = try await ping(binary: path)
-        if ok { print("MCP server OK") } else { throw ExitCode(1) }
+        if ok { print("MCP server OK (\(path))") } else { throw ExitCode(1) }
     }
 
     private func ping(binary: String) async throws -> Bool {

@@ -73,7 +73,7 @@ enum MCPProviderTools {
         let blocked = names.filter { !allowed.contains($0) }
         if !blocked.isEmpty {
             return MCPTools.errorResult(
-                "not MCP-allowed: \(blocked.sorted().joined(separator: ", ")). Use set_mcp_allowed first."
+                "not MCP-allowed: \(blocked.sorted().joined(separator: ", ")). Enable AI access in the Vibe Vault app."
             )
         }
         let provider = try resolveProvider(id: providerId, context: context)

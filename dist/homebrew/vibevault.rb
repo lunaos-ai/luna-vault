@@ -11,7 +11,7 @@
 
 class Vibevault < Formula
   desc "Local-first macOS secrets for AI coding — Keychain, MCP audit, provider sync"
-  homepage "https://lunaos.ai/download/vibevault"
+  homepage "https://vibevault.lunaos.ai/"
   version "0.1.0"
   license "MIT"
 
@@ -35,7 +35,7 @@ class Vibevault < Formula
   def caveats
     <<~EOS
       Install the menu-bar app (notarized DMG):
-        open https://lunaos.ai/download/vibevault
+        open https://vibevault.lunaos.ai/download
 
       Wire Cursor / VS Code MCP:
         vibevault mcp install --client all

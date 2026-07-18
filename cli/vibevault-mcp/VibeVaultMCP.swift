@@ -5,7 +5,9 @@ import VaultCore
 struct VibeVaultMCP {
     static func main() async {
         let detector = MCPAgentDetector()
-        let store = KeychainStore()
+        // Same store as App/CLI: file vault (+ lazy Keychain migrate on read).
+        // KeychainStore alone misses secrets that only live in EncryptedVaultStore.
+        let store = MigratingVaultStore()
         guard let audit = try? AuditDB() else {
             FileHandle.standardError.write(Data("vibevault-mcp: failed to open audit DB\n".utf8))
             exit(1)

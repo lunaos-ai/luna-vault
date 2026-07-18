@@ -17,7 +17,7 @@ struct ImportReviewSheet: View {
     @State private var rows: [ImportRowState]
     @State private var showValues = false
     @State private var overwrite: Bool
-    @State private var allowForAI = true
+    @State private var allowForAI = false
     @State private var phase: Phase = .review
 
     init(
@@ -25,7 +25,7 @@ struct ImportReviewSheet: View {
         subtitle: String,
         rows: [ImportRowState],
         projectURL: URL? = nil,
-        showPrefix: Bool = false,
+        showPrefix: Bool = true,
         initialPrefix: String = "",
         sourceColumnTitle: String = "Name",
         stillMissing: Set<String> = [],
@@ -73,12 +73,22 @@ struct ImportReviewSheet: View {
     private var reviewContent: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.lg) {
             header
-            controls
+            ImportReviewControls(
+                prefix: $prefix,
+                showValues: $showValues,
+                overwrite: $overwrite,
+                allowForAI: $allowForAI,
+                showPrefix: showPrefix,
+                selectedCount: rows.filter(\.enabled).count,
+                exampleVaultName: rows.first.map { $0.vaultName(prefix: prefix) },
+                onPrefixChange: { v in
+                    if let url = projectURL { env.saveProjectPrefix(v, for: url) }
+                }
+            )
             if rows.isEmpty { emptyState } else {
                 ImportReviewTable(
                     rows: $rows,
                     prefix: prefix,
-                    showPrefixColumn: showPrefix,
                     sourceColumnTitle: sourceColumnTitle,
                     showValues: $showValues
                 )
@@ -95,31 +105,6 @@ struct ImportReviewSheet: View {
                 .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(Tokens.Text.secondary)
                 .lineLimit(2)
-        }
-    }
-
-    private var controls: some View {
-        HStack(spacing: Tokens.Space.lg) {
-            if showPrefix {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Vault name prefix").font(.caption.weight(.semibold))
-                    TextField("PROJECT_", text: $prefix)
-                        .font(.system(.body, design: .monospaced))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 220)
-                        .onChange(of: prefix) { _, v in
-                            if let url = projectURL { env.saveProjectPrefix(v, for: url) }
-                        }
-                }
-            }
-            Toggle("Show values", isOn: $showValues)
-            Toggle("Overwrite existing", isOn: $overwrite)
-            Toggle("Allow AI agents", isOn: $allowForAI)
-                .help("Expose imported secrets to Cursor, VS Code, and Devin via MCP.")
-            Spacer()
-            Text("\(rows.filter(\.enabled).count) selected")
-                .font(.caption)
-                .foregroundStyle(Tokens.Text.secondary)
         }
     }
 

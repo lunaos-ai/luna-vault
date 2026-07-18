@@ -22,7 +22,7 @@ The job: **trust a single local source for every secret, audited per AI agent, w
 
 A native macOS secret manager designed for the AI-coding workflow.
 
-- Secrets live in **macOS Keychain** (encrypted at rest, Touch ID gated).
+- Secrets live in an **encrypted local vault** (AES-GCM); the master key is held in **macOS Keychain**. Reads are Touch ID gated.
 - Every read is **audited per AI agent** — Claude Code, Cursor, Windsurf are tagged on every access.
 - **Local-first**: no telemetry, no account, no cloud unless the user explicitly pushes to Cloudflare/Vercel/etc.
 - **One-command sync** to provider environments when needed, but never as a default.
@@ -50,7 +50,7 @@ First-order category reflex to refuse: **secret-manager → saturated purple-on-
 
 1. **Calm by default, sharp on action.** Surfaces are quiet (system materials, semantic text, monochrome glyphs). Accent appears only where the user can act — primary button, selected row, focused field, status that demands attention.
 2. **Content is the interface.** The secret name, value, and audit row are the UI. No chrome, no hero metrics, no "welcome back" cards. Detail panes carry one material surface, not three.
-3. **One source of truth — Keychain.** Settings, alerts, secrets all live in the user's login Keychain. No second store, no shadow state, no plist file the user can lose.
+3. **One local vault.** Secrets ciphertext lives under Application Support; the master key and prefs live in Keychain. No cloud account for Solo. No shadow plist the user can lose.
 4. **The audit log is a first-class surface.** Not a settings page. Every read is recorded, every agent tagged, every row queryable. Trust is built by making it easy to verify.
 5. **Three seconds to the secret.** From command-N to "secret in clipboard" should be three keystrokes and one Touch ID prompt. Friction is a design failure.
 

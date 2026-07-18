@@ -37,13 +37,18 @@ struct MainWindow: View {
             if open { selection = .projects; env.onboardingOpenProjects = false }
         }
         .onChange(of: env.openCloudflare) { _, open in
-            if open { selection = .providers; env.openCloudflare = false }
-        }
-        .onChange(of: env.openVercel) { _, open in
-            if open { selection = .providers }
+            if open {
+                env.pendingProviderTab = "cloudflare"
+                selection = .providers
+                env.openCloudflare = false
+            }
         }
         .onChange(of: env.openPushci) { _, open in
-            if open { selection = .providers }
+            if open {
+                env.pendingProviderTab = "pushci"
+                selection = .providers
+                env.openPushci = false
+            }
         }
         .onChange(of: env.openAddSecret) { _, open in
             if open {

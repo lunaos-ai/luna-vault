@@ -12,11 +12,6 @@ extension AppEnvironment {
 
     var vercelScopeComplete: Bool { !settings.vercelProjectId.isEmpty }
 
-    var hasVercelToken: Bool {
-        ProviderCredentialStore.vercelToken(prefs: prefs) != nil
-            || ProcessInfo.processInfo.environment["VERCEL_TOKEN"]?.isEmpty == false
-    }
-
     func setVercelScope(projectId: String, teamId: String) {
         settings.vercelProjectId = projectId
         settings.vercelTeamId = teamId
@@ -25,6 +20,9 @@ extension AppEnvironment {
 
     func setVercelToken(_ token: String) {
         ProviderCredentialStore.setVercelToken(token.isEmpty ? nil : token, prefs: prefs)
+        cachedHasVercelToken =
+            !token.isEmpty
+            || ProcessInfo.processInfo.environment["VERCEL_TOKEN"]?.isEmpty == false
     }
 
     func vercelProvider() -> VercelProvider? {

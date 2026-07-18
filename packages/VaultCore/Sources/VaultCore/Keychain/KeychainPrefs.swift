@@ -18,6 +18,7 @@ public extension PreferenceStoring {
     }
 }
 
+/// App/provider prefs in Keychain with standard ACL (not open). Tokens require OS mediation.
 public final class KeychainPrefs: PreferenceStoring, @unchecked Sendable {
     public static let service = "dev.vibevault.prefs"
     private let serviceName: String
@@ -36,25 +37,19 @@ public final class KeychainPrefs: PreferenceStoring, @unchecked Sendable {
             q[kSecMatchLimit as String] = kSecMatchLimitOne
             var item: CFTypeRef?
             let status = SecItemCopyMatching(q as CFDictionary, &item)
-            guard status == errSecSuccess else { return nil }
-            return item as? Data
+            guard status == errSecSuccess, let data = item as? Data else { return nil }
+            return data
         }
     }
 
     public func set(_ data: Data?, forKey key: String) {
         queue.sync {
-            let q = base(key)
-            guard let data else {
-                SecItemDelete(q as CFDictionary)
-                return
-            }
-            var query = q
+            SecItemDelete(base(key) as CFDictionary)
+            guard let data else { return }
+            var query = base(key)
             query[kSecValueData as String] = data
-            let addStatus = SecItemAdd(query as CFDictionary, nil)
-            if addStatus == errSecDuplicateItem {
-                let update: [String: Any] = [kSecValueData as String: data]
-                SecItemUpdate(q as CFDictionary, update as CFDictionary)
-            }
+            query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            SecItemAdd(query as CFDictionary, nil)
         }
     }
 

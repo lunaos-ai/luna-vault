@@ -5,11 +5,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 swift build -c release
 
-# Sign CLI binaries with entitlements for shared Keychain access group.
+# Prefer a stable local identity (same as bundle-app debug) so Keychain ACLs stick.
 ARCH=$(uname -m)
 BIN_DIR=".build/${ARCH}-apple-macosx/release"
-codesign --force --sign - --entitlements cli/vibevault/vibevault.entitlements "$BIN_DIR/vibevault"
-codesign --force --sign - --entitlements cli/vibevault-mcp/vibevault-mcp.entitlements "$BIN_DIR/vibevault-mcp"
+IDENTITY="${CODESIGN_IDENTITY:-$(bash scripts/ensure-debug-codesign.sh)}"
+codesign --force --sign "$IDENTITY" --entitlements cli/vibevault/vibevault.entitlements "$BIN_DIR/vibevault"
+codesign --force --sign "$IDENTITY" --entitlements cli/vibevault-mcp/vibevault-mcp.entitlements "$BIN_DIR/vibevault-mcp"
 
 echo ""
 echo "Built + signed:"

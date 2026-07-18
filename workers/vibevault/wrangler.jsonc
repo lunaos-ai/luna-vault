@@ -19,14 +19,13 @@
     "LANDING_URL": "https://vibevault.lunaos.ai/",
     "DOWNLOAD_URL": "https://lunaos.ai/download/vibevault",
     "FROM_EMAIL": "licenses@lunaos.ai",
-    "VIBEVAULT_CHECKOUT_BASE": "https://lunaos.lemonsqueezy.com/checkout/buy",
-    // Fill these with your Lemon Squeezy IDs (public — safe in vars)
-    "VIBEVAULT_STORE_ID": "",
-    "VIBEVAULT_PRODUCT_ID": "",
-    "VIBEVAULT_VARIANT_TEAM": "",
-    "VIBEVAULT_VARIANT_STUDIO": "",
-    "VIBEVAULT_VARIANT_COMPANY": "",
-    "VARIANT_SEATS_JSON": "{}"
+    "VIBEVAULT_CHECKOUT_BASE": "https://finsavvy.lemonsqueezy.com/checkout/buy",
+    "VIBEVAULT_STORE_ID": "214097",
+    "VIBEVAULT_PRODUCT_ID": "1229600",
+    "VIBEVAULT_VARIANT_TEAM": "bfee18ff-8f12-4bd8-b2f5-de9b2d1f4305",
+    "VIBEVAULT_VARIANT_STUDIO": "1ac129fb-a772-4f3d-ae4b-2db5f6d95a99",
+    "VIBEVAULT_VARIANT_COMPANY": "76a007b6-bcb9-469f-9e69-cf97df2a0552",
+    "VARIANT_SEATS_JSON": "{\"1922362\":5,\"1922377\":20,\"1922379\":100}"
   },
   "routes": [
     {

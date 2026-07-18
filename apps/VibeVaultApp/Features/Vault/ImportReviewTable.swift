@@ -4,31 +4,27 @@ import VaultCore
 struct ImportReviewTable: View {
     @Binding var rows: [ImportRowState]
     let prefix: String
-    let showPrefixColumn: Bool
     let sourceColumnTitle: String
     @Binding var showValues: Bool
 
     var body: some View {
-        if showPrefixColumn {
-            prefixedTable
-        } else {
-            plainTable
-        }
-    }
-
-    private var prefixedTable: some View {
         Table(rows) {
             TableColumn("") { row in
-                Toggle("", isOn: binding(for: row)).labelsHidden()
+                Toggle("", isOn: enabledBinding(for: row)).labelsHidden()
             }
             .width(28)
             TableColumn(sourceColumnTitle) { row in
-                Text(row.sourceName).font(.system(.body, design: .monospaced))
+                TextField("NAME", text: nameBinding(for: row))
+                    .font(.system(.body, design: .monospaced))
+                    .textFieldStyle(.plain)
+                    .help("Rename before import")
             }
             TableColumn("Vault name") { row in
                 Text(row.vaultName(prefix: prefix))
                     .font(.system(.body, design: .monospaced))
-                    .foregroundStyle(Tokens.Palette.accent)
+                    .foregroundStyle(prefix.isEmpty ? Tokens.Text.secondary : Tokens.Palette.accent)
+                    .lineLimit(1)
+                    .help("Final name written to the vault")
             }
             TableColumn("Source") { row in
                 Text(row.sourceFile ?? "—")
@@ -37,45 +33,34 @@ struct ImportReviewTable: View {
                     .lineLimit(1)
             }
             TableColumn("Value") { row in
-                valueCell(row)
-            }
-        }
-        .frame(maxHeight: 280)
-    }
-
-    private var plainTable: some View {
-        Table(rows) {
-            TableColumn("") { row in
-                Toggle("", isOn: binding(for: row)).labelsHidden()
-            }
-            .width(28)
-            TableColumn(sourceColumnTitle) { row in
-                Text(row.sourceName).font(.system(.body, design: .monospaced))
-            }
-            TableColumn("Source") { row in
-                Text(row.sourceFile ?? "—")
+                Text(showValues ? row.value : SecretNaming.maskedValue(row.value))
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(Tokens.Text.tertiary)
+                    .foregroundStyle(Tokens.Text.secondary)
                     .lineLimit(1)
             }
-            TableColumn("Value") { row in
-                valueCell(row)
-            }
         }
         .frame(maxHeight: 280)
     }
 
-    private func valueCell(_ row: ImportRowState) -> some View {
-        Text(showValues ? row.value : SecretNaming.maskedValue(row.value))
-            .font(.system(.caption, design: .monospaced))
-            .foregroundStyle(Tokens.Text.secondary)
-            .lineLimit(1)
+    private func enabledBinding(for row: ImportRowState) -> Binding<Bool> {
+        binding(for: row, keyPath: \.enabled, fallback: row.enabled)
     }
 
-    private func binding(for row: ImportRowState) -> Binding<Bool> {
+    private func nameBinding(for row: ImportRowState) -> Binding<String> {
+        binding(for: row, keyPath: \.name, fallback: row.name)
+    }
+
+    private func binding<T>(
+        for row: ImportRowState,
+        keyPath: WritableKeyPath<ImportRowState, T>,
+        fallback: T
+    ) -> Binding<T> {
         guard let idx = rows.firstIndex(where: { $0.id == row.id }) else {
-            return .constant(row.enabled)
+            return .constant(fallback)
         }
-        return $rows[idx].enabled
+        return Binding(
+            get: { rows[idx][keyPath: keyPath] },
+            set: { rows[idx][keyPath: keyPath] = $0 }
+        )
     }
 }

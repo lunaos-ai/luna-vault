@@ -29,7 +29,7 @@ Vibe Vault is a native macOS menu-bar app + CLI:
 
 Local-first: no account, no telemetry.
 
-Download: https://lunaos.ai/download/vibevault
+Download: https://vibevault.lunaos.ai/download
 brew tap luna-os/tap && brew install vibevault
 
 Wire Cursor in one shot:
@@ -45,7 +45,7 @@ Curious what you think of the MCP-allowed gate vs always-on agent env injectors.
 1. Stop pasting secrets into Cursor chat.
 2. Vibe Vault: Keychain + Touch ID + per-agent audit for MCP (Cursor, Claude, Windsurf).
 3. `vibevault cursor prepare` → rules, skill, MCP, .env pre-commit guard.
-4. DMG / brew → https://lunaos.ai/download/vibevault
+4. DMG / brew -> https://vibevault.lunaos.ai/download
 5. Open source CLI (MIT). macOS 14+. Local-first.
 
 ---
@@ -58,7 +58,7 @@ Built a local Keychain secret manager aimed at AI coding workflows.
 Problem: .env in git + paste into agents.
 Fix: MCP-opt-in secrets, audited reads, `vibevault cursor prepare`.
 
-https://lunaos.ai/download/vibevault
+https://vibevault.lunaos.ai/download
 ```
 
 ---

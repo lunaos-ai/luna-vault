@@ -1,6 +1,6 @@
 import Foundation
 
-/// Composes KeychainStore + AuditDB + AgentDetector + BiometricGate.
+/// Composes encrypted vault (or Keychain) + AuditDB + AgentDetector + BiometricGate.
 /// Every secret read goes through this façade so audit cannot be bypassed.
 public final class VaultService: @unchecked Sendable {
     public let store: KeychainStoring
@@ -8,6 +8,8 @@ public final class VaultService: @unchecked Sendable {
     public let detector: AgentDetecting
     public let biometric: BiometricGating
     public let sessionId: String
+    private let cacheQueue = DispatchQueue(label: "dev.vibevault.readcache")
+    private var readCache: [String: Secret] = [:]
 
     public init(
         store: KeychainStoring,
@@ -25,44 +27,56 @@ public final class VaultService: @unchecked Sendable {
 
     public static func live() throws -> VaultService {
         VaultService(
-            store: KeychainStore(),
+            store: MigratingVaultStore(),
             audit: try AuditDB(),
             detector: AgentDetector(),
             biometric: BiometricGate()
         )
     }
 
+    public func clearReadCache() {
+        cacheQueue.sync { readCache.removeAll() }
+    }
+
+    private func invalidateCache(name: String) {
+        _ = cacheQueue.sync { readCache.removeValue(forKey: name) }
+    }
+
+    @discardableResult
+    public func migrateLegacyKeychain() -> (ok: Int, failed: [String]) {
+        guard let migrating = store as? MigratingVaultStore else { return (0, []) }
+        let result = migrating.migrateAllFromKeychain()
+        clearReadCache()
+        return result
+    }
+
+    public func pendingLegacyKeychainCount() -> Int {
+        (store as? MigratingVaultStore)?.pendingLegacyCount() ?? 0
+    }
+
     public func add(
-        name: String,
-        value: String,
-        notes: String? = nil,
-        expiresAt: Date? = nil,
-        rotateEveryDays: Int? = nil,
-        mcpAllowed: Bool = false
+        name: String, value: String, notes: String? = nil,
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false
     ) throws {
         let secret = Secret(
             name: name, value: value, notes: notes,
-            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
-            mcpAllowed: mcpAllowed
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, mcpAllowed: mcpAllowed
         )
         try store.add(secret)
+        invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
 
     public func update(
-        name: String,
-        value: String,
-        notes: String? = nil,
-        expiresAt: Date? = nil,
-        rotateEveryDays: Int? = nil,
-        mcpAllowed: Bool = false
+        name: String, value: String, notes: String? = nil,
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false
     ) throws {
         let secret = Secret(
             name: name, value: value, notes: notes,
-            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
-            mcpAllowed: mcpAllowed
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, mcpAllowed: mcpAllowed
         )
         try store.update(secret)
+        invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
 
@@ -75,21 +89,19 @@ public final class VaultService: @unchecked Sendable {
             mcpAllowed: allowed
         )
         try store.update(updated)
+        invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
 
     public func rotate(name: String, newValue: String?) async throws {
         let existing = try await read(name: name, reason: "Rotate \(name)")
         let updated = Secret(
-            name: existing.name,
-            value: newValue ?? existing.value,
-            updatedAt: Date(),
-            notes: existing.notes,
-            expiresAt: existing.expiresAt,
-            rotateEveryDays: existing.rotateEveryDays,
-            lastRotatedAt: Date()
+            name: existing.name, value: newValue ?? existing.value, updatedAt: Date(),
+            notes: existing.notes, expiresAt: existing.expiresAt,
+            rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: Date()
         )
         try store.update(updated)
+        invalidateCache(name: name)
         try recordEvent(name: name, action: .rotate, projectPath: currentProjectPath())
     }
 
@@ -120,6 +132,7 @@ public final class VaultService: @unchecked Sendable {
                     if overwrite {
                         try store.update(Secret(name: item.name, value: item.value, notes: item.notes))
                         updated.append(item.name)
+                        invalidateCache(name: item.name)
                     } else {
                         skipped.append(item.name)
                         continue
@@ -127,6 +140,7 @@ public final class VaultService: @unchecked Sendable {
                 } else {
                     try store.add(Secret(name: item.name, value: item.value, notes: item.notes))
                     imported.append(item.name)
+                    invalidateCache(name: item.name)
                 }
                 try recordEvent(name: item.name, action: .importEvent, projectPath: currentProjectPath())
             } catch {
@@ -138,31 +152,40 @@ public final class VaultService: @unchecked Sendable {
 
     public func delete(name: String) throws {
         try store.delete(name: name)
+        invalidateCache(name: name)
         try recordEvent(name: name, action: .delete, projectPath: currentProjectPath())
     }
 
     public func read(name: String, reason: String = "Read secret") async throws -> Secret {
         try await biometric.authenticate(reason: reason)
+        if let cached = cacheQueue.sync(execute: { readCache[name] }) {
+            do {
+                try recordEvent(name: name, action: .read, projectPath: currentProjectPath())
+                return cached
+            } catch {
+                invalidateCache(name: name)
+                throw error
+            }
+        }
         let secret = try store.read(name: name)
-        try recordEvent(name: name, action: .read, projectPath: currentProjectPath())
-        return secret
+        do {
+            try recordEvent(name: name, action: .read, projectPath: currentProjectPath())
+            cacheQueue.sync { readCache[name] = secret }
+            return secret
+        } catch {
+            invalidateCache(name: name)
+            throw error
+        }
     }
 
-    public func list() throws -> [Secret] {
-        try store.list()
-    }
+    public func list() throws -> [Secret] { try store.list() }
 
     public func recordEvent(name: String, action: AuditEvent.Action, projectPath: String?) throws {
         let agent = detector.detect()
-        let event = AuditEvent(
-            secretName: name,
-            agent: agent.name,
-            agentConfidence: agent.confidence,
-            sessionId: sessionId,
-            projectPath: projectPath,
-            action: action
-        )
-        try audit.record(event)
+        try audit.record(AuditEvent(
+            secretName: name, agent: agent.name, agentConfidence: agent.confidence,
+            sessionId: sessionId, projectPath: projectPath, action: action
+        ))
     }
 
     public func currentProjectPath() -> String? {

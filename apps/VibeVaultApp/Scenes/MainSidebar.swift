@@ -78,7 +78,7 @@ struct MainSidebar: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text("Vibe Vault").font(.system(size: 13, weight: .semibold)).tracking(-0.2)
-                Text("Local Keychain")
+                Text("Local vault")
                     .font(.system(size: 10))
                     .foregroundStyle(Tokens.Text.tertiary)
             }

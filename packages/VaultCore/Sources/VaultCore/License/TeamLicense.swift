@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// Team license payload — signed offline, verified against `LicensePublicKey`.
@@ -34,7 +33,15 @@ public struct TeamLicense: Codable, Equatable, Sendable {
         return expiresAt < Date()
     }
 
-    public var isTeam: Bool { tier == "team" && !isExpired }
+    /// Paid offline tiers issued by Lemon Squeezy / `vibevault license issue`.
+    public static let paidTiers: Set<String> = ["team", "studio", "company"]
+
+    public var isLicensed: Bool {
+        seats > 0 && !isExpired && Self.paidTiers.contains(tier.lowercased())
+    }
+
+    /// Alias for `isLicensed` (Team badge / Settings).
+    public var isTeam: Bool { isLicensed }
 }
 
 public enum LicenseError: Error, CustomStringConvertible, Equatable {
@@ -43,6 +50,7 @@ public enum LicenseError: Error, CustomStringConvertible, Equatable {
     case expired
     case decodeFailed
     case missingPrivateKey
+    case notLicensed
 
     public var description: String {
         switch self {
@@ -51,6 +59,7 @@ public enum LicenseError: Error, CustomStringConvertible, Equatable {
         case .expired: return "license expired"
         case .decodeFailed: return "could not decode license payload"
         case .missingPrivateKey: return "missing signing key (VIBEVAULT_LICENSE_PRIVATE_KEY)"
+        case .notLicensed: return "Team license required"
         }
     }
 }

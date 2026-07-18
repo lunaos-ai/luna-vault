@@ -32,12 +32,12 @@ enum MCPTools {
         ),
         MCPToolDef(
             name: "set_mcp_allowed",
-            description: "Allow or revoke MCP access for a vault secret.",
+            description: "Revoke MCP access for a vault secret. Enabling AI access must be done in the Vibe Vault app.",
             inputSchema: [
                 "type": "object",
                 "properties": [
                     "name": ["type": "string"],
-                    "allowed": ["type": "boolean"]
+                    "allowed": ["type": "boolean", "description": "Must be false (revoke only)."]
                 ],
                 "required": ["name", "allowed"]
             ]
@@ -100,7 +100,7 @@ enum MCPTools {
             .filter(\.mcpAllowed)
             .sorted { $0.name < $1.name }
         if allowed.isEmpty {
-            return textResult("(no MCP-allowed secrets — enable in Vibe Vault or use set_mcp_allowed)")
+            return textResult("(no MCP-allowed secrets — enable in the Vibe Vault app)")
         }
         let lines = allowed.map { secret -> String in
             var bits = [secret.name]
@@ -118,7 +118,7 @@ enum MCPTools {
         }
         if !entry.mcpAllowed {
             return errorResult(
-                "secret '\(name)' is not MCP-accessible. Use set_mcp_allowed or toggle in Vibe Vault."
+                "secret '\(name)' is not MCP-accessible. Enable AI access in the Vibe Vault app."
             )
         }
         let secret = try await context.service.read(
@@ -130,8 +130,13 @@ enum MCPTools {
     static func setMCPAllowed(args: [String: Any], context: MCPContext) async throws -> [String: Any] {
         guard let name = args["name"] as? String else { return errorResult("missing 'name'") }
         guard let allowed = args["allowed"] as? Bool else { return errorResult("missing 'allowed'") }
-        try await context.service.setMCPAllowed(name: name, allowed: allowed)
-        return textResult(allowed ? "MCP access enabled for \(name)" : "MCP access revoked for \(name)")
+        guard allowed == false else {
+            return errorResult(
+                "Enabling AI access must be done in the Vibe Vault app. Agents may only revoke."
+            )
+        }
+        try await context.service.setMCPAllowed(name: name, allowed: false)
+        return textResult("MCP access revoked for \(name)")
     }
 
     static func scanProject(args: [String: Any], context: MCPContext) throws -> [String: Any] {
@@ -154,10 +159,17 @@ enum MCPTools {
     }
 
     static func getAuditLog(args: [String: Any], context: MCPContext) throws -> [String: Any] {
+        let allowedNames = Set(try context.service.list().filter(\.mcpAllowed).map(\.name))
         var filter = AuditFilter(limit: (args["limit"] as? Int) ?? 50)
         if let a = args["agent"] as? String, !a.isEmpty { filter.agent = a }
-        if let s = args["secret"] as? String, !s.isEmpty { filter.secretName = s }
+        if let s = args["secret"] as? String, !s.isEmpty {
+            guard allowedNames.contains(s) else {
+                return errorResult("secret '\(s)' is not MCP-accessible")
+            }
+            filter.secretName = s
+        }
         let events = try context.service.audit.query(filter)
+            .filter { allowedNames.contains($0.secretName) }
         let lines = events.map { e in
             "\(e.timestamp.formatted(date: .abbreviated, time: .shortened)) · \(e.action.rawValue) · \(e.secretName) · \(e.agent) (\(e.agentConfidence.rawValue))"
         }
@@ -168,14 +180,14 @@ enum MCPTools {
         guard let path = args["path"] as? String else { return errorResult("missing 'path'") }
         guard let task = args["task"] as? String, !task.isEmpty else { return errorResult("missing 'task'") }
         let url = URL(fileURLWithPath: path)
-        let known = Set(try context.service.list().map(\.name))
-        let scan = try ProjectScanner().scan(projectURL: url, knownSecrets: known)
-        let suggestion = SecretTaskSuggester.suggest(task: task, scan: scan, vaultNames: known)
+        let allowed = Set(try context.service.list().filter(\.mcpAllowed).map(\.name))
+        let scan = try ProjectScanner().scan(projectURL: url, knownSecrets: allowed)
+        let suggestion = SecretTaskSuggester.suggest(task: task, scan: scan, vaultNames: allowed)
         let lines = [
             "likely: \(suggestion.likely.joined(separator: ", "))",
-            "in vault: \(suggestion.presentInVault.joined(separator: ", "))",
+            "in vault (MCP-allowed): \(suggestion.presentInVault.joined(separator: ", "))",
             "missing: \(suggestion.missingFromVault.joined(separator: ", "))",
-            "(names only — never paste values into chat)"
+            "(names only; enable AI access in Vibe Vault for other secrets)"
         ]
         return textResult(lines.joined(separator: "\n"))
     }

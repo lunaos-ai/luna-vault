@@ -34,7 +34,7 @@ Local-first secret manager on macOS Keychain. Every read is audited per agent.
 | `scan_project` | Project root; reports git leaks too |
 | `list_secrets` | MCP-allowed names only |
 | `read_secret` | Value if MCP-allowed |
-| `set_mcp_allowed` | Opt-in / revoke |
+| `set_mcp_allowed` | Revoke only (`allowed: false`). Enable in the app. |
 | `reconcile_provider` | Compare vault ↔ Cloudflare/Vercel/PushCI |
 | `push_secrets` | Push MCP-allowed secrets to a provider |
 | `get_audit_log` | Optional `agent`, `secret`, `limit` |

@@ -60,6 +60,7 @@ public enum SecretError: Error, Equatable {
     case keychainStatus(Int32)
     case biometricDenied
     case invalidName(String)
+    case vaultIO(String)
 }
 
 extension SecretError: CustomStringConvertible {
@@ -70,6 +71,7 @@ extension SecretError: CustomStringConvertible {
         case .keychainStatus(let s): return "keychain error: OSStatus \(s)"
         case .biometricDenied: return "biometric authentication denied"
         case .invalidName(let n): return "invalid secret name: \(n)"
+        case .vaultIO(let m): return "vault error: \(m)"
         }
     }
 }

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 extension AppEnvironment {
@@ -8,6 +9,13 @@ extension AppEnvironment {
         DispatchQueue.main.async {
             self.toastMessage = message
         }
+    }
+
+    /// Copies the secret *name* only (no biometric / value read).
+    func copySecretName(_ name: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(name, forType: .string)
+        showToast("Copied name \(name)")
     }
 
     func bindUISoundsFromSettings() {

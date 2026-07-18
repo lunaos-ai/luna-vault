@@ -23,7 +23,7 @@ On `order_created` (or `subscription_created`):
 
 1. Worker verifies Lemon Squeezy signature (`X-Signature` HMAC).
 2. Signs a `VV1` key with `VIBEVAULT_LICENSE_PRIVATE_KEY`.
-3. Emails the key if `RESEND_API_KEY` is set (else check `wrangler tail`).
+3. Emails the key if `RESEND_API_KEY` is set. Without Resend, the webhook response includes `licenseKey` for manual delivery/testing.
 
 Manual issue (local):
 

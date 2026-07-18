@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish VibeVault.dmg + landing page to lunaos.ai via Cloudflare Pages.
+# Publish VibeVault.dmg + landing page for vibevault.lunaos.ai.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -63,6 +63,5 @@ echo "==> Deploying to Cloudflare Pages ($PROJECT)..."
 
 echo ""
 echo "==> Live:"
-echo "    https://lunaos.ai/vibevault"
-echo "    https://lunaos.ai/download/vibevault"
-echo "    https://lunaos.ai/downloads/VibeVault.dmg"
+echo "    https://vibevault.lunaos.ai/"
+echo "    https://vibevault.lunaos.ai/download"
