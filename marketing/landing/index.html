@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vibe Vault — Local secrets for Cursor &amp; Claude</title>
+  <meta name="description" content="Native macOS secret manager for AI coding. Keychain + Touch ID, per-agent audit, MCP sync. Solo free. Team offline licenses from $19/mo." />
+  <meta property="og:title" content="Vibe Vault" />
+  <meta property="og:description" content="Stop pasting secrets into chat. Local Keychain + agent audit for Cursor, Claude Code, Windsurf." />
+  <meta property="og:url" content="https://lunaos.ai/vibevault/" />
+  <meta property="og:image" content="https://lunaos.ai/vibevault/assets/vibe-vault-open-graph.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1E1E1E" media="(prefers-color-scheme: dark)" />
+  <link rel="canonical" href="https://lunaos.ai/vibevault" />
+  <link rel="icon" href="assets/vibe-vaulta-app-icon.png" type="image/png" />
+  <style>
+    /* Apple HIG–aligned tokens (Locksmith's Bench / DESIGN.md) */
+    :root {
+      --bg: #F5F5F7;
+      --elevated: #FFFFFF;
+      --fg: #1D1D1F;
+      --secondary: #6E6E73;
+      --tertiary: #8E8E93;
+      --sep: #D1D1D6;
+      --accent: #4F46E5;
+      --accent-deep: #3730A3;
+      --success: #34C759;
+      --warning: #FF9500;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 16px;
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1E1E1E;
+        --elevated: #2C2C2E;
+        --fg: #F5F5F7;
+        --secondary: #98989D;
+        --tertiary: #8E8E93;
+        --sep: #38383A;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.47;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      color: var(--fg);
+      background: color-mix(in srgb, var(--sep) 35%, transparent);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+
+    .shell { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    /* Nav — content-first, minimal chrome */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 52px;
+      padding: 12px 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      min-height: 44px;
+    }
+    .brand img {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--r-sm);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-links a {
+      font-size: 15px;
+      color: var(--secondary);
+      padding: 10px 12px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: var(--r-sm);
+    }
+    .nav-links a:hover { color: var(--fg); }
+    .nav-links .dl {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: var(--r-sm);
+    }
+    .nav-links .dl:hover {
+      background: var(--accent-deep);
+      color: #fff;
+    }
+
+    /* Hero — one composition: brand, headline, lede, CTA, product shot */
+    .hero {
+      padding: 48px 0 64px;
+      display: grid;
+      gap: 40px;
+      align-items: center;
+    }
+    @media (min-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr 1.05fr;
+        padding: 56px 0 80px;
+        gap: 48px;
+      }
+    }
+    .eyebrow {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin: 0 0 12px;
+      letter-spacing: -0.01em;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 48px);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.08;
+      margin: 0 0 14px;
+    }
+    .lede {
+      font-size: 19px;
+      line-height: 1.4;
+      color: var(--secondary);
+      margin: 0 0 28px;
+      max-width: 28em;
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--r-sm);
+      border: none;
+      cursor: pointer;
+      transition: background 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-deep); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--sep);
+    }
+    .btn-ghost:hover { background: color-mix(in srgb, var(--sep) 40%, transparent); }
+    .btn[aria-disabled="true"] {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .brew {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--secondary);
+      background: var(--elevated);
+      border: 1px solid var(--sep);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      overflow-x: auto;
+      margin: 0;
+    }
+    .hero-shot {
+      border-radius: var(--r-lg);
+      border: 1px solid var(--sep);
+      overflow: hidden;
+      background: var(--elevated);
+    }
+    .hero-shot img { width: 100%; }
+
+    section { padding: 56px 0; border-top: 1px solid var(--sep); }
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin: 0 0 8px;
+    }
+    h2 {
+      font-size: clamp(24px, 3.5vw, 28px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin: 0 0 8px;
+    }
+    .sub {
+      margin: 0 0 28px;
+      color: var(--secondary);
+      font-size: 17px;
+      max-width: 38em;
+    }
+
+    .pillars {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--sep);
+    }
+    @media (min-width: 720px) {
+      .pillars { grid-template-columns: repeat(3, 1fr); }
+    }
+    .pillar {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--sep);
+    }
+    @media (min-width: 720px) {
+      .pillar {
+        padding: 24px 20px 24px 0;
+        border-bottom: none;
+        border-right: 1px solid var(--sep);
+      }
+      .pillar:last-child { border-right: none; padding-right: 0; }
+      .pillar:first-child { padding-left: 0; }
+    }
+    .pillar strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .pillar p {
+      margin: 0;
+      font-size: 15px;
+      color: var(--secondary);
+      line-height: 1.45;
+    }
+
+    .config-warn {
+      display: none;
+      margin: 0 0 20px;
+      padding: 12px 14px;
+      border-radius: var(--r-sm);
+      border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--sep));
+      background: color-mix(in srgb, var(--warning) 12%, var(--elevated));
+      color: var(--fg);
+      font-size: 13px;
+    }
+    .config-warn.show { display: block; }
+
+    .pricing {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 900px) {
+      .pricing { grid-template-columns: repeat(3, 1fr); }
+    }
+    .tier {
+      display: flex;
+      flex-direction: column;
+      background: var(--elevated);
+      border: 1px solid var(--sep);
+      border-radius: var(--r-md);
+      overflow: hidden;
+    }
+    .tier.popular { border-color: color-mix(in srgb, var(--accent) 40%, var(--sep)); }
+    .tier-art img {
+      width: 100%;
+      aspect-ratio: 2 / 1;
+      object-fit: cover;
+    }
+    .tier-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+    .tier-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tier-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pop {
+      font-size: 11px;
+      font-weight: 600;
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .price {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .price span {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--secondary);
+    }
+    .limit { font-size: 13px; color: var(--secondary); }
+    .desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--tertiary);
+      line-height: 1.45;
+    }
+    .features {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      flex: 1;
+    }
+    .features li {
+      font-size: 13px;
+      color: var(--secondary);
+      padding: 6px 0;
+      border-top: 1px solid var(--sep);
+    }
+    .features li:first-child { border-top: none; }
+    .features li::before {
+      content: "✓ ";
+      color: var(--success);
+      font-weight: 600;
+    }
+    .tier .btn { width: 100%; margin-top: 4px; }
+
+    .solo {
+      margin-top: 20px;
+      font-size: 15px;
+      color: var(--secondary);
+      padding: 16px;
+      border-radius: var(--r-sm);
+      border: 1px dashed var(--sep);
+      background: var(--elevated);
+    }
+    .solo strong { color: var(--fg); font-weight: 600; }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+    }
+    @media (min-width: 720px) {
+      .steps { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    }
+    .step {
+      padding: 16px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--sep);
+      background: var(--elevated);
+    }
+    .step .n {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 8px;
+    }
+    .step strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .step p {
+      margin: 0;
+      font-size: 15px;
+      color: var(--secondary);
+    }
+
+    .faq { max-width: 640px; display: grid; gap: 8px; }
+    details {
+      border: 1px solid var(--sep);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      background: var(--elevated);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      list-style: none;
+      min-height: 32px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details p {
+      margin: 8px 0 0;
+      font-size: 15px;
+      color: var(--secondary);
+    }
+
+    footer {
+      padding: 32px 0 48px;
+      border-top: 1px solid var(--sep);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--tertiary);
+    }
+    footer a { color: var(--secondary); }
+    footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav aria-label="Primary">
+      <a class="brand" href="/">
+        <img src="assets/vibe-vaulta-app-icon.png" width="28" height="28" alt="" />
+        Vibe Vault
+      </a>
+      <div class="nav-links">
+        <a href="#product">Product</a>
+        <a href="#pricing">Pricing</a>
+        <a class="dl" href="https://lunaos.ai/download/vibevault">Download</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">LunaOS · macOS 14+</p>
+        <h1>Vibe Vault</h1>
+        <p class="lede">
+          Local secrets for Cursor and Claude. Keychain storage, per-agent audit,
+          one-command MCP sync. No cloud account. No paste into chat.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://lunaos.ai/download/vibevault">Start Free</a>
+          <a class="btn btn-ghost" href="#pricing">View Team plans</a>
+        </div>
+        <pre class="brew" tabindex="0">brew tap luna-os/tap &amp;&amp; brew install vibevault</pre>
+      </div>
+      <div class="hero-shot">
+        <img
+          src="assets/vibe-vault-open-graph.png"
+          width="1200"
+          height="630"
+          alt="Vibe Vault audit log: which AI agent read which secret"
+          fetchpriority="high"
+        />
+      </div>
+    </header>
+
+    <section id="product">
+      <p class="section-label">Product</p>
+      <h2>Native macOS secret manager for AI coding</h2>
+      <p class="sub">
+        Secrets live in Keychain with Touch ID. Every read is audited per agent.
+        Sync to Cloudflare, Vercel, and PushCI when you choose. Solo is free forever.
+      </p>
+      <div class="pillars">
+        <div class="pillar">
+          <strong>Keychain-first</strong>
+          <p>Encrypted at rest in your login Keychain. Touch ID gated. No cloud account for Solo.</p>
+        </div>
+        <div class="pillar">
+          <strong>Agent audit</strong>
+          <p>Every access tagged: Cursor, Claude Code, Windsurf. Queryable in the app and CLI.</p>
+        </div>
+        <div class="pillar">
+          <strong>MCP + prepare</strong>
+          <p><code>vibevault cursor prepare</code> wires MCP, skill, rules, and a .env guard.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <p class="section-label">Pricing</p>
+      <h2>Solo free. Team when you need seats.</h2>
+      <p class="sub">Offline VV1 licenses. Activate once. Verification never phones home.</p>
+
+      <div id="config-warn" class="config-warn" role="status">
+        Checkout links need Worker vars: <code>VIBEVAULT_VARIANT_TEAM</code>,
+        <code>VIBEVAULT_VARIANT_STUDIO</code>, <code>VIBEVAULT_VARIANT_COMPANY</code>.
+      </div>
+
+      <div class="pricing">
+        <article class="tier popular">
+          <div class="tier-art">
+            <img src="assets/vibe-vault-team.png" width="800" height="400" alt="Vibe Vault Team, $19 per month, 5 seats" loading="lazy" />
+          </div>
+          <div class="tier-body">
+            <div class="tier-head">
+              <span class="tier-name">Team</span>
+              <span class="pop">Most Popular</span>
+            </div>
+            <div class="price">$19<span>/mo</span></div>
+            <div class="limit">5 seats · offline license</div>
+            <p class="desc">Small AI-coding crews. Solo features plus a 5-seat VV1 key and email support.</p>
+            <ul class="features">
+              <li>Everything in Solo (Keychain, Touch ID, CLI, MCP)</li>
+              <li>5-seat offline Team license (VV1)</li>
+              <li>Per-agent audit · provider sync</li>
+              <li>cursor prepare · git leak guard</li>
+              <li>Team badge · email support (48h)</li>
+            </ul>
+            <a class="btn btn-primary buy" data-tier="team" href="#pricing">Buy Team</a>
+          </div>
+        </article>
+
+        <article class="tier">
+          <div class="tier-art">
+            <img src="assets/vibe-vault-studio.png" width="800" height="400" alt="Vibe Vault Studio, $69 per month, 20 seats" loading="lazy" />
+          </div>
+          <div class="tier-body">
+            <div class="tier-head"><span class="tier-name">Studio</span></div>
+            <div class="price">$69<span>/mo</span></div>
+            <div class="limit">20 seats · offline license</div>
+            <p class="desc">Studios and multi-repo teams. Priority support and early shared-vault access.</p>
+            <ul class="features">
+              <li>Everything in Team</li>
+              <li>20-seat offline Studio license</li>
+              <li>Priority email (next business day)</li>
+              <li>Audit retention guidance</li>
+              <li>Early shared vault / relay</li>
+            </ul>
+            <a class="btn btn-ghost buy" data-tier="studio" href="#pricing">Buy Studio</a>
+          </div>
+        </article>
+
+        <article class="tier">
+          <div class="tier-art">
+            <img src="assets/vibe-vault-company.png" width="800" height="400" alt="Vibe Vault Company, $249 per month, 100 seats" loading="lazy" />
+          </div>
+          <div class="tier-body">
+            <div class="tier-head"><span class="tier-name">Company</span></div>
+            <div class="price">$249<span>/mo</span></div>
+            <div class="limit">100 seats · offline license</div>
+            <p class="desc">Org-wide macOS rollout. SLA, onboarding call, roadmap input. Still local-first.</p>
+            <ul class="features">
+              <li>Everything in Studio</li>
+              <li>100-seat offline Company license</li>
+              <li>SLA email (same business day)</li>
+              <li>1× onboarding call</li>
+              <li>Seat reissuance · invoice checkout</li>
+            </ul>
+            <a class="btn btn-ghost buy" data-tier="company" href="#pricing">Buy Company</a>
+          </div>
+        </article>
+      </div>
+
+      <p class="solo">
+        <strong>Solo stays free</strong> and is not sold on Lemon Squeezy.
+        Buy only when you need multi-seat offline licenses.
+      </p>
+    </section>
+
+    <section id="activate">
+      <p class="section-label">Activate</p>
+      <h2>How licensing works</h2>
+      <p class="sub">Buy, receive a signed <code>VV1.…</code> key, activate offline.</p>
+      <div class="steps">
+        <div class="step">
+          <span class="n">01</span>
+          <strong>Checkout</strong>
+          <p>Pick Team, Studio, or Company on Lemon Squeezy. No Vibe Vault account.</p>
+        </div>
+        <div class="step">
+          <span class="n">02</span>
+          <strong>Get your key</strong>
+          <p>Webhook signs an Ed25519 license and emails it to you.</p>
+        </div>
+        <div class="step">
+          <span class="n">03</span>
+          <strong>Activate</strong>
+          <p><code>vibevault license activate 'VV1.…'</code> or paste in Settings.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <p class="section-label">FAQ</p>
+      <h2>Questions</h2>
+      <div class="faq" style="margin-top: 20px">
+        <details open>
+          <summary>Does Team phone home?</summary>
+          <p>No. The app verifies against an embedded public key. No license server on open.</p>
+        </details>
+        <details>
+          <summary>Solo vs Team?</summary>
+          <p>Solo: Keychain, Touch ID, CLI, MCP, audit, provider sync. Team adds multi-seat offline licenses. Studio and Company add seats and support SLAs.</p>
+        </details>
+        <details>
+          <summary>Webhook URL</summary>
+          <p><code>https://lunaos.ai/vibevaultwebhooks/lemonsqueezy</code></p>
+        </details>
+      </div>
+    </section>
+
+    <footer>
+      <div>© LunaOS · macOS 14+</div>
+      <div>
+        <a href="https://lunaos.ai">lunaos.ai</a> ·
+        <a href="https://github.com/luna-os/luna-vault">GitHub</a> ·
+        <a href="https://lunaos.ai/download/vibevault">Download</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (async function () {
+      try {
+        const cfg = await (await fetch("https://vibevault.lunaos.ai/api/checkout")).json();
+        if (!cfg.configured) document.getElementById("config-warn")?.classList.add("show");
+        document.querySelectorAll("a.buy[data-tier]").forEach((a) => {
+          const url = cfg[a.dataset.tier];
+          if (url) {
+            a.href = url;
+            a.target = "_blank";
+            a.rel = "noopener";
+          } else {
+            a.setAttribute("aria-disabled", "true");
+          }
+        });
+      } catch {
+        document.getElementById("config-warn")?.classList.add("show");
+      }
+    })();
+  </script>
+</body>
+</html>

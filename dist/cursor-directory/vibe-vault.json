@@ -1,0 +1,27 @@
+{
+  "name": "vibe-vault",
+  "displayName": "Vibe Vault",
+  "description": "Local macOS Keychain secrets for Cursor via MCP. Per-agent audit, no paste into chat, optional Cloudflare/Vercel sync.",
+  "homepage": "https://lunaos.ai/vibevault",
+  "download": "https://lunaos.ai/download/vibevault",
+  "repository": "https://github.com/luna-os/luna-vault",
+  "license": "MIT",
+  "categories": ["security", "mcp", "developer-tools", "macos"],
+  "mcp": {
+    "server": "vibe-vault",
+    "install": "vibevault mcp install --client cursor",
+    "tools": [
+      "list_secrets",
+      "read_secret",
+      "scan_project",
+      "suggest_secrets_for_task",
+      "push_secrets",
+      "get_audit_log"
+    ]
+  },
+  "skill": {
+    "install": "vibevault skill install",
+    "path": "~/.cursor/skills/vibevault/SKILL.md"
+  },
+  "oneLiner": "vibevault cursor prepare"
+}

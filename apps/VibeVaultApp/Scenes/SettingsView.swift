@@ -54,6 +54,26 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("UI sounds", isOn: $env.uiSoundsEnabled)
+                Button("Preview success sound") {
+                    Feedback.play(.success, soundsEnabled: true)
+                }
+                .disabled(!env.uiSoundsEnabled)
+                Button("Run UX walkthrough") {
+                    NotificationCenter.default.post(name: .runUXSmokeTour, object: nil)
+                }
+            } header: {
+                Text("Feedback")
+            } footer: {
+                Text("Quiet system clicks on copy, prepare, and sync. Walkthrough visits every sidebar pane with motion and toasts.")
+            }
+
+            TeamLicenseSection()
+            CloudflareSettingsSection()
+            VercelSettingsSection()
+            PushciSettingsSection()
+
+            Section {
                 LabeledContent("Settings storage", value: "Keychain (\(KeychainPrefs.service))")
                 LabeledContent("Audit DB", value: "~/Library/Application Support/vibe-vault/audit.db")
                 Text("Records older than 90 days are auto-purged. Override in CLI: `vibevault purge --days N`.")

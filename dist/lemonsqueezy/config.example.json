@@ -1,0 +1,26 @@
+{
+  "store": "lunaos",
+  "landing_url": "https://vibevault.lunaos.ai/",
+  "webhook_url": "https://vibevault.lunaos.ai/webhooks/lemonsqueezy",
+  "checkout_base": "https://lunaos.lemonsqueezy.com/checkout/buy",
+  "worker": "workers/vibevault",
+  "public_vars": {
+    "VIBEVAULT_STORE_ID": "from LS Settings → Stores",
+    "VIBEVAULT_PRODUCT_ID": "from LS product page",
+    "VIBEVAULT_VARIANT_TEAM": "Team variant id → $19 / 5 seats",
+    "VIBEVAULT_VARIANT_STUDIO": "Studio variant id → $69 / 20 seats",
+    "VIBEVAULT_VARIANT_COMPANY": "Company variant id → $249 / 100 seats"
+  },
+  "secrets": {
+    "VIBEVAULT_WEBHOOK_SECRET": "same signing secret as LS webhook",
+    "VIBEVAULT_LICENSE_PRIVATE_KEY": "base64 Ed25519 from dist/lemonsqueezy/private.b64",
+    "VIBEVAULT_RESEND_API_KEY": "optional — emails VV1 keys"
+  },
+  "webhook_events": ["order_created", "subscription_created", "subscription_updated", "order_refunded"],
+  "license_format": "VV1.<base64url-json>.<base64url-ed25519-sig>",
+  "notes": [
+    "Set public vars in wrangler.jsonc or Cloudflare dashboard (Worker → Settings → Variables).",
+    "Secrets via: npx wrangler secret put VIBEVAULT_WEBHOOK_SECRET",
+    "Landing Buy buttons load https://vibevault.lunaos.ai/api/checkout"
+  ]
+}

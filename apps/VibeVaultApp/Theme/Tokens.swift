@@ -75,6 +75,27 @@ extension View {
             .foregroundStyle(color)
     }
 
+    /// Premium elevated card — material, hairline, generous radius.
+    func luxuryCard(padding: CGFloat = Tokens.Space.lg) -> some View {
+        self
+            .padding(padding)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Tokens.Radius.lg, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Tokens.Radius.lg, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Tokens.Palette.accent.opacity(0.15),
+                                Tokens.Surface.separator.opacity(0.4)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: Tokens.Stroke.hairline
+                    )
+            )
+    }
+
     /// Section header label — small caps, secondary, tracking.
     func sectionLabel() -> some View {
         self

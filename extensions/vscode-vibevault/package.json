@@ -1,0 +1,41 @@
+{
+  "name": "vibevault",
+  "displayName": "Vibe Vault",
+  "description": "Local macOS secrets for AI coding — MCP bridge and audit.",
+  "version": "0.1.0",
+  "publisher": "luna-os",
+  "engines": { "vscode": "^1.99.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibevault.openDocs",
+        "title": "Vibe Vault: Open AI Agents Setup"
+      },
+      {
+        "command": "vibevault.installMCP",
+        "title": "Vibe Vault: Install MCP Config"
+      }
+    ],
+    "configuration": {
+      "title": "Vibe Vault",
+      "properties": {
+        "vibevault.mcpBinary": {
+          "type": "string",
+          "default": "",
+          "description": "Path to vibevault-mcp binary (empty = PATH lookup)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p ."
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.99.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vibe Vault — LemonSqueezy Product Setup</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 8px; }
+    .subtitle { color: #888; margin: 0 0 28px; }
+    .subtitle a { color: #4F46E5; }
+    .instructions {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+      color: #aaa;
+      font-size: 14px;
+    }
+    .instructions ol { margin: 8px 0 0; padding-left: 20px; }
+    .instructions li { margin: 4px 0; }
+    .product {
+      border: 1px solid #222;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .product-header {
+      background: #141414;
+      border-bottom: 1px solid #222;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .product-header h2 { margin: 0; font-size: 20px; }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: color-mix(in srgb, #4F46E5 25%, transparent);
+      color: #A5B4FC;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .variant {
+      padding: 22px;
+      border-top: 1px solid #222;
+    }
+    .variant:first-of-type { border-top: none; }
+    .variant h3 {
+      margin: 0 0 16px;
+      font-size: 15px;
+      color: #ccc;
+      font-weight: 600;
+    }
+    .popular-tag {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      font-weight: 650;
+      color: #0a0a0a;
+      background: #00E5C3;
+      padding: 2px 8px;
+      border-radius: 999px;
+      vertical-align: middle;
+    }
+    .field { margin-bottom: 16px; }
+    .field-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .field-value {
+      position: relative;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      white-space: pre-wrap;
+      font-size: 14px;
+      transition: border-color 0.15s;
+    }
+    .field-value:hover { border-color: #444; }
+    .field-value.copied { border-color: #00E5C3; }
+    .field-value.copied::after,
+    .ai-prompt.copied::after {
+      content: "Copied!";
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 11px;
+      font-weight: 650;
+      color: #00E5C3;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+    .variant-price {
+      color: #00E5C3;
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .hint { font-size: 12px; color: #666; margin-top: 6px; }
+    .features-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px;
+    }
+    .features-list li {
+      padding: 6px 0;
+      font-size: 14px;
+      color: #ccc;
+    }
+    .features-list li::before {
+      content: "✓ ";
+      color: #2ECC7B;
+      font-weight: 700;
+    }
+    .ai-prompt-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #666;
+      margin: 18px 0 6px;
+    }
+    .ai-prompt {
+      position: relative;
+      background: #0d1117;
+      border: 1px solid #1a2332;
+      border-radius: 8px;
+      padding: 14px;
+      cursor: pointer;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      transition: border-color 0.15s;
+    }
+    .ai-prompt:hover { border-color: #30363d; }
+    .ai-prompt.copied { border-color: #00E5C3; }
+    .note {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border: 1px dashed #333;
+      border-radius: 8px;
+      color: #888;
+      font-size: 13px;
+    }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 0.92em; color: #A5B4FC; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Vibe Vault — LemonSqueezy Product Setup</h1>
+    <p class="subtitle">
+      Click any field to copy, then paste into
+      <a href="https://app.lemonsqueezy.com/products/new" target="_blank" rel="noopener">app.lemonsqueezy.com/products/new</a>.
+      Accent: Graphite Indigo <code>#4F46E5</code>. Solo stays free outside the store.
+    </p>
+
+    <div class="instructions">
+      <strong>How to use</strong>
+      <ol>
+        <li>Create the product first (name + description).</li>
+        <li>Add each variant tier (name, price, description).</li>
+        <li>Paste feature bullets into the variant feature list / custom fields.</li>
+        <li>Generate images from the AI prompts (Hero, Icon, OG, Thumbnail, then one card per tier).</li>
+        <li>After checkout variants exist, put the Team (Most Popular) checkout URL into <code>VIBEVAULT_LS_CHECKOUT</code> and landing CTA.</li>
+        <li>Webhook callback: <code>https://vibevault.lunaos.ai/webhooks/lemonsqueezy</code> (Worker in <code>workers/vibevault</code>).</li>
+        <li>Wire webhook to issue licenses (Worker secrets + optional Resend), and email the key.</li>
+      </ol>
+    </div>
+
+    <div class="product">
+      <div class="product-header">
+        <h2>Vibe Vault</h2>
+        <span class="badge">macOS · Local-first</span>
+      </div>
+
+      <!-- PRODUCT SETUP -->
+      <div class="variant">
+        <h3>Product Setup</h3>
+
+        <div class="field">
+          <div class="field-label">Product Name</div>
+          <div class="field-value" onclick="copyThis(this)">Vibe Vault</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Product Description</div>
+          <div class="field-value" onclick="copyThis(this)">Native macOS secret manager for AI coding. Secrets live in Keychain with Touch ID. Every read is audited per agent (Cursor, Claude Code, Windsurf). Sync to Cloudflare, Vercel, and PushCI when you choose. Solo is free forever. Team unlocks multi-seat offline licenses with no phone-home verification.</div>
+        </div>
+
+        <div class="ai-prompt-label">AI Prompt — Hero Image (1270×760)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">Product marketing hero, 1270x760, Apple-quality. Black background #0a0a0f. Layout: left third = visual mark, right two-thirds = typography.
+
+LEFT THIRD: Minimal SF Symbol–style key-in-vault glyph (rounded rectangle vault with a simple key silhouette), graphite indigo glow #4F46E5 around the mark, soft specular highlight, no glassmorphism clutter, no purple neon.
+
+RIGHT TWO-THIRDS: Large white bold headline "Vibe Vault". Gray tagline below: "Local secrets for Cursor &amp; Claude". Three small icon-label pairs in #4F46E5: "Keychain", "Agent audit", "MCP sync". Bottom right: pill CTA "Start Free" in #4F46E5 with white text. Generous Apple-inspired spacing, crisp vector edges, no emojis, no gradient text.</div>
+
+        <div class="ai-prompt-label">AI Prompt — App Icon (1024×1024)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">App icon 1024x1024, black rounded-squircle background (~22% corner radius). Upper half: centered vault+key glyph with soft #4F46E5 indigo glow, SF Symbol simplicity, works at 32px. Thin #4F46E5 horizontal accent line. Lower half: "Vibe Vault" in white bold SF-style sans. No busy detail, no purple, no glass, monochrome glyph with indigo accent only.</div>
+
+        <div class="ai-prompt-label">AI Prompt — Open Graph (1200×630)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">Open Graph share card 1200x630, cinematic premium. Black #0a0a0f with faint 3% opacity grid. Left third: vault+key mark with a soft #4F46E5 light beam fanning right, illuminating faint holographic outlines of a macOS sidebar and audit log rows. Right two-thirds: white bold "Vibe Vault", gray tagline "Stop pasting secrets into chat", feature labels in #4F46E5: "Touch ID · Agent audit · Offline Team license". Clean hierarchy, no clutter, no emoji.</div>
+
+        <div class="ai-prompt-label">AI Prompt — LS Thumbnail (800×400)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">Lemon Squeezy product thumbnail 800x400. Black background. Left third: vault+key icon with #4F46E5 accent glow. Right two-thirds: "Vibe Vault" white bold, tagline "Local-first secrets for AI coding", feature labels "Keychain · Audit · MCP" in #4F46E5. Apple-inspired spacing, crisp, minimal.</div>
+      </div>
+
+      <!-- TIER 1: TEAM -->
+      <div class="variant">
+        <h3>Variant — Team <span class="popular-tag">Most Popular</span></h3>
+
+        <div class="field">
+          <div class="field-label">Variant Name</div>
+          <div class="field-value" onclick="copyThis(this)">Vibe Vault Team</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Price</div>
+          <div class="field-value variant-price" onclick="copyThis(this)">19</div>
+          <div class="hint">USD, Monthly · maps to license seats: 5</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Variant Description</div>
+          <div class="field-value" onclick="copyThis(this)">Team license for small AI-coding crews on macOS. Includes everything in Solo plus a 5-seat offline VV1 license key, Team badge in the app, and email support. Activate once with vibevault license activate. No account required. No phone-home on verification.</div>
+        </div>
+
+        <ul class="features-list">
+          <li>Everything in Solo (Keychain, Touch ID, CLI, MCP)</li>
+          <li>5-seat offline Team license (VV1)</li>
+          <li>Per-agent audit for Cursor, Claude Code, Windsurf</li>
+          <li>Provider sync: Cloudflare, Vercel, PushCI</li>
+          <li>vibevault cursor prepare (rules, skill, guard)</li>
+          <li>Git leak scan + pre-commit guard</li>
+          <li>Team badge in app + CLI license status</li>
+          <li>Email support (48h business response)</li>
+        </ul>
+
+        <div class="ai-prompt-label">AI Prompt — Variant Card (800×400)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">Pricing card image 800x400, black #0a0a0f. Left third: single vault+key icon with soft #4F46E5 glow (personal/small-team scale). Right two-thirds: small accent label "TEAM" in #4F46E5 plus teal "Most Popular" badge. Large white bold "$19/mo". Gray primary limit "5 seats · offline license". Dimmer gray feature line: "Keychain · Agent audit · MCP · No phone-home". Clean Apple spacing, no clutter.</div>
+      </div>
+
+      <!-- TIER 2: STUDIO -->
+      <div class="variant">
+        <h3>Variant — Studio</h3>
+
+        <div class="field">
+          <div class="field-label">Variant Name</div>
+          <div class="field-value" onclick="copyThis(this)">Vibe Vault Studio</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Price</div>
+          <div class="field-value variant-price" onclick="copyThis(this)">69</div>
+          <div class="hint">USD, Monthly · maps to license seats: 20 (~3.6× Team)</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Variant Description</div>
+          <div class="field-value" onclick="copyThis(this)">For product studios and multi-repo AI teams. 20-seat offline license, longer audit retention guidance, priority email, and early access to shared-vault / relay features when they ship. Same local-first model: activate offline, never phone home to verify.</div>
+        </div>
+
+        <ul class="features-list">
+          <li>Everything in Team</li>
+          <li>20-seat offline Studio license</li>
+          <li>Priority email support (next business day)</li>
+          <li>Audit retention guidance for longer reviews</li>
+          <li>Early access to shared vault / relay (when available)</li>
+          <li>Named contacts for seat reassignment help</li>
+          <li>Checkout + license issue via Lemon Squeezy webhook</li>
+          <li>Same Keychain-local secret storage (no cloud vault)</li>
+        </ul>
+
+        <div class="ai-prompt-label">AI Prompt — Variant Card (800×400)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">Pricing card image 800x400, black #0a0a0f. Left third: vault+key icon with a thin orbital ring in #4F46E5 (pro scale), soft indigo glow. Right two-thirds: small accent label "STUDIO". Large white bold "$69/mo". Gray primary limit "20 seats · offline license". Dimmer gray: "Priority support · Early shared vault · Local-first". Clean, premium, no purple neon.</div>
+      </div>
+
+      <!-- TIER 3: COMPANY -->
+      <div class="variant">
+        <h3>Variant — Company</h3>
+
+        <div class="field">
+          <div class="field-label">Variant Name</div>
+          <div class="field-value" onclick="copyThis(this)">Vibe Vault Company</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Price</div>
+          <div class="field-value variant-price" onclick="copyThis(this)">249</div>
+          <div class="hint">USD, Monthly · maps to license seats: 100 (~3.6× Studio)</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Variant Description</div>
+          <div class="field-value" onclick="copyThis(this)">For companies standardizing AI-coding secret hygiene on macOS. 100-seat offline license, dedicated onboarding call, SLA-backed email, and roadmap input for team relay features. Still local-first: secrets stay in each Mac Keychain; the license unlocks seats, not a cloud account.</div>
+        </div>
+
+        <ul class="features-list">
+          <li>Everything in Studio</li>
+          <li>100-seat offline Company license</li>
+          <li>SLA email support (same business day)</li>
+          <li>1× onboarding call (license + Cursor prepare rollout)</li>
+          <li>Seat reissuance help on device turnover</li>
+          <li>Roadmap input for shared vault / org policies</li>
+          <li>Invoice-friendly Lemon Squeezy checkout</li>
+          <li>No telemetry requirement; offline verify forever</li>
+        </ul>
+
+        <div class="ai-prompt-label">AI Prompt — Variant Card (800×400)</div>
+        <div class="ai-prompt" onclick="copyThis(this)">Pricing card image 800x400, black #0a0a0f. Left third: three vault+key marks arranged in a triangle with shared #4F46E5 glow (enterprise/team scale). Right two-thirds: small accent label "COMPANY". Large white bold "$249/mo". Gray primary limit "100 seats · offline license". Dimmer gray: "SLA support · Onboarding · Local-first". Crisp, calm, Apple-quality, no clutter.</div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Solo is free</strong> (not a Lemon Squeezy product). Sell only Team / Studio / Company.
+      After creating variants, wire seats into <code>issue-license.sh --seats N</code>
+      (Team=5, Studio=20, Company=100). Point the landing "Buy Team" CTA at the Team variant checkout URL.
+      See <code>dist/lemonsqueezy/WEBHOOK.md</code>.
+    </div>
+  </div>
+
+  <script>
+    function copyThis(el) {
+      navigator.clipboard.writeText(el.innerText).then(() => {
+        el.classList.add('copied');
+        setTimeout(() => el.classList.remove('copied'), 1500);
+      });
+    }
+  </script>
+</body>
+</html>

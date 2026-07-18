@@ -2,6 +2,10 @@
 
 Native macOS secret manager for AI coding workflows. Lives in your menu bar.
 
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)](https://lunaos.ai/vibevault)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1.0-indigo)](CHANGELOG.md)
+
 ```bash
 # instead of this:
 export CF_API_TOKEN=$(op read "op://Personal/Cloudflare/api token")
@@ -11,83 +15,109 @@ npm run dev
 vibevault run -- npm run dev
 ```
 
-Secrets live in macOS Keychain. Every read is audited per AI agent (Claude Code, Cursor, Windsurf). One command syncs to Cloudflare, Vercel, GitHub Actions, AWS.
+Secrets live in macOS Keychain. Every read is audited per AI agent (Claude Code, Cursor, Windsurf). One command syncs to Cloudflare, Vercel, PushCI.
 
-## Status
+## Install
 
-v0.1 — in active development. macOS 14 Sonoma minimum. Apple Silicon + Intel.
+**App (menu bar)**
+
+- https://lunaos.ai/download/vibevault  
+- Pitch page: https://lunaos.ai/vibevault
+
+**CLI**
+
+```bash
+brew tap luna-os/tap && brew install vibevault
+# or from this repo: brew install --formula ./dist/homebrew/vibevault.rb
+# or: bash scripts/install.sh
+```
+
+**Wire Cursor in one shot**
+
+```bash
+vibevault cursor prepare
+```
 
 ## Quick start
 
 ```bash
-# install (when released)
-brew install luna-os/tap/vibevault
-
-# add a secret
 vibevault add CF_API_TOKEN
-
-# scan a project for required secrets
 cd ~/my-cloudflare-worker
 vibevault scan
-
-# run with injected env
 vibevault run -- npm run dev
-
-# push to Cloudflare
-vibevault push --to cloudflare --project my-worker
+vibevault push --to cloudflare --scope account_id=… --scope script_name=…
 ```
 
 ## Why
 
-Vibe-coding workflows leak secrets through `.env` files, plain-text rc files, and copy-paste. Existing tools (1Password CLI, doppler, infisical) cover storage but don't know **which AI agent** invoked them, can't **auto-detect** what a repo needs, and force cloud accounts for solo devs.
+Vibe-coding workflows leak secrets through `.env` files and copy-paste into AI chats. 1Password / Doppler store secrets but don't know **which agent** read them, don't scan repos, and often need a cloud account.
 
 ## Differentiators
 
-1. **AI-agent audit log** — `Claude Code read CF_API_TOKEN at 14:32 in repo my-worker.` 1Password can't do this.
-2. **Auto-detect** — scans `wrangler.toml`, `vercel.json`, `.env.example`, `package.json`, `next.config.js` and tells you what's missing.
-3. **Local-first** — no account, no telemetry, no cloud. Pure Keychain.
-4. **One-command sync** — `vibevault push --to cloudflare` mirrors secrets to provider APIs.
+1. **AI-agent audit log** — `cursor read CF_API_TOKEN at 14:32 in repo my-worker`
+2. **Auto-detect** — `wrangler.toml`, `vercel.json`, `.env*`, `package.json`
+3. **Local-first** — Keychain only; sync is opt-in
+4. **MCP + Cursor rules** — `vibevault cursor prepare`
+5. **Team license** — Lemon Squeezy checkout + offline `VV1` key (`vibevault license`)
 
 ## Architecture
 
 ```
 vibe-vault/
 ├── apps/VibeVaultApp/        # SwiftUI menu bar + main window
-├── packages/VaultCore/       # shared framework (Keychain, Audit, Providers, Scanner)
-├── cli/vibevault/            # Swift CLI (links VaultCore)
-└── plugins/                  # v0.3 third-party provider bundles
+├── packages/VaultCore/       # Keychain, Audit, Providers, Scanner, License
+├── cli/vibevault/            # Swift CLI
+├── cli/vibevault-mcp/        # MCP server
+├── skills/vibevault/         # Agent skill
+├── marketing/landing/        # GTM pitch page
+├── docs/launch/              # Show HN / social pack
+├── dist/lemonsqueezy/        # Checkout config + webhook notes
+└── dist/homebrew/            # Homebrew formula
 ```
 
-See `CLAUDE.md` for engineering rules. See `/Users/shaharsolomon/.claude/plans/read-a-keychain-toasty-shannon.md` for the full plan.
+```bash
+vibevault mcp install --client all
+vibevault skill install
+vibevault cursor prepare
+vibevault cursor shadow
+vibevault scan --git-only
+vibevault guard install
+vibevault license status
+```
+
+Launch copy: `docs/launch/LAUNCH_PACK.md`  
+GTM plan: `.luna/vibe-vault/gtm/plan.md`  
+Team licensing: `dist/lemonsqueezy/WEBHOOK.md`
 
 ## Build
 
-### CLI only
+### CLI
 
 ```bash
 swift build -c release
 .build/release/vibevault --help
 ```
 
-### App (quick — SwiftPM-bundled .app)
+### App
 
 ```bash
-bash scripts/bundle-app.sh debug          # or `release`
+bash scripts/bundle-app.sh debug
 open build/VibeVault.app
 ```
 
-Ad-hoc signed, no notarization, runs locally. MenuBarExtra works.
-Touch ID prompt will request Keychain access on first read.
-
-### App (proper — Xcode project for shipping)
+### Release DMG + website
 
 ```bash
-brew install xcodegen
-xcodegen generate
-open VibeVault.xcodeproj
-# build / archive / notarize from Xcode
+bash scripts/release.sh
+NOTARIZE=1 NOTARIZE_DMG=1 bash scripts/release.sh   # needs Apple creds
+bash scripts/publish-to-website.sh
+bash scripts/gtm-check.sh
 ```
 
 ## License
 
-TBD — likely MIT for CLI + VaultCore, proprietary for App.
+MIT for CLI + VaultCore + MCP (`LICENSE`). App binary branding may remain LunaOS proprietary — see LICENSE scope notes.
+
+## Status
+
+**v0.1.0** — see `CHANGELOG.md`.

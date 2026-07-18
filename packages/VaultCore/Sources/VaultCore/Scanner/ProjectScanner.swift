@@ -5,12 +5,21 @@ public struct ScanResult: Equatable, Sendable {
     public let missing: Set<String>
     public let extra: Set<String>
     public let sources: [String: [String]]  // filename -> secret names found
+    /// Relative paths of dotenv-like files tracked by git.
+    public let gitLeaks: [String]
 
-    public init(required: Set<String>, missing: Set<String>, extra: Set<String>, sources: [String: [String]]) {
+    public init(
+        required: Set<String>,
+        missing: Set<String>,
+        extra: Set<String>,
+        sources: [String: [String]],
+        gitLeaks: [String] = []
+    ) {
         self.required = required
         self.missing = missing
         self.extra = extra
         self.sources = sources
+        self.gitLeaks = gitLeaks
     }
 }
 
@@ -36,7 +45,7 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
     }
 
     public static func defaultParsers() -> [SecretFileParser] {
-        [
+        dotenvParsers() + [
             WranglerParser(),
             VercelParser(),
             DotenvExampleParser(),
@@ -62,7 +71,11 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
         }
         let missing = required.subtracting(knownSecrets)
         let extra = knownSecrets.subtracting(required)
-        return ScanResult(required: required, missing: missing, extra: extra, sources: sources)
+        let gitLeaks = GitLeakScanner.trackedLeaks(projectURL: projectURL)
+        return ScanResult(
+            required: required, missing: missing, extra: extra,
+            sources: sources, gitLeaks: gitLeaks
+        )
     }
 
     private static let skipDirs: Set<String> = [

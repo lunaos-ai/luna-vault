@@ -7,6 +7,10 @@ struct VaultListView: View {
     @State private var showAdd = false
     @State private var search = ""
     @State private var filter: Filter = .all
+    var highlightName: String? = nil
+    var onHighlightHandled: (() -> Void)? = nil
+    var onScanProject: (() -> Void)? = nil
+    var onOpenImport: (() -> Void)? = nil
 
     enum Filter: String, CaseIterable, Identifiable {
         case all, expiring, rotateDue = "rotate", mcp
@@ -44,6 +48,40 @@ struct VaultListView: View {
         .sheet(isPresented: $showAdd) {
             AddSecretSheet().environmentObject(env)
         }
+        .onChange(of: highlightName) { _, name in
+            guard let name, let secret = env.secrets.first(where: { $0.name == name }) else { return }
+            selection = secret.id
+            search = ""
+            filter = .all
+            onHighlightHandled?()
+        }
+        .onAppear { applyHighlightIfNeeded() }
+        .onChange(of: env.secrets.count) { _, _ in applyHighlightIfNeeded() }
+        .onChange(of: env.focusVaultSearch) { _, focus in
+            guard focus else { return }
+            search = ""
+            filter = .all
+            env.focusVaultSearch = false
+        }
+        .onChange(of: env.copySelectedSecret) { _, copy in
+            guard copy else { return }
+            env.copySelectedSecret = false
+            guard let id = selection,
+                  let name = env.secrets.first(where: { $0.id == id })?.name else { return }
+            Task { await env.copySecret(name: name) }
+        }
+        .onChange(of: env.openAddSecret) { _, open in
+            if open { showAdd = true }
+        }
+    }
+
+    private func applyHighlightIfNeeded() {
+        guard let name = highlightName,
+              let secret = env.secrets.first(where: { $0.name == name }) else { return }
+        selection = secret.id
+        search = ""
+        filter = .all
+        onHighlightHandled?()
     }
 
     private var sidebar: some View {
@@ -100,8 +138,16 @@ struct VaultListView: View {
     private var detail: some View {
         if let id = selection, let secret = env.secrets.first(where: { $0.id == id }) {
             SecretDetailView(secret: secret)
+                .id(secret.id)
+        } else if env.secrets.isEmpty {
+            VaultEmptyState(
+                isFirstRun: true,
+                onAdd: { showAdd = true },
+                onScan: onScanProject,
+                onImport: onOpenImport
+            )
         } else {
-            VaultEmptyState { showAdd = true }
+            VaultSelectHint(secretCount: env.secrets.count, onAdd: { showAdd = true })
         }
     }
 
@@ -118,43 +164,6 @@ struct VaultListView: View {
             .keyboardShortcut("n", modifiers: .command)
             .help("Add secret (⌘N)")
         }
-    }
-}
-
-struct VaultEmptyState: View {
-    let onAdd: () -> Void
-    var body: some View {
-        VStack(spacing: Tokens.Space.xl) {
-            ZStack {
-                Circle()
-                    .fill(Tokens.Palette.accent.opacity(0.05))
-                    .frame(width: 96, height: 96)
-                Image(systemName: "key.viewfinder")
-                    .font(.system(size: 38, weight: .light))
-                    .foregroundStyle(Tokens.Text.tertiary)
-            }
-            VStack(spacing: Tokens.Space.xs) {
-                Text("Nothing selected")
-                    .font(.title2.weight(.semibold))
-                    .tracking(-0.3)
-                Text("Pick a secret from the list, or add a new one.")
-                    .font(.body)
-                    .foregroundStyle(Tokens.Text.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 320)
-            }
-            Button(action: onAdd) {
-                Label("New Secret", systemImage: "plus")
-                    .font(.body.weight(.medium))
-                    .padding(.horizontal, Tokens.Space.lg)
-                    .padding(.vertical, 4)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(PremiumBackdrop())
     }
 }
 

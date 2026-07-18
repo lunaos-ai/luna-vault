@@ -15,7 +15,8 @@ struct PushCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         let service = try VaultService.live()
-        let registry = ProviderRegistry.defaults()
+        let prefs = KeychainPrefs()
+        let registry = ProviderRegistry.defaultsWithToken(from: prefs)
         guard let provider = registry.provider(id: to) else {
             FileHandle.standardError.write(Data("unknown provider: \(to)\n".utf8))
             throw ExitCode(2)

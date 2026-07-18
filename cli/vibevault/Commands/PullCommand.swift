@@ -13,7 +13,8 @@ struct PullCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Import pulled secrets into local vault (requires values).") var importSecrets = false
 
     mutating func run() async throws {
-        let registry = ProviderRegistry.defaults()
+        let prefs = KeychainPrefs()
+        let registry = ProviderRegistry.defaultsWithToken(from: prefs)
         guard let provider = registry.provider(id: from) else {
             FileHandle.standardError.write(Data("unknown provider: \(from)\n".utf8))
             throw ExitCode(2)

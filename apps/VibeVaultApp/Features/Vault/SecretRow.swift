@@ -3,6 +3,8 @@ import VaultCore
 
 struct SecretRow: View {
     let secret: Secret
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovering = false
 
     var body: some View {
         HStack(spacing: Tokens.Space.md) {
@@ -17,8 +19,19 @@ struct SecretRow: View {
             Spacer()
             trailing
         }
-        .padding(.vertical, 5)
+        .padding(.horizontal, Tokens.Space.xs)
+        .padding(.vertical, 6)
+        .background(
+            isHovering ? Tokens.Palette.accent.opacity(0.06) : Color.clear,
+            in: RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
+        )
+        .scaleEffect(isHovering && !reduceMotion ? 1.01 : 1)
+        .animation(Motion.value(reduceMotion, Motion.soft), value: isHovering)
         .contentShape(Rectangle())
+        .onHover { hovering in
+            Motion.animate(reduceMotion) { isHovering = hovering }
+        }
+        // Do not attach pressableScale here — DragGesture steals List selection on macOS.
     }
 
     private var avatar: some View {

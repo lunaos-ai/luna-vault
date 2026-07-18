@@ -1,40 +1,38 @@
 import Foundation
 
-enum MCPInstallerError: Error, CustomStringConvertible {
-    case clientNotFound(String)
+public enum MCPInstallerError: Error, CustomStringConvertible, Sendable {
     case ioFailed(String)
-    case invalidConfig(String)
 
-    var description: String {
+    public var description: String {
         switch self {
-        case .clientNotFound(let m): return "Client not detected: \(m)"
         case .ioFailed(let m): return "I/O failed: \(m)"
-        case .invalidConfig(let m): return "Existing config not in expected shape: \(m)"
         }
     }
 }
 
-enum MCPClientInstaller {
-    static let serverKey = "vibe-vault"
+public enum MCPClientInstaller {
+    public static let serverKey = "vibe-vault"
 
-    static func status(of kind: MCPClientKind) -> MCPClientStatus {
-        let url = kind.configURL
+    public static func status(of client: MCPClientID) -> MCPInstallStatus {
+        let url = client.configURL
         let fm = FileManager.default
         let exists = fm.fileExists(atPath: url.path)
         let parentExists = fm.fileExists(atPath: url.deletingLastPathComponent().path)
         let installed: Bool = {
             guard exists,
                   let data = try? Data(contentsOf: url),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let servers = serversDict(in: json)
             else { return false }
-            let servers = serversDict(in: json)
-            return servers?[serverKey] != nil
+            return servers[serverKey] != nil
         }()
-        return MCPClientStatus(kind: kind, configExists: exists, installed: installed, parentDirExists: parentExists)
+        return MCPInstallStatus(
+            client: client, configExists: exists, installed: installed, parentDirExists: parentExists
+        )
     }
 
-    static func install(kind: MCPClientKind, binaryPath: String) throws {
-        let url = kind.configURL
+    public static func install(client: MCPClientID, binaryPath: String) throws {
+        let url = client.configURL
         let fm = FileManager.default
         let parent = url.deletingLastPathComponent()
         if !fm.fileExists(atPath: parent.path) {
@@ -49,9 +47,9 @@ enum MCPClientInstaller {
         servers[serverKey] = [
             "command": binaryPath,
             "args": [] as [String],
-            "env": [:] as [String: String]
+            "env": agentEnv(for: client)
         ]
-        setServersDict(in: &root, value: servers, kind: kind)
+        setServersDict(in: &root, value: servers)
         do {
             let data = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
             try data.write(to: url, options: .atomic)
@@ -60,17 +58,21 @@ enum MCPClientInstaller {
         }
     }
 
-    static func uninstall(kind: MCPClientKind) throws {
-        let url = kind.configURL
+    public static func uninstall(client: MCPClientID) throws {
+        let url = client.configURL
         guard FileManager.default.fileExists(atPath: url.path),
               let data = try? Data(contentsOf: url),
-              var root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+              var root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              var servers = serversDict(in: root)
         else { return }
-        guard var servers = serversDict(in: root) else { return }
         servers.removeValue(forKey: serverKey)
-        setServersDict(in: &root, value: servers, kind: kind)
+        setServersDict(in: &root, value: servers)
         let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
         try out.write(to: url, options: .atomic)
+    }
+
+    public static func agentEnv(for client: MCPClientID) -> [String: String] {
+        ["LUNA_AGENT": client.lunaAgent, "LUNA_SESSION": SessionID.current()]
     }
 
     private static func serversDict(in root: [String: Any]) -> [String: Any]? {
@@ -79,8 +81,7 @@ enum MCPClientInstaller {
         return nil
     }
 
-    private static func setServersDict(in root: inout [String: Any], value: [String: Any], kind: MCPClientKind) {
-        // Claude Code uses "mcpServers"; some clients use "servers". Default to "mcpServers" if creating.
+    private static func setServersDict(in root: inout [String: Any], value: [String: Any]) {
         if root["servers"] != nil { root["servers"] = value; return }
         root["mcpServers"] = value
     }

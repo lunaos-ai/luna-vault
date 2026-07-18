@@ -8,11 +8,12 @@ struct AuditLogView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            auditHero
             filterBar
             Divider()
             table
         }
-        .background(Tokens.Surface.background)
+        .background(PremiumBackdrop())
         .navigationTitle("Audit Log")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -27,17 +28,69 @@ struct AuditLogView: View {
         .onChange(of: secretFilter) { _, _ in applyFilter() }
     }
 
-    private var filterBar: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            field(prompt: "Filter by agent", text: $agentFilter, icon: "person.crop.square")
-            field(prompt: "Filter by secret", text: $secretFilter, icon: "key")
+    private var auditHero: some View {
+        HStack(spacing: Tokens.Space.lg) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Agent audit trail")
+                    .font(.title2.weight(.semibold))
+                    .tracking(-0.3)
+                Text("Every read, write, and push tagged by agent.")
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
             Spacer()
-            Text("\(env.auditEvents.count) event\(env.auditEvents.count == 1 ? "" : "s")")
+            Text("\(env.auditEvents.count)")
+                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .foregroundStyle(Tokens.Palette.accent)
+            Text("events")
                 .font(.caption)
                 .foregroundStyle(Tokens.Text.secondary)
         }
+        .padding(.horizontal, Tokens.Space.xxl)
+        .padding(.vertical, Tokens.Space.lg)
+    }
+
+    private var filterBar: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+            HStack(spacing: Tokens.Space.sm) {
+                agentChip("All", value: "")
+                agentChip("Cursor", value: "cursor")
+                agentChip("Claude", value: "claude")
+                agentChip("Windsurf", value: "windsurf")
+                agentChip("VS Code", value: "vscode")
+                Spacer()
+            }
+            HStack(spacing: Tokens.Space.sm) {
+                field(prompt: "Filter by agent", text: $agentFilter, icon: "person.crop.square")
+                field(prompt: "Filter by secret", text: $secretFilter, icon: "key")
+                Spacer()
+                Text("\(env.auditEvents.count) event\(env.auditEvents.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+        }
         .padding(.horizontal, Tokens.Space.lg)
         .padding(.vertical, Tokens.Space.md)
+    }
+
+    private func agentChip(_ label: String, value: String) -> some View {
+        let selected = agentFilter.lowercased() == value.lowercased()
+            || (value.isEmpty && agentFilter.isEmpty)
+        return Button {
+            agentFilter = value
+        } label: {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, Tokens.Space.sm)
+                .padding(.vertical, Tokens.Space.xs)
+                .background(
+                    (selected ? Tokens.Palette.accent : Tokens.Text.tertiary).opacity(selected ? 0.15 : 0.08),
+                    in: Capsule()
+                )
+                .foregroundStyle(selected ? Tokens.Palette.accent : Tokens.Text.secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Filter agent \(label)")
     }
 
     private func field(prompt: String, text: Binding<String>, icon: String) -> some View {

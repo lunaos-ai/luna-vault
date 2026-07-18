@@ -12,6 +12,9 @@ build/
 *.profdata
 .env
 .env.local
+.env.*
+!.env.example
+!.env.sample
 *.keychain
 xcuserdata/
 .vscode/
@@ -20,3 +23,15 @@ audit.db
 audit.db-journal
 *.log
 LunaVault.xcodeproj/
+
+# License signing material (never commit)
+dist/lemonsqueezy/private.b64
+dist/lemonsqueezy/*.pem
+dist/lemonsqueezy/.webhook-secret.local
+secrets/
+
+# Cloudflare Worker
+workers/vibevault/node_modules/
+workers/vibevault/.wrangler/
+workers/vibevault/dist/
+.wrangler/

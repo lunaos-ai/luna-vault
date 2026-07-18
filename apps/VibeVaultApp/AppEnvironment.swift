@@ -30,6 +30,23 @@ final class AppEnvironment: ObservableObject {
     @Published var biometricStatus: String = "Idle"
     @Published var rotatePromptName: String?
     @Published var importStatus: String?
+    @Published var onboardingOpenProjects = false
+    @Published var openCloudflare = false
+    @Published var openVercel = false
+    @Published var openPushci = false
+    @Published var openVaultHighlight: String?
+    @Published var openAIAgents = false
+    @Published var openAddSecret = false
+    @Published var focusVaultSearch = false
+    @Published var copySelectedSecret = false
+    @Published var toastMessage: String?
+    @Published var uiSoundsEnabled: Bool = true {
+        didSet {
+            settings.uiSoundsEnabled = uiSoundsEnabled
+            persistSettings()
+        }
+    }
+
     @Published var notificationsEnabled: Bool {
         didSet {
             settings.notificationsEnabled = notificationsEnabled
@@ -47,8 +64,8 @@ final class AppEnvironment: ObservableObject {
     @Published var lastNotifierRun: String = "Never"
 
     static let settingsKey = "app-settings"
-    private var settings: AppSettings
-    private let prefs: PreferenceStoring
+    var settings: AppSettings
+    let prefs: PreferenceStoring
 
     lazy var scheduler: ExpiryScheduler = ExpiryScheduler(
         secretsProvider: { [weak self] in self?.secrets ?? [] }
@@ -65,12 +82,13 @@ final class AppEnvironment: ObservableObject {
         self.settings = loaded
         self.biometricSessionMinutes = loaded.sessionMinutes
         self.notificationsEnabled = loaded.notificationsEnabled
+        self.uiSoundsEnabled = loaded.uiSoundsEnabled
         self.warnWithinDays = loaded.warnWithinDays
         service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
         Task { @MainActor [weak self] in self?.updateSchedulerState() }
     }
 
-    private func persistSettings() {
+    func persistSettings() {
         prefs.setCodable(settings, forKey: Self.settingsKey)
     }
 
@@ -101,8 +119,13 @@ final class AppEnvironment: ObservableObject {
     }
 
     static func makeLive() -> AppEnvironment {
+        let prefs = KeychainPrefs()
         do {
-            return AppEnvironment(service: try VaultService.live(), registry: ProviderRegistry.defaults())
+            return AppEnvironment(
+                service: try VaultService.live(),
+                registry: ProviderRegistry.defaultsWithToken(from: prefs),
+                prefs: prefs
+            )
         } catch {
             let stub = VaultService(
                 store: InMemoryKeychainStore(),
@@ -110,7 +133,11 @@ final class AppEnvironment: ObservableObject {
                 detector: StubAgentDetector(),
                 biometric: NoopBiometricGate()
             )
-            return AppEnvironment(service: stub, registry: ProviderRegistry.defaults())
+            return AppEnvironment(
+                service: stub,
+                registry: ProviderRegistry.defaultsWithToken(from: prefs),
+                prefs: prefs
+            )
         }
     }
 
@@ -125,88 +152,6 @@ final class AppEnvironment: ObservableObject {
             refresh()
         } catch {
             lastError = "\(error)"
-        }
-    }
-
-    func importDotenv(at url: URL, overwrite: Bool) {
-        do {
-            let items = try DotenvImporter.parseFile(at: url)
-            let r = try service.importSecrets(items, overwrite: overwrite)
-            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count) · failed \(r.failed.count)"
-            refresh()
-        } catch {
-            importStatus = "error: \(error)"
-        }
-    }
-
-    func importEnv(globs: [String], overwrite: Bool) {
-        importStatus = "Reading shell environment…"
-        Task.detached(priority: .userInitiated) { [weak self] in
-            let shellEnv = LoginShellEnv.snapshot()
-            let items = EnvImporter.collect(env: shellEnv, matching: globs)
-            await MainActor.run { [weak self] in
-                guard let self else { return }
-                if shellEnv.isEmpty {
-                    self.importStatus = "Could not read shell env. Open Terminal and run: open -a VibeVault"
-                    return
-                }
-                if items.isEmpty {
-                    self.importStatus = "No env vars matched: \(globs.joined(separator: " "))"
-                    return
-                }
-                do {
-                    let r = try self.service.importSecrets(items, overwrite: overwrite)
-                    self.importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
-                    self.refresh()
-                } catch {
-                    self.importStatus = "error: \(error)"
-                }
-            }
-        }
-    }
-
-    func importOnePassword(itemRef: String, overwrite: Bool) {
-        do {
-            let items = try OnePasswordImporter.fetch(itemRef: itemRef)
-            let r = try service.importSecrets(items, overwrite: overwrite)
-            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
-            refresh()
-        } catch {
-            importStatus = "error: \(error)"
-        }
-    }
-
-    func importMissing(projectURL: URL, missing: Set<String>, overwrite: Bool) {
-        let r = ProjectMissingImporter.collect(projectURL: projectURL, missing: missing)
-        if r.items.isEmpty {
-            importStatus = r.stillMissing.isEmpty
-                ? "No missing secrets."
-                : "No values found in project dotenv for: \(r.stillMissing.sorted().joined(separator: ", "))"
-            return
-        }
-        do {
-            let res = try service.importSecrets(r.items, overwrite: overwrite)
-            var msg = "Imported \(res.imported.count) · updated \(res.updated.count) · skipped \(res.skipped.count)"
-            if !r.stillMissing.isEmpty {
-                msg += " · no value for \(r.stillMissing.count)"
-            }
-            importStatus = msg
-            refresh()
-            if let url = lastScannedURL { scan(projectURL: url) }
-        } catch {
-            importStatus = "error: \(error)"
-        }
-    }
-
-    func importClipboard(overwrite: Bool) {
-        do {
-            let items = ClipboardImporter.read()
-            if items.isEmpty { importStatus = "Clipboard had nothing dotenv-shaped"; return }
-            let r = try service.importSecrets(items, overwrite: overwrite)
-            importStatus = "Imported \(r.imported.count) · updated \(r.updated.count) · skipped \(r.skipped.count)"
-            refresh()
-        } catch {
-            importStatus = "error: \(error)"
         }
     }
 
@@ -255,27 +200,25 @@ final class AppEnvironment: ObservableObject {
         catch { lastError = "\(error)" }
     }
 
-    func scan(projectURL: URL) {
-        let known = Set(secrets.map(\.name))
-        scanResult = nil
-        isScanning = true
-        lastScannedURL = projectURL
-        Task.detached(priority: .userInitiated) { [weak self] in
-            let result: Result<ScanResult, Error>
-            do {
-                let scan = try ProjectScanner().scan(projectURL: projectURL, knownSecrets: known)
-                result = .success(scan)
-            } catch {
-                result = .failure(error)
-            }
-            await MainActor.run { [weak self] in
-                guard let self else { return }
-                self.isScanning = false
-                switch result {
-                case .success(let r): self.scanResult = r
-                case .failure(let e): self.lastError = "\(e)"
-                }
-            }
+    func projectPrefix(for url: URL) -> String {
+        let path = url.standardizedFileURL.path
+        if let saved = settings.projectPrefixes[path], !saved.isEmpty { return saved }
+        return SecretNaming.defaultProjectPrefix(from: url)
+    }
+
+    func saveProjectPrefix(_ prefix: String, for url: URL) {
+        settings.projectPrefixes[url.standardizedFileURL.path] = prefix
+        persistSettings()
+    }
+
+    func focusVault(secretName: String) {
+        openVaultHighlight = secretName
+    }
+
+    func allowMCPAccess(for names: Set<String>) async {
+        for name in names {
+            try? await service.setMCPAllowed(name: name, allowed: true)
         }
+        refresh()
     }
 }

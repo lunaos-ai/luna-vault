@@ -1,0 +1,4 @@
+# vibe-vault — keep local env out of Cursor index
+.env
+.env.local
+.env.*.local

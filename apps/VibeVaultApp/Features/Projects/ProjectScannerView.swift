@@ -5,6 +5,8 @@ struct ProjectScannerView: View {
     @EnvironmentObject var env: AppEnvironment
     @State private var projectURL: URL?
     @State private var filter: ResultFilter = .all
+    @State private var showImportReview = false
+    @State private var importPreview: ProjectMissingImporter.Result?
 
     enum ResultFilter: String, CaseIterable, Identifiable {
         case all = "All"
@@ -21,8 +23,26 @@ struct ProjectScannerView: View {
                     scanningRow
                 } else if let result = env.scanResult {
                     summaryLine(result)
-                    if result.missing.count > 0, let url = projectURL {
-                        importBar(missing: result.missing, projectURL: url)
+                    if !result.gitLeaks.isEmpty {
+                        GitLeakBanner(
+                            leaks: result.gitLeaks,
+                            projectURL: projectURL,
+                            onInstallHook: {
+                                if let u = projectURL { ProjectScannerActions.installGuard(projectURL: u, env: env) }
+                            },
+                            onFixIgnores: {
+                                if let u = projectURL { ProjectScannerActions.fixIgnores(projectURL: u, env: env) }
+                            }
+                        )
+                    }
+                    if let url = projectURL {
+                        PrepareCursorBar(projectURL: url) { env.openAIAgents = true }
+                        ProjectImportBar(result: result, projectURL: url) { preview in
+                            importPreview = preview
+                            showImportReview = true
+                        }
+                        CloudflareSyncBar(projectURL: url) { env.openCloudflare = true }
+                        PushciSyncBar(projectURL: url) { env.openPushci = true }
                     }
                     if let s = env.importStatus {
                         Text(s).font(.caption).foregroundStyle(Tokens.Text.secondary)
@@ -42,6 +62,22 @@ struct ProjectScannerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Tokens.Surface.background)
         .navigationTitle("Projects")
+        .sheet(isPresented: $showImportReview) {
+            if let url = projectURL, let preview = importPreview {
+                ImportReviewSheet(
+                    subtitle: url.lastPathComponent,
+                    rows: preview.previews.map {
+                        ImportRowState(sourceName: $0.sourceName, value: $0.value, sourceFile: $0.sourceFile)
+                    },
+                    projectURL: url,
+                    showPrefix: true,
+                    sourceColumnTitle: "Project name",
+                    stillMissing: preview.stillMissing,
+                    notes: "imported from project dotenv"
+                )
+                .environmentObject(env)
+            }
+        }
     }
 
     private var hero: some View {
@@ -111,7 +147,7 @@ struct ProjectScannerView: View {
             Text("Pick a project folder")
                 .font(.headline)
                 .foregroundStyle(Tokens.Text.primary)
-            Text("Reads wrangler.toml, vercel.json, .env.example, package.json, next.config.js.")
+            Text("Reads wrangler.toml, vercel.json, .env, .env.local, package.json.")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Tokens.Text.tertiary)
@@ -135,37 +171,6 @@ struct ProjectScannerView: View {
             Spacer()
         }
         .font(.subheadline)
-    }
-
-    private func importBar(missing: Set<String>, projectURL: URL) -> some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Image(systemName: "tray.and.arrow.down")
-                .foregroundStyle(Tokens.Palette.accent)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Import \(missing.count) missing into vault")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Tokens.Text.primary)
-                Text("Reads values from .env / .env.local in project root.")
-                    .font(.caption)
-                    .foregroundStyle(Tokens.Text.secondary)
-            }
-            Spacer()
-            Button {
-                env.importMissing(projectURL: projectURL, missing: missing, overwrite: false)
-            } label: {
-                Label("Import missing", systemImage: "square.and.arrow.down")
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Tokens.Palette.accent)
-        }
-        .padding(Tokens.Space.md)
-        .background(Tokens.Palette.accent.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Tokens.Radius.md, style: .continuous)
-                .strokeBorder(Tokens.Palette.accent.opacity(0.2),
-                              lineWidth: Tokens.Stroke.hairline)
-        )
     }
 
     private var filterPicker: some View {

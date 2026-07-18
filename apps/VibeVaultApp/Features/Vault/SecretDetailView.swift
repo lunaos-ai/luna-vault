@@ -4,8 +4,6 @@ import VaultCore
 struct SecretDetailView: View {
     @EnvironmentObject var env: AppEnvironment
     let secret: Secret
-    @State private var revealed = false
-    @State private var revealedValue = ""
     @State private var deleteConfirm = false
     @State private var showRotateSheet = false
 
@@ -61,36 +59,10 @@ struct SecretDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(Tokens.Text.secondary)
             }
-            valueRow.padding(.top, Tokens.Space.xs)
+            SecretValueRow(secret: secret)
+                .environmentObject(env)
+                .padding(.top, Tokens.Space.xs)
         }
-    }
-
-    private var valueRow: some View {
-        HStack(spacing: Tokens.Space.md) {
-            Text(revealed ? revealedValue : secret.maskedValue)
-                .font(.system(.title3, design: .monospaced).weight(.medium))
-                .textSelection(.enabled)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Button { Task { await reveal() } } label: {
-                Image(systemName: revealed ? "eye.slash" : "eye")
-                    .font(.system(size: 14, weight: .medium))
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(Tokens.Text.secondary)
-            .help(revealed ? "Hide value" : "Reveal value (Touch ID)")
-            Button { copy() } label: {
-                Image(systemName: "doc.on.doc")
-                    .font(.system(size: 14, weight: .medium))
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(Tokens.Text.secondary)
-            .help("Copy value (Touch ID)")
-        }
-        .padding(.horizontal, Tokens.Space.lg)
-        .padding(.vertical, Tokens.Space.lg)
-        .deepInset(radius: Tokens.Radius.md)
     }
 
     private var detailSurface: some View {
@@ -166,25 +138,6 @@ struct SecretDetailView: View {
             Button(role: .destructive) { deleteConfirm = true } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-    }
-
-    private func reveal() async {
-        if revealed { revealed = false; revealedValue = ""; return }
-        do {
-            let fresh = try await env.service.read(name: secret.name, reason: "Reveal \(secret.name)")
-            revealedValue = fresh.value
-            revealed = true
-        } catch { env.lastError = "\(error)" }
-    }
-
-    private func copy() {
-        Task {
-            do {
-                let fresh = try await env.service.read(name: secret.name, reason: "Copy \(secret.name)")
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(fresh.value, forType: .string)
-            } catch { env.lastError = "\(error)" }
         }
     }
 

@@ -4,7 +4,15 @@ import VaultCore
 struct AppSettings: Codable, Equatable {
     var sessionMinutes: Double = 5
     var notificationsEnabled: Bool = true
+    var uiSoundsEnabled: Bool = true
     var warnWithinDays: Int = 14
+    var hasCompletedOnboarding: Bool = false
+    var cloudflareAccountId: String = ""
+    var cloudflareScriptName: String = ""
+    var vercelProjectId: String = ""
+    var vercelTeamId: String = ""
+    var pushciProjectPath: String = ""
+    var projectPrefixes: [String: String] = [:]
 
     static func migrateLegacy(into prefs: PreferenceStoring, settingsKey: String) -> AppSettings {
         var s = AppSettings()

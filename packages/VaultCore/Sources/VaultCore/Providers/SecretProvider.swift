@@ -70,10 +70,21 @@ public final class ProviderRegistry: @unchecked Sendable {
     public var all: [SecretProvider] { Array(byId.values) }
 
     public static func defaults() -> ProviderRegistry {
-        ProviderRegistry(builtin: [
-            CloudflareProvider(),
-            VercelProvider(),
+        defaultsWithToken(from: InMemoryPrefs())
+    }
+
+    public static func defaultsWithToken(from prefs: PreferenceStoring) -> ProviderRegistry {
+        let registry = ProviderRegistry(builtin: [
+            VercelProvider(tokenSource: {
+                ProviderCredentialStore.vercelToken(prefs: prefs)
+                    ?? ProcessInfo.processInfo.environment["VERCEL_TOKEN"]
+            }),
             PushciProvider()
         ])
+        registry.register(CloudflareProvider(tokenSource: {
+            ProviderCredentialStore.cloudflareToken(prefs: prefs)
+                ?? ProcessInfo.processInfo.environment["CLOUDFLARE_API_TOKEN"]
+        }))
+        return registry
     }
 }

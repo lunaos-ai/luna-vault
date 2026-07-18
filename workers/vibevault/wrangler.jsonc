@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "vibevault",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/webhooks/*", "/health", "/download", "/api/*"]
+  },
+  "vars": {
+    "LANDING_URL": "https://vibevault.lunaos.ai/",
+    "DOWNLOAD_URL": "https://lunaos.ai/download/vibevault",
+    "FROM_EMAIL": "licenses@lunaos.ai",
+    "VIBEVAULT_CHECKOUT_BASE": "https://lunaos.lemonsqueezy.com/checkout/buy",
+    // Fill these with your Lemon Squeezy IDs (public — safe in vars)
+    "VIBEVAULT_STORE_ID": "",
+    "VIBEVAULT_PRODUCT_ID": "",
+    "VIBEVAULT_VARIANT_TEAM": "",
+    "VIBEVAULT_VARIANT_STUDIO": "",
+    "VIBEVAULT_VARIANT_COMPANY": "",
+    "VARIANT_SEATS_JSON": "{}"
+  },
+  "routes": [
+    {
+      "pattern": "vibevault.lunaos.ai",
+      "custom_domain": true
+    }
+  ]
+}

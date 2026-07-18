@@ -1,36 +1,62 @@
 import Foundation
 
-/// Stub provider for pushci.dev — user-owned product, API spec pending.
-/// Skeleton lets us register the provider and wire the UI; real endpoints land once docs ship.
+/// Syncs vault secrets to PushCI's local encrypted store via `pushci secret` CLI.
+/// Cloud REST API lands in pushci v0.2; this bridge matches how PushCI stores secrets today.
 public final class PushciProvider: SecretProvider, @unchecked Sendable {
     public let id = "pushci"
     public let displayName = "pushci.dev"
-    public let requiredScopeKeys = ["workspace"]
+    public let requiredScopeKeys = ["project_path"]
 
-    private let session: URLSession
     private let tokenSource: () -> String?
-    private let baseURL: URL
+    private let runner: PushciCLI.Runner
 
     public init(
-        session: URLSession = .shared,
-        baseURL: URL = URL(string: "https://api.pushci.dev")!,
-        tokenSource: @escaping () -> String? = { ProcessInfo.processInfo.environment["PUSHCI_TOKEN"] }
+        tokenSource: @escaping () -> String? = { ProcessInfo.processInfo.environment["PUSHCI_TOKEN"] },
+        runner: @escaping PushciCLI.Runner = PushciCLI.defaultRunner
     ) {
-        self.session = session
-        self.baseURL = baseURL
         self.tokenSource = tokenSource
+        self.runner = runner
     }
 
     public func authToken() throws -> String {
-        guard let t = tokenSource(), !t.isEmpty else { throw ProviderError.missingAuth(id) }
-        return t
+        if let t = tokenSource(), !t.isEmpty { return t }
+        return "local"
     }
 
     public func push(secrets: [Secret], target: ProviderTarget) async throws -> ProviderPushResult {
-        throw ProviderError.unsupported("pushci adapter pending API spec; track in v0.1 roadmap")
+        let root = try projectURL(from: target)
+        var pushed: [String] = []
+        var failed: [(String, String)] = []
+        for secret in secrets {
+            do {
+                try PushciCLI.setValue(name: secret.name, value: secret.value, projectPath: root, runner: runner)
+                pushed.append(secret.name)
+            } catch {
+                failed.append((secret.name, "\(error)"))
+            }
+        }
+        return ProviderPushResult(pushed: pushed, skipped: [], failed: failed)
     }
 
     public func pull(target: ProviderTarget) async throws -> [Secret] {
-        throw ProviderError.unsupported("pushci adapter pending API spec; track in v0.1 roadmap")
+        let root = try projectURL(from: target)
+        let keys = try PushciCLI.listKeys(projectPath: root, runner: runner)
+        var items: [Secret] = []
+        for key in keys {
+            do {
+                let value = try PushciCLI.getValue(name: key, projectPath: root, runner: runner)
+                items.append(Secret(name: key, value: value))
+            } catch {
+                items.append(Secret(name: key, value: ""))
+            }
+        }
+        return items
+    }
+
+    private func projectURL(from target: ProviderTarget) throws -> URL {
+        guard let path = target.scope["project_path"], !path.isEmpty else {
+            throw PushciCLIError.missingProjectPath
+        }
+        return URL(fileURLWithPath: path, isDirectory: true)
     }
 }

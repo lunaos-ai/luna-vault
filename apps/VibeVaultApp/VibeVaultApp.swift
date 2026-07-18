@@ -10,6 +10,7 @@ struct VibeVaultApp: App {
             MainWindow()
                 .environmentObject(env)
                 .frame(minWidth: 880, minHeight: 560)
+                .onAppear { CommandBridge.shared.env = env }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
@@ -25,12 +26,31 @@ struct VibeVaultApp: App {
 }
 
 struct VibeVaultCommands: Commands {
+    @ObservedObject private var bridge = CommandBridge.shared
+
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About Vibe Vault") {}
         }
         CommandGroup(after: .newItem) {
-            Button("New Secret…") {}.keyboardShortcut("n")
+            Button("New Secret…") {
+                bridge.env?.openAddSecret = true
+            }
+            .keyboardShortcut("n")
+            Button("Find in Vault…") {
+                bridge.env?.focusVaultSearch = true
+            }
+            .keyboardShortcut("f")
+            Button("Copy Secret") {
+                bridge.env?.copySelectedSecret = true
+            }
+            .keyboardShortcut("c")
         }
     }
+}
+
+@MainActor
+final class CommandBridge: ObservableObject {
+    static let shared = CommandBridge()
+    weak var env: AppEnvironment?
 }

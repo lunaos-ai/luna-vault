@@ -10,19 +10,28 @@ struct ScanCommand: AsyncParsableCommand {
 
     @Option(name: .shortAndLong, help: "Project directory (default: current).") var path: String?
     @Flag(name: .long, help: "Output as JSON.") var json = false
+    @Flag(name: .long, help: "Only report git-tracked .env leaks (exit 4 if any).")
+    var gitOnly = false
 
     mutating func run() async throws {
-        let service = try VaultService.live()
         let projectURL = URL(fileURLWithPath: path ?? FileManager.default.currentDirectoryPath)
+        if gitOnly {
+            let leaks = GitLeakScanner.trackedLeaks(projectURL: projectURL)
+            printGitLeaks(leaks, json: json, projectURL: projectURL)
+            if !leaks.isEmpty { throw ExitCode(4) }
+            return
+        }
+
+        let service = try VaultService.live()
         let known = Set(try service.list().map(\.name))
-        let scanner = ProjectScanner()
-        let result = try scanner.scan(projectURL: projectURL, knownSecrets: known)
+        let result = try ProjectScanner().scan(projectURL: projectURL, knownSecrets: known)
         if json {
             let payload: [String: Any] = [
                 "required": Array(result.required).sorted(),
                 "missing": Array(result.missing).sorted(),
                 "extra": Array(result.extra).sorted(),
-                "sources": result.sources
+                "sources": result.sources,
+                "gitLeaks": result.gitLeaks
             ]
             let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted])
             print(String(data: data, encoding: .utf8) ?? "{}")
@@ -31,7 +40,26 @@ struct ScanCommand: AsyncParsableCommand {
             print("Required (\(result.required.count)): \(Array(result.required).sorted().joined(separator: ", "))")
             print("Missing  (\(result.missing.count)): \(Array(result.missing).sorted().joined(separator: ", "))")
             print("Extra    (\(result.extra.count)): \(Array(result.extra).sorted().joined(separator: ", "))")
+            if !result.gitLeaks.isEmpty {
+                print("Git leaks (\(result.gitLeaks.count)): \(result.gitLeaks.joined(separator: ", "))")
+                print("Hint: vibevault guard install")
+            }
         }
+        if !result.gitLeaks.isEmpty { throw ExitCode(4) }
         if !result.missing.isEmpty { throw ExitCode(3) }
+    }
+
+    private func printGitLeaks(_ leaks: [String], json: Bool, projectURL: URL) {
+        if json {
+            let payload: [String: Any] = ["gitLeaks": leaks, "path": projectURL.path]
+            if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted]),
+               let s = String(data: data, encoding: .utf8) {
+                print(s)
+            }
+        } else if leaks.isEmpty {
+            print("No tracked .env leaks in \(projectURL.path)")
+        } else {
+            print("Git leaks (\(leaks.count)): \(leaks.joined(separator: ", "))")
+        }
     }
 }

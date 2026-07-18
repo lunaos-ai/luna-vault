@@ -31,6 +31,9 @@ jobs:
       - name: 200-LOC lint
         run: bash scripts/check-loc.sh
 
+      - name: DMG packaging smoke test
+        run: bash scripts/tests/create-dmg-smoke.sh
+
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:

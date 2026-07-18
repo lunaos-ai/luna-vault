@@ -3,141 +3,116 @@ import VaultCore
 
 struct MainWindow: View {
     @EnvironmentObject var env: AppEnvironment
-    @State private var selection: SidebarItem = .vault
-
-    enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-        case vault, importSecrets = "import", projects, audit, providers, aiAgents = "ai-agents", settings
-        var id: String { rawValue }
-        var label: String {
-            switch self {
-            case .vault: return "Vault"
-            case .importSecrets: return "Import"
-            case .projects: return "Projects"
-            case .audit: return "Audit"
-            case .providers: return "Providers"
-            case .aiAgents: return "AI Agents"
-            case .settings: return "Settings"
-            }
-        }
-        var systemImage: String {
-            switch self {
-            case .vault: return "key.fill"
-            case .importSecrets: return "square.and.arrow.down"
-            case .projects: return "folder.badge.questionmark"
-            case .audit: return "list.bullet.rectangle"
-            case .providers: return "icloud.and.arrow.up"
-            case .aiAgents: return "sparkles"
-            case .settings: return "gearshape"
-            }
-        }
-        var tint: Color { Tokens.Text.secondary }
-        var section: String {
-            switch self {
-            case .vault, .importSecrets: return "Library"
-            case .projects, .providers, .aiAgents: return "Workflows"
-            case .audit, .settings: return "System"
-            }
-        }
-    }
-
-    private var sections: [String] {
-        ["Library", "Workflows", "System"]
-    }
+    @State private var selection: SidebarItem = .overview
+    @State private var showOnboarding = false
+    @State private var showAddSecret = false
 
     var body: some View {
         NavigationSplitView {
-            sidebar
+            MainSidebar(selection: $selection)
+                .environmentObject(env)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 224, max: 280)
         } detail: {
             detail
                 .background(Tokens.Surface.background.ignoresSafeArea())
         }
-        .task { env.refresh(); env.refreshAudit() }
-    }
-
-    private var sidebar: some View {
-        List(selection: $selection) {
-            ForEach(sections, id: \.self) { section in
-                Section {
-                    ForEach(SidebarItem.allCases.filter { $0.section == section }) { item in
-                        sidebarRow(item).tag(item)
-                    }
-                } header: {
-                    Text(section)
-                        .font(.caption2.weight(.semibold))
-                        .textCase(.uppercase)
-                        .tracking(0.6)
-                        .foregroundStyle(Tokens.Text.tertiary)
-                        .padding(.top, Tokens.Space.xs)
+        .toast($env.toastMessage)
+        .sheet(isPresented: $showAddSecret) {
+            AddSecretSheet().environmentObject(env)
+        }
+        .task {
+            env.refresh()
+            env.refreshAudit()
+            showOnboarding = env.needsOnboarding
+            if ProcessInfo.processInfo.environment["VIBEVAULT_UX_SMOKE"] == "1" {
+                showOnboarding = false
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                await UXSmokeTour.run(setSelection: { selection = $0 }, env: env)
+            }
+        }
+        .onChange(of: selection) { _, _ in
+            Feedback.play(.select, soundsEnabled: env.uiSoundsEnabled)
+        }
+        .onChange(of: env.onboardingOpenProjects) { _, open in
+            if open { selection = .projects; env.onboardingOpenProjects = false }
+        }
+        .onChange(of: env.openCloudflare) { _, open in
+            if open { selection = .providers; env.openCloudflare = false }
+        }
+        .onChange(of: env.openVercel) { _, open in
+            if open { selection = .providers }
+        }
+        .onChange(of: env.openPushci) { _, open in
+            if open { selection = .providers }
+        }
+        .onChange(of: env.openAddSecret) { _, open in
+            if open {
+                selection = .vault
+                showAddSecret = true
+                env.openAddSecret = false
+            }
+        }
+        .onChange(of: env.focusVaultSearch) { _, focus in
+            if focus { selection = .vault }
+        }
+        .onChange(of: env.openVaultHighlight) { _, name in
+            if name != nil { selection = .vault }
+        }
+        .onChange(of: env.openAIAgents) { _, open in
+            if open { selection = .aiAgents; env.openAIAgents = false }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .runUXSmokeTour)) { _ in
+            Task {
+                showOnboarding = false
+                await UXSmokeTour.run(setSelection: { selection = $0 }, env: env)
+            }
+        }
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingScene(
+                onScanProject: {
+                    env.completeOnboarding(openProjects: true)
+                    showOnboarding = false
+                },
+                onOpenVault: {
+                    env.completeOnboarding()
+                    selection = .overview
+                    showOnboarding = false
+                },
+                onConnectAgents: {
+                    env.completeOnboarding()
+                    env.openAIAgents = true
+                    showOnboarding = false
                 }
-            }
+            )
+            .environmentObject(env)
+            .interactiveDismissDisabled()
         }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .background(.regularMaterial)
-        .navigationTitle("Vibe Vault")
-        .safeAreaInset(edge: .top) { sidebarBrand }
-        .safeAreaInset(edge: .bottom) { footer }
-    }
-
-    private var sidebarBrand: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Tokens.Palette.accent.opacity(0.14))
-                    .frame(width: 24, height: 24)
-                Image(systemName: "key.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Tokens.Palette.accent)
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Vibe Vault").font(.system(size: 13, weight: .semibold)).tracking(-0.2)
-                Text("Local Keychain")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Tokens.Text.tertiary)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, Tokens.Space.md)
-        .padding(.top, Tokens.Space.sm)
-        .padding(.bottom, Tokens.Space.xs)
-    }
-
-    private func sidebarRow(_ item: SidebarItem) -> some View {
-        Label(item.label, systemImage: item.systemImage)
-            .font(.system(size: 13))
-            .padding(.vertical, 1)
-            .accessibilityLabel(item.label)
-    }
-
-    private var footer: some View {
-        let unlocked = env.biometricStatus.lowercased().contains("unlock") || env.biometricStatus == "Idle"
-        return HStack(spacing: Tokens.Space.sm) {
-            Image(systemName: unlocked ? "lock.open.fill" : "lock.fill")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(unlocked ? Tokens.Status.success.opacity(0.85) : Tokens.Status.warning)
-            Text(unlocked ? "Session unlocked" : "Locked. Touch ID required.")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Tokens.Text.secondary)
-            Spacer()
-            Text("v0.1")
-                .font(.system(size: 10))
-                .foregroundStyle(Tokens.Text.tertiary)
-        }
-        .padding(.horizontal, Tokens.Space.md)
-        .padding(.vertical, Tokens.Space.sm)
-        .background(.thinMaterial)
-        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
     private var detail: some View {
         switch selection {
-        case .vault: VaultListView()
+        case .overview:
+            VaultOverviewView(
+                onScan: { selection = .projects },
+                onImport: { selection = .importSecrets },
+                onCloudflare: { selection = .providers },
+                onAIAgents: { selection = .aiAgents },
+                onAudit: { selection = .audit },
+                onAdd: { showAddSecret = true }
+            )
+            .environmentObject(env)
+        case .vault:
+            VaultListView(
+                highlightName: env.openVaultHighlight,
+                onHighlightHandled: { env.openVaultHighlight = nil },
+                onScanProject: { selection = .projects },
+                onOpenImport: { selection = .importSecrets }
+            )
         case .importSecrets: ImportView()
         case .projects: ProjectScannerView()
         case .audit: AuditLogView()
-        case .providers: ProviderSyncView()
+        case .providers: ProvidersHubView()
         case .aiAgents: AIAgentsView()
         case .settings: SettingsView()
         }
