@@ -125,6 +125,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
     private struct Record: Codable {
         var name: String
         var value: String
+        var createdAt: Date?
         var updatedAt: Date
         var notes: String?
         var expiresAt: Date?
@@ -134,6 +135,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
 
         init(_ s: Secret) {
             name = s.name; value = s.value; updatedAt = s.updatedAt
+            createdAt = s.createdAt
             notes = s.notes; expiresAt = s.expiresAt
             rotateEveryDays = s.rotateEveryDays; lastRotatedAt = s.lastRotatedAt
             mcpAllowed = s.mcpAllowed
@@ -141,7 +143,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
 
         func asSecret(maskValue: Bool = false) -> Secret {
             Secret(
-                name: name, value: maskValue ? "" : value, updatedAt: updatedAt,
+                name: name, value: maskValue ? "" : value, updatedAt: updatedAt, createdAt: createdAt ?? updatedAt,
                 notes: notes, expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
                 lastRotatedAt: lastRotatedAt, mcpAllowed: mcpAllowed
             )

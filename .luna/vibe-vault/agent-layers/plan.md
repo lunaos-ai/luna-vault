@@ -34,7 +34,7 @@ North star: every AI client (Cursor, VS Code, Devin, Claude Code) knows how to u
 |-------------|------|
 | Canonical skill content | `skills/vibevault/SKILL.md` |
 | Installer (VaultCore) | `AgentSkillInstaller.swift` |
-| Install targets | Cursor, Claude Code, Claude Desktop, Windsurf |
+| Install targets | Cursor, Claude Code, Claude Desktop, Devin |
 | App UI | AI Agents → Install skill |
 | CLI | `vibevault skill install\|status` |
 | Onboarding | Quick install skill with MCP |

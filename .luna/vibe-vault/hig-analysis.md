@@ -87,7 +87,7 @@ The **marketing landing** (`workers/vibevault/public/index.html`) is the opposit
 3. **`ToastBanner` drop shadow** — violates No-Shadow Rule (`Theme/ToastBanner.swift`).
 4. **`PremiumBackdrop` indigo wash** — mild decorative accent on every detail pane; prefer plain `windowBackgroundColor`.
 5. **Status chips on Overview** paint green for “ok” idle (Touch ID / Cloudflare / MCP) — Status-Earns-Color: green only for live session unlock, etc.
-6. **Onboarding copy uses em dash** (“Windsurf — opt-in…”) — `OnboardingScene.swift` line 51.
+6. **Onboarding copy uses em dash** (“Devin. Opt-in…”) — `OnboardingScene.swift` line 51.
 7. **Colored icon tiles** in sidebar brand and QuickAction cards — DESIGN: no colored icon tiles; monochrome glyphs.
 8. **Sparse VoiceOver coverage** — labels exist on sidebar rows, some badges, MenuBar copy; many toggles/buttons rely on default labels only.
 9. **`symbolEffect(.bounce)`** on sidebar — Motion.swift guards custom animation, but symbol effects should also gate on `accessibilityReduceMotion`.

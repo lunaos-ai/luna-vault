@@ -8,7 +8,7 @@ All notable changes to Vibe Vault are documented here.
 
 - Native macOS menu-bar app (encrypted local vault, Touch ID, audit log)
 - CLI: `vibevault` add/list/scan/run/push/pull/mcp/skill/guard/cursor
-- MCP server for Cursor, VS Code, Devin, Claude Code, Windsurf
+- MCP server for Cursor, VS Code, Devin, Claude Code, Claude Desktop
 - Agent skill + Cursor rules + Prepare for Cursor one-click
 - Cloudflare, Vercel, PushCI (local CLI bridge) provider sync
 - Git leak scan + pre-commit guard
@@ -27,6 +27,10 @@ All notable changes to Vibe Vault are documented here.
 - Team license verified offline against embedded public key (no phone-home)
 
 ## Unreleased
+
+### Changed
+
+- Replaced Windsurf with Devin as a supported AI coding client (MCP, agent skill, audit filters)
 
 ### Fixed
 

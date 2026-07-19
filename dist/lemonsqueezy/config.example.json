@@ -16,11 +16,12 @@
     "VIBEVAULT_LICENSE_PRIVATE_KEY": "base64 Ed25519 from dist/lemonsqueezy/private.b64",
     "VIBEVAULT_RESEND_API_KEY": "recommended — emails VV1 keys to customers"
   },
-  "webhook_events": ["order_created", "subscription_created", "subscription_updated", "order_refunded"],
+  "webhook_events": ["order_created", "subscription_created", "subscription_updated", "subscription_payment_success", "order_refunded"],
   "license_format": "VV1.<base64url-json>.<base64url-ed25519-sig>",
   "notes": [
     "Set public vars in wrangler.jsonc or Cloudflare dashboard (Worker → Settings → Variables).",
     "Secrets via: npx wrangler secret put VIBEVAULT_WEBHOOK_SECRET",
-    "Landing Buy buttons load https://vibevault.lunaos.ai/api/checkout"
+    "Landing Buy buttons load https://vibevault.lunaos.ai/api/checkout",
+    "Worker-issued commercial keys are valid for 35 days; renewal webhooks issue fresh keys"
   ]
 }

@@ -14,6 +14,7 @@ final class MCPClientMapperTests: XCTestCase {
 
     func test_maps_devin() {
         XCTAssertEqual(MCPClientMapper.canonical(from: "Devin"), "devin")
+        XCTAssertEqual(MCPClientMapper.canonical(from: "mcp:devin"), "devin")
     }
 
     func test_maps_claude_variants() {

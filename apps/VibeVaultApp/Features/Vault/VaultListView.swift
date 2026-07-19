@@ -9,6 +9,9 @@ struct VaultListView: View {
     @State private var showAdd = false
     @State private var search = ""
     @State private var filter: VaultListFilter = .all
+    @State private var sort: VaultListSort = .name
+    @State private var grouping: VaultListGrouping = .none
+    @FocusState private var searchFocused: Bool
     var highlightName: String? = nil
     var onHighlightHandled: (() -> Void)? = nil
     var onScanProject: (() -> Void)? = nil
@@ -16,6 +19,10 @@ struct VaultListView: View {
 
     private var filtered: [Secret] {
         vaultFilteredSecrets(env.secrets, filter: filter, search: search)
+    }
+
+    private var sections: [VaultSecretSection] {
+        vaultSecretSections(filtered, grouping: grouping, sort: sort)
     }
 
     var body: some View {
@@ -33,7 +40,7 @@ struct VaultListView: View {
         .onChange(of: env.secrets.count) { _, _ in applyHighlight(highlightName) }
         .onChange(of: env.focusVaultSearch) { _, focus in
             guard focus else { return }
-            search = ""; filter = .all; env.focusVaultSearch = false
+            search = ""; filter = .all; searchFocused = true; env.focusVaultSearch = false
         }
         .onChange(of: env.copySelectedSecret) { _, copy in
             guard copy else { return }
@@ -58,12 +65,18 @@ struct VaultListView: View {
                 .padding(.horizontal, Tokens.Space.lg)
                 .padding(.top, Tokens.Space.md)
                 .padding(.bottom, Tokens.Space.sm)
+            highlightedSearch
+                .padding(.horizontal, Tokens.Space.lg)
+                .padding(.bottom, Tokens.Space.sm)
             Picker("", selection: $filter) {
                 ForEach(VaultListFilter.allCases) { Text($0.label).tag($0) }
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, Tokens.Space.lg)
             .padding(.bottom, Tokens.Space.sm)
+            VaultListOptionsBar(sort: $sort, grouping: $grouping)
+                .padding(.horizontal, Tokens.Space.lg)
+                .padding(.bottom, Tokens.Space.sm)
             secretList
             if isSelecting {
                 VaultSelectBar(
@@ -79,22 +92,76 @@ struct VaultListView: View {
         .navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 460)
     }
 
+    private var highlightedSearch: some View {
+        HStack(spacing: Tokens.Space.sm) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(searchFocused || !search.isEmpty ? Tokens.Palette.accent : Tokens.Text.secondary)
+                .frame(width: 18, height: 18)
+            TextField("Search secrets", text: $search)
+                .textFieldStyle(.plain)
+                .focused($searchFocused)
+            if !search.isEmpty {
+                Button {
+                    search = ""
+                    searchFocused = true
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Tokens.Text.tertiary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear search")
+            }
+        }
+        .padding(.horizontal, Tokens.Space.md)
+        .frame(height: 38)
+        .background(
+            (searchFocused || !search.isEmpty ? Tokens.Palette.accent.opacity(0.12) : Tokens.Surface.elevated.opacity(0.75)),
+            in: RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
+                .strokeBorder(
+                    searchFocused || !search.isEmpty ? Tokens.Palette.accent.opacity(0.8) : Tokens.Surface.separator.opacity(0.55),
+                    lineWidth: searchFocused || !search.isEmpty ? Tokens.Stroke.thin : Tokens.Stroke.hairline
+                )
+        )
+    }
+
     @ViewBuilder
     private var secretList: some View {
         Group {
             if isSelecting {
-                List(filtered, selection: $multiSelection) { row in
-                    SecretRow(secret: row).tag(row.id)
+                List(selection: $multiSelection) {
+                    listRows
                 }
             } else {
-                List(filtered, selection: $selection) { row in
-                    SecretRow(secret: row).tag(row.id)
+                List(selection: $selection) {
+                    listRows
                 }
             }
         }
         .listStyle(.inset)
         .scrollContentBackground(.hidden)
-        .searchable(text: $search, placement: .sidebar, prompt: "Search secrets")
+    }
+
+    @ViewBuilder
+    private var listRows: some View {
+        if grouping == .none {
+            ForEach(sections.first?.secrets ?? []) { row in
+                SecretRow(secret: row).tag(row.id)
+            }
+        } else {
+            ForEach(sections) { section in
+                Section {
+                    ForEach(section.secrets) { row in
+                        SecretRow(secret: row).tag(row.id)
+                    }
+                } header: {
+                    VaultListSectionHeader(title: section.title, count: section.secrets.count)
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -171,5 +238,52 @@ struct VaultListView: View {
         search = ""
         filter = .all
         onHighlightHandled?()
+    }
+}
+
+private struct VaultListOptionsBar: View {
+    @Binding var sort: VaultListSort
+    @Binding var grouping: VaultListGrouping
+
+    var body: some View {
+        HStack(spacing: Tokens.Space.sm) {
+            Picker(selection: $sort) {
+                ForEach(VaultListSort.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            } label: {
+                Label("Sort", systemImage: "arrow.up.arrow.down")
+            }
+            .pickerStyle(.menu)
+            .help("Sort secrets")
+
+            Picker(selection: $grouping) {
+                ForEach(VaultListGrouping.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            } label: {
+                Label("Group", systemImage: "rectangle.3.group")
+            }
+            .pickerStyle(.menu)
+            .help("Group secrets")
+
+            Spacer(minLength: 0)
+        }
+        .controlSize(.small)
+    }
+}
+
+private struct VaultListSectionHeader: View {
+    let title: String
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: Tokens.Space.xs) {
+            Text(title)
+            Text("\(count)")
+                .foregroundStyle(Tokens.Text.tertiary)
+        }
+        .sectionLabel()
+        .padding(.top, Tokens.Space.xs)
     }
 }

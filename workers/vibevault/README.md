@@ -34,5 +34,6 @@ Legacy `LEMONSQUEEZY_WEBHOOK_SECRET` / `RESEND_API_KEY` still accepted.
 ## Lemon Squeezy webhook
 
 - **Callback:** `https://vibevault.lunaos.ai/webhooks/lemonsqueezy`
-- **Events:** `order_created`, `subscription_created`
+- **Events:** `order_created`, `subscription_created`, `subscription_updated`, `subscription_payment_success`
+- Worker-issued commercial keys are valid for 35 days. Monthly renewals should send a fresh key through the renewal webhook.
 - If `VIBEVAULT_RESEND_API_KEY` is set, the Worker sends the license email before acknowledging the webhook. If it is not set, the JSON response includes `licenseKey` for manual delivery/testing.

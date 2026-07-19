@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vibe Vault | The trust layer for AI agents</title>
-  <meta name="description" content="Vibe Vault is the local-first macOS vault for AI-coding secrets. Touch ID gated reads, per-agent audit, MCP setup, provider sync, and offline team licenses." />
+  <title>Vibe Vault | Secure credential access for AI coding agents</title>
+  <meta name="description" content="Give AI coding agents secure access to credentials without exposing raw API keys. Local-first macOS vault, Touch ID approval, per-agent audit, and no cloud account." />
   <meta property="og:title" content="Vibe Vault" />
-  <meta property="og:description" content="The local-first trust layer for Cursor, Claude Code, Windsurf, and every AI agent that touches your secrets." />
+  <meta property="og:description" content="Secure credential access for AI coding agents. Your AI gets the access it needs; your secrets stay protected." />
   <meta property="og:url" content="https://vibevault.lunaos.ai/" />
   <meta property="og:image" content="https://vibevault.lunaos.ai/assets/vibe-vault-open-graph.png" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -26,12 +26,12 @@
       --panel: #141516;
       --panel-raised: #1B1C1D;
       --line: rgba(248, 248, 248, 0.13);
-      --line-strong: rgba(231, 200, 136, 0.34);
+      --line-strong: rgba(165, 180, 252, 0.34);
       --text: #F8F8F8;
       --muted: #B7B7B7;
       --dim: #777A7E;
-      --gold: #CFA95C;
-      --gold-soft: #E7C888;
+      --gold: #4F46E5;
+      --gold-soft: #A5B4FC;
       --blue: #8DA8FF;
       --green: #91C8A9;
       --danger: #FF6B5F;
@@ -86,8 +86,8 @@
       font-size: 0.92em;
       font-weight: 500;
       color: var(--gold-soft);
-      background: rgba(207, 169, 92, 0.1);
-      border: 1px solid rgba(207, 169, 92, 0.18);
+      background: rgba(79, 70, 229, 0.1);
+      border: 1px solid rgba(165, 180, 252, 0.18);
       border-radius: 4px;
       padding: 0.08em 0.34em;
       overflow-wrap: anywhere;
@@ -157,7 +157,7 @@
     }
 
     .nav-links .download:hover {
-      color: #090909;
+      color: #F8F8F8;
       background: var(--gold);
     }
 
@@ -236,6 +236,33 @@
       line-height: 1.5;
     }
 
+    .trust-line {
+      margin: -14px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .hero-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 22px;
+    }
+
+    .hero-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid rgba(165, 180, 252, 0.22);
+      border-radius: var(--radius);
+      color: #DDE3FF;
+      background: rgba(79, 70, 229, 0.1);
+      font-size: 13px;
+      font-weight: 560;
+    }
+
     .cta-row {
       display: flex;
       flex-wrap: wrap;
@@ -263,7 +290,7 @@
 
     .btn-primary:hover {
       background: var(--gold);
-      color: #090909;
+      color: #F8F8F8;
     }
 
     .btn-secondary {
@@ -273,8 +300,8 @@
     }
 
     .btn-secondary:hover {
-      border-color: rgba(231, 200, 136, 0.42);
-      background: rgba(231, 200, 136, 0.08);
+      border-color: rgba(165, 180, 252, 0.42);
+      background: rgba(79, 70, 229, 0.1);
     }
 
     .btn[aria-disabled="true"] {
@@ -331,7 +358,7 @@
 
     .metrics {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 1px;
       background: var(--line);
       border: 1px solid var(--line);
@@ -377,7 +404,7 @@
 
     .compare-panel.after {
       background:
-        linear-gradient(180deg, rgba(207, 169, 92, 0.08), rgba(207, 169, 92, 0)),
+        linear-gradient(180deg, rgba(79, 70, 229, 0.16), rgba(79, 70, 229, 0)),
         var(--panel);
     }
 
@@ -559,13 +586,17 @@
       white-space: nowrap;
     }
 
+    .flow-status.deny {
+      color: var(--danger);
+    }
+
     html.motion .flow-row.active {
       animation: activeRead 4.8s var(--ease) infinite;
     }
 
     @keyframes activeRead {
       0%, 45%, 100% { border-color: rgba(255, 255, 255, 0.1); }
-      18%, 30% { border-color: rgba(231, 200, 136, 0.58); }
+      18%, 30% { border-color: rgba(165, 180, 252, 0.58); }
     }
 
     .audit-table {
@@ -593,7 +624,8 @@
       font-weight: 520;
     }
 
-    .proof-grid {
+    .proof-grid,
+    .alternative-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1px;
@@ -603,23 +635,31 @@
       background: var(--line);
     }
 
-    .proof {
+    .alternative-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .proof,
+    .alternative {
       min-height: 210px;
       padding: 24px;
       background: var(--panel);
     }
 
-    .proof .label {
+    .proof .label,
+    .alternative .label {
       color: var(--gold-soft);
       font-family: var(--mono);
       font-size: 12px;
     }
 
-    .proof h3 {
+    .proof h3,
+    .alternative h3 {
       margin-top: 18px;
     }
 
-    .proof p {
+    .proof p,
+    .alternative p {
       margin: 12px 0 0;
       color: var(--muted);
       font-size: 15px;
@@ -714,7 +754,7 @@
 
     .plan.featured {
       background:
-        linear-gradient(180deg, rgba(207, 169, 92, 0.1), rgba(207, 169, 92, 0)),
+        linear-gradient(180deg, rgba(79, 70, 229, 0.16), rgba(79, 70, 229, 0)),
         var(--panel);
     }
 
@@ -760,19 +800,12 @@
       margin-top: 20px;
     }
 
-    .config-warn {
-      display: none;
-      margin: 0 0 18px;
-      padding: 14px 16px;
+    .pricing-note {
+      margin: 18px 0 0;
       color: var(--muted);
       font-size: 14px;
-      line-height: 1.45;
-      border: 1px solid rgba(255, 107, 95, 0.3);
-      border-radius: var(--radius);
-      background: rgba(255, 107, 95, 0.08);
+      line-height: 1.55;
     }
-
-    .config-warn.show { display: block; }
 
     .faq {
       display: grid;
@@ -819,7 +852,7 @@
     .final-cta {
       padding: 84px 0;
       background:
-        linear-gradient(180deg, rgba(207, 169, 92, 0.07), rgba(207, 169, 92, 0)),
+        linear-gradient(180deg, rgba(79, 70, 229, 0.1), rgba(79, 70, 229, 0)),
         var(--bg);
       text-align: center;
     }
@@ -881,8 +914,16 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .pipeline {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .alternative-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .terminal,
@@ -953,6 +994,7 @@
       .metrics,
       .compare,
       .proof-grid,
+      .alternative-grid,
       .pricing-grid,
       .faq {
         grid-template-columns: 1fr;
@@ -985,8 +1027,9 @@
         Vibe Vault
       </a>
       <div class="nav-links">
-        <a href="#why">Why</a>
-        <a href="#workflow">Workflow</a>
+        <a href="#why">Risk</a>
+        <a href="#workflow">Demo</a>
+        <a href="#compare">Compare</a>
         <a href="#security">Security</a>
         <a href="#pricing">Pricing</a>
         <a class="download" href="/download">Download</a>
@@ -997,18 +1040,25 @@
   <header class="hero">
     <div class="shell">
       <div class="hero-inner reveal">
-        <p class="eyebrow">LunaOS / macOS 14+</p>
+        <p class="eyebrow">Vibe Vault — secure credential access for AI coding agents</p>
         <h1>Vibe Vault</h1>
-        <p class="hero-claim">The trust layer for AI agents.</p>
+        <p class="hero-claim">Stop AI coding agents from exposing your API keys.</p>
         <p class="lede">
-          AI projects remember context. Vibe Vault controls the secrets agents can touch,
-          records every read, and keeps the vault local to your Mac.
+          Give Cursor, Claude Code, Devin, and VS Code secure access to credentials through
+          a local macOS vault, with Touch ID approval, per-agent audit logs, and no cloud account.
         </p>
+        <p class="trust-line">Free for solo developers · macOS 14+ · Local-first · No account required</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="/download">Download for macOS</a>
-          <a class="btn btn-secondary" href="#workflow">See the workflow</a>
+          <a class="btn btn-primary" href="/download">Download Free</a>
+          <a class="btn btn-secondary" href="#workflow">Watch Demo</a>
         </div>
         <pre class="install" tabindex="0">brew tap luna-os/tap &amp;&amp; brew install vibevault</pre>
+        <div class="hero-chips" aria-label="Trust signals">
+          <span class="hero-chip">Never paste into chat</span>
+          <span class="hero-chip">Secrets stay local</span>
+          <span class="hero-chip">Touch ID controlled</span>
+          <span class="hero-chip">Agent access audited</span>
+        </div>
       </div>
     </div>
   </header>
@@ -1018,30 +1068,36 @@
       <div class="shell">
         <div class="section-head reveal">
           <div>
-            <p class="section-label">Positioning</p>
-            <h2>AI tools can hold instructions. They should not become your secret vault.</h2>
+            <p class="section-label">The risk</p>
+            <h2>AI agents now operate inside your development environment. Secret management was not built for them.</h2>
           </div>
           <p class="section-copy">
-            ChatGPT Projects and Claude Projects organize work. Vibe Vault protects the
-            credentials underneath that work, with local storage and audit trails built for agents.
+            Developers now give agents access to repositories, terminals, deployment tools,
+            and production services. Credentials are still copied into <code>.env</code> files,
+            shell histories, chat windows, and project folders.
           </p>
         </div>
 
-        <div class="metrics reveal" aria-label="Product pillars">
+        <div class="metrics reveal" aria-label="AI coding credential risks">
           <div class="metric">
             <span>01</span>
-            <strong>Local first</strong>
-            <p>AES-GCM vault on disk. Master key in macOS Keychain. No account required for Solo.</p>
+            <strong>Secret exposed in a prompt</strong>
+            <p>A model transcript should never become the place your production credentials live.</p>
           </div>
           <div class="metric">
             <span>02</span>
-            <strong>Agent aware</strong>
-            <p>Reads are tagged by tool, repo, action, and time so the audit log answers who touched what.</p>
+            <strong>Secret committed to Git</strong>
+            <p>Each repo becomes another secret inventory that can drift, leak, or get indexed.</p>
           </div>
           <div class="metric">
             <span>03</span>
-            <strong>Workflow native</strong>
-            <p>Prepare Cursor, run commands, sync providers, and guard git from the CLI or macOS app.</p>
+            <strong>Wrong agent reads production</strong>
+            <p>Local tools inherit credentials easily when there is no project-aware boundary.</p>
+          </div>
+          <div class="metric">
+            <span>04</span>
+            <strong>No record of access</strong>
+            <p>When Cursor, Claude Code, or a shell command reads a value, teams need evidence.</p>
           </div>
         </div>
       </div>
@@ -1051,12 +1107,12 @@
       <div class="shell">
         <div class="section-head reveal">
           <div>
-            <p class="section-label">Before / After</p>
-            <h2>The difference is not storage. It is control.</h2>
+            <p class="section-label">Outcome</p>
+            <h2>Vibe Vault creates a secure boundary between agents and credentials.</h2>
           </div>
           <p class="section-copy">
-            Password managers store secrets. Dotenv files scatter them. Vibe Vault turns secret access
-            into a deliberate, audited part of the AI-coding workflow.
+            Traditional password managers store credentials for people. Vibe Vault controls how
+            AI coding agents access credentials during development.
           </p>
         </div>
 
@@ -1064,10 +1120,10 @@
           <article class="compare-panel">
             <h3>Before Vibe Vault</h3>
             <ul class="compare-list">
-              <li><span class="mark">-</span><span>Production tokens copied from a password manager into terminals and chats.</span></li>
-              <li><span class="mark">-</span><span><code>.env</code> files spread across repos with no central view or rotation context.</span></li>
-              <li><span class="mark">-</span><span>No record of whether Cursor, Claude Code, or a shell command read a secret.</span></li>
-              <li><span class="mark">-</span><span>Provider sync is manual, fragile, and easy to forget after a key rotates.</span></li>
+              <li><span class="mark">-</span><span>API keys copied from a password manager into terminals, chats, and local notes.</span></li>
+              <li><span class="mark">-</span><span><code>.env</code> files multiply across repos with no central view or rotation trail.</span></li>
+              <li><span class="mark">-</span><span>No record of whether Cursor, Claude Code, Devin, or a shell command read a secret.</span></li>
+              <li><span class="mark">-</span><span>Provider updates are manual and easy to miss after a key rotates.</span></li>
             </ul>
           </article>
 
@@ -1075,9 +1131,9 @@
             <h3>After Vibe Vault</h3>
             <ul class="compare-list">
               <li><span class="mark">+</span><span>One local vault becomes the source of truth for AI-coding credentials.</span></li>
-              <li><span class="mark">+</span><span>Touch ID gates reads before a secret reaches an agent or command.</span></li>
-              <li><span class="mark">+</span><span>Every read lands in an audit log with agent, project, and timestamp.</span></li>
-              <li><span class="mark">+</span><span>Cloudflare, Vercel, and PushCI sync happen when you explicitly choose.</span></li>
+              <li><span class="mark">+</span><span>Your secrets never leave your Mac unless you explicitly sync or inject them.</span></li>
+              <li><span class="mark">+</span><span>Each access is logged with agent, project, action, and time.</span></li>
+              <li><span class="mark">+</span><span>Secure an AI coding environment with <code>vibevault cursor prepare</code>.</span></li>
             </ul>
           </article>
         </div>
@@ -1088,12 +1144,12 @@
       <div class="shell">
         <div class="section-head reveal">
           <div>
-            <p class="section-label">Three-second workflow</p>
-            <h2>Scan the repo. Prepare the agent. Run with secrets. Audit the read.</h2>
+            <p class="section-label">How it works</p>
+            <h2>A complete credential access flow in under a minute.</h2>
           </div>
           <p class="section-copy">
-            The CLI and macOS app share one vault, so the path from missing secret to verified agent
-            access stays short and legible.
+            Add a key, prepare Cursor, approve access, let the agent run, then see both successful
+            and denied reads in the audit log.
           </p>
         </div>
 
@@ -1106,14 +1162,15 @@
               </div>
               <ul class="command-stack">
                 <li><span class="prompt">$</span><span>vibevault scan</span></li>
+                <li><span class="prompt">$</span><span>vibevault add OPENAI_API_KEY</span></li>
                 <li><span class="prompt">$</span><span>vibevault cursor prepare</span></li>
                 <li><span class="prompt">$</span><span>vibevault run -- npm run dev</span></li>
-                <li><span class="prompt">$</span><span>vibevault push --to cloudflare</span></li>
+                <li><span class="prompt">$</span><span>vibevault audit --agent cursor</span></li>
               </ul>
             </div>
             <p class="terminal-note">
-              The setup command wires MCP, agent rules, skills, and a git leak guard so the AI tool
-              receives permissioned access instead of raw copy-paste.
+              The setup command wires MCP, agent rules, skills, ignore rules, and a git leak guard so
+              the AI tool requests credentials through Vibe Vault instead of copy-paste.
             </p>
           </div>
 
@@ -1126,74 +1183,153 @@
               <div class="flow-row">
                 <span class="flow-index">01</span>
                 <div>
-                  <strong>Project scan</strong>
-                  <span>Detects <code>wrangler.toml</code>, <code>vercel.json</code>, package scripts, and dotenv gaps.</span>
+                  <strong>Add credential</strong>
+                  <span><code>OPENAI_API_KEY</code> is stored in the local vault backed by macOS Keychain.</span>
                 </div>
-                <span class="flow-status">mapped</span>
+                <span class="flow-status">stored</span>
               </div>
               <div class="flow-row active">
                 <span class="flow-index">02</span>
                 <div>
-                  <strong>Touch ID read</strong>
-                  <span>Secret leaves the vault only after local approval.</span>
+                  <strong>Prepare Cursor</strong>
+                  <span>MCP, project rules, skills, ignore rules, and git leak protection are installed.</span>
                 </div>
-                <span class="flow-status">gated</span>
+                <span class="flow-status">ready</span>
               </div>
               <div class="flow-row">
                 <span class="flow-index">03</span>
                 <div>
-                  <strong>Agent handoff</strong>
-                  <span>Cursor, Claude Code, or Windsurf receives the allowed value through MCP.</span>
+                  <strong>Touch ID approval</strong>
+                  <span>Cursor or Claude Code requests access; the developer approves locally.</span>
                 </div>
-                <span class="flow-status">scoped</span>
+                <span class="flow-status">gated</span>
               </div>
               <div class="flow-row">
                 <span class="flow-index">04</span>
                 <div>
-                  <strong>Audit trail</strong>
+                  <strong>Use without exposure</strong>
+                  <span>The agent receives runtime access without putting the key in chat or project files.</span>
+                </div>
+                <span class="flow-status">allowed</span>
+              </div>
+              <div class="flow-row">
+                <span class="flow-index">05</span>
+                <div>
+                  <strong>Block wrong project</strong>
+                  <span>A request outside the prepared project is denied and recorded.</span>
+                </div>
+                <span class="flow-status deny">denied</span>
+              </div>
+              <div class="flow-row">
+                <span class="flow-index">06</span>
+                <div>
+                  <strong>Audit evidence</strong>
                   <span>Each access is recorded for review after the session ends.</span>
                 </div>
                 <span class="flow-status">logged</span>
               </div>
             </div>
             <div class="audit-table" aria-label="Recent secret reads">
-              <div class="audit-row"><strong>CF_API_TOKEN</strong><span>Claude Code</span><span>16:42</span></div>
-              <div class="audit-row"><strong>VERCEL_TOKEN</strong><span>Cursor</span><span>16:39</span></div>
-              <div class="audit-row"><strong>PUSHCI_KEY</strong><span>Windsurf</span><span>16:31</span></div>
+              <div class="audit-row"><strong>OPENAI_API_KEY</strong><span>Cursor allowed</span><span>16:42</span></div>
+              <div class="audit-row"><strong>VERCEL_TOKEN</strong><span>Claude Code allowed</span><span>16:39</span></div>
+              <div class="audit-row"><strong>STRIPE_SECRET</strong><span>Cursor denied</span><span>16:31</span></div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section>
+    <section id="compare">
       <div class="shell">
         <div class="section-head reveal">
           <div>
-            <p class="section-label">Why it wins</p>
-            <h2>Built for the moment an AI agent needs real access.</h2>
+            <p class="section-label">Comparison</p>
+            <h2>General vaults protect credentials for people. Vibe Vault controls access for agents.</h2>
           </div>
           <p class="section-copy">
-            This is where ordinary vaults, project folders, and prompt memory stop. Vibe Vault knows
-            the repo, the agent, the provider, and the audit requirement.
+            Password managers, Keychain, tool-specific secrets, and <code>.env</code> files each solve
+            part of the problem. AI coding needs the workflow boundary between all of them.
+          </p>
+        </div>
+
+        <div class="alternative-grid reveal">
+          <article class="alternative">
+            <span class="label">.env</span>
+            <h3>Easy until it leaks, forks, or drifts.</h3>
+            <p>Vibe Vault scans gaps, guards git, and injects values only when a command or agent session needs them.</p>
+          </article>
+          <article class="alternative">
+            <span class="label">Shell env</span>
+            <h3>Fast, inherited, and hard to audit.</h3>
+            <p>Environment variables can flow into child processes without a clear record of who used what.</p>
+          </article>
+          <article class="alternative">
+            <span class="label">1Password</span>
+            <h3>A human vault is not an agent access log.</h3>
+            <p>Keep your password manager. Use Vibe Vault when AI tools need scoped, audited credential reads.</p>
+          </article>
+          <article class="alternative">
+            <span class="label">macOS Keychain</span>
+            <h3>A primitive is not a workflow.</h3>
+            <p>Vibe Vault builds scanning, approvals, audit, MCP setup, and provider sync on top of local Keychain storage.</p>
+          </article>
+          <article class="alternative">
+            <span class="label">CI/CD stores</span>
+            <h3>Deployment secrets are not local AI access.</h3>
+            <p>Provider stores are useful after a push. Vibe Vault protects the developer machine before deployment.</p>
+          </article>
+          <article class="alternative">
+            <span class="label">Vibe Vault</span>
+            <h3>Local storage, agent access, audit, and setup.</h3>
+            <p>One workflow covers Keychain storage, AI-agent access, repo protection, provider sync, and audit.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="use-cases">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <p class="section-label">Use cases</p>
+            <h2>The product becomes concrete at the moment an agent needs access.</h2>
+          </div>
+          <p class="section-copy">
+            Vibe Vault is for local AI coding, multi-repo development, deployment credentials,
+            team onboarding, incident review, and contractor workflows.
           </p>
         </div>
 
         <div class="proof-grid reveal">
           <article class="proof">
-            <span class="label">Against AI projects</span>
-            <h3>Projects remember instructions. Vibe Vault controls credentials.</h3>
-            <p>Keep prompts and context in your AI tool. Keep tokens in a local vault that can approve, deny, and record access.</p>
+            <span class="label">Local AI coding</span>
+            <h3>Give Cursor and Claude Code the keys they need.</h3>
+            <p>Use credentials in a session without pasting raw values into prompts or project files.</p>
           </article>
           <article class="proof">
-            <span class="label">Against password managers</span>
-            <h3>Storage is not enough when agents are acting.</h3>
-            <p>Traditional vaults do not know whether a read came from Cursor, Claude Code, Windsurf, or a shell process.</p>
+            <span class="label">Multi-repo work</span>
+            <h3>Stop duplicating <code>.env</code> files.</h3>
+            <p>Use one controlled local source across workers, apps, scripts, and provider projects.</p>
           </article>
           <article class="proof">
-            <span class="label">Against dotenv sprawl</span>
-            <h3>Your repo stops being the hiding place.</h3>
-            <p>Scan missing values, prepare ignore rules, install guards, and keep the source of truth out of git.</p>
+            <span class="label">Deployment sync</span>
+            <h3>Push selected credentials only when you choose.</h3>
+            <p>Sync to Cloudflare, Vercel, and PushCI without turning Vibe Vault into a cloud vault.</p>
+          </article>
+          <article class="proof">
+            <span class="label">Team onboarding</span>
+            <h3>Standardize the first protected repository.</h3>
+            <p>Give developers the same scan, prepare, guard, run, and audit path on every Mac.</p>
+          </article>
+          <article class="proof">
+            <span class="label">Incident review</span>
+            <h3>See which agent accessed a credential.</h3>
+            <p>Audit agent, project, credential, timestamp, and result before a suspicious deployment or repo change.</p>
+          </article>
+          <article class="proof">
+            <span class="label">Contractor access</span>
+            <h3>Reduce credential copy-paste during short engagements.</h3>
+            <p>Use limited local access instead of emailing, pasting, or scattering shared secrets.</p>
           </article>
         </div>
       </div>
@@ -1203,22 +1339,22 @@
       <div class="shell">
         <div class="section-head reveal">
           <div>
-            <p class="section-label">LunaOS memory layer</p>
-            <h2>A small, durable layer between knowledge and execution.</h2>
+            <p class="section-label">Expansion path</p>
+            <h2>macOS first, then agent identity and broader runtime governance.</h2>
           </div>
           <p class="section-copy">
-            Vibe Vault gives LunaOS a trustworthy boundary: agents can know what to do, but every
-            secret read still passes through a local vault and a permanent audit trail.
+            Vibe Vault starts where the workflow is local and high-risk: Mac developers using
+            AI agents. The larger category is identity and access management for AI coding agents.
           </p>
         </div>
 
-        <div class="pipeline reveal" aria-label="LunaOS workflow">
-          <div class="pipe-step"><span>01</span><strong>Idea</strong></div>
-          <div class="pipe-step"><span>02</span><strong>Project context</strong></div>
-          <div class="pipe-step"><span>03</span><strong>Agent action</strong></div>
-          <div class="pipe-step"><span>04</span><strong>Vault approval</strong></div>
-          <div class="pipe-step"><span>05</span><strong>Provider sync</strong></div>
-          <div class="pipe-step"><span>06</span><strong>Audited output</strong></div>
+        <div class="pipeline reveal" aria-label="AI credential infrastructure roadmap">
+          <div class="pipe-step"><span>Available</span><strong>macOS local vault</strong></div>
+          <div class="pipe-step"><span>Available</span><strong>Agent audit and provider sync</strong></div>
+          <div class="pipe-step"><span>Planned</span><strong>Linux and Windows workflows</strong></div>
+          <div class="pipe-step"><span>Planned</span><strong>Repository-level policies</strong></div>
+          <div class="pipe-step"><span>Research</span><strong>Remote dev environments</strong></div>
+          <div class="pipe-step"><span>Later</span><strong>Agent identity governance</strong></div>
         </div>
       </div>
     </section>
@@ -1228,37 +1364,46 @@
         <div class="security">
           <div class="reveal">
             <p class="section-label">Trust</p>
-            <h2>Local-first security that reads enterprise before it needs enterprise theater.</h2>
+            <h2>Local-first by architecture, not by marketing.</h2>
             <p class="section-copy">
-              The product should feel calm because the architecture is calm: local encrypted storage,
-              Keychain-backed keys, explicit sync, and offline licensing.
+              A security product needs a precise threat story. Vibe Vault keeps Solo credentials
+              local, makes provider sync user-initiated, and records access metadata without storing
+              secret values in logs.
             </p>
           </div>
 
           <div class="security-list reveal">
             <div class="security-row">
-              <strong>Encrypted vault</strong>
-              <span>AES-GCM ciphertext lives on disk; the master key is held in macOS Keychain.</span>
+              <strong>Storage model</strong>
+              <span>Credentials live in local encrypted storage with the master key held in macOS Keychain.</span>
             </div>
             <div class="security-row">
-              <strong>Touch ID reads</strong>
-              <span>Secret access is gated locally before a value is copied, injected, or sent through MCP.</span>
+              <strong>Access model</strong>
+              <span>Reads can require local approval before a value is copied, injected, or sent through MCP.</span>
             </div>
             <div class="security-row">
-              <strong>Per-agent audit</strong>
-              <span>Claude Code, Cursor, Windsurf, and shell access can be reviewed by project and time.</span>
+              <strong>Audit model</strong>
+              <span>Audit rows record metadata such as agent, project, credential name, action, result, and time.</span>
             </div>
             <div class="security-row">
-              <strong>Offline Team license</strong>
-              <span>VV1 keys activate locally. Verification does not need an account or a license server.</span>
+              <strong>Secret values in logs</strong>
+              <span>Audit logs are designed for names and access events, not raw secret values.</span>
             </div>
             <div class="security-row">
               <strong>Provider sync</strong>
-              <span>Cloudflare, Vercel, and PushCI receive secrets only when you run an explicit push.</span>
+              <span>Cloudflare, Vercel, and PushCI receive selected secrets only when you run an explicit push.</span>
             </div>
             <div class="security-row">
-              <strong>Rollout controls</strong>
-              <span>Seats, support SLAs, invoice checkout, reissuance, and shared-vault roadmap for larger teams.</span>
+              <strong>Offline licensing</strong>
+              <span>Team licenses verify locally against an embedded public key; opening the app does not require a license server.</span>
+            </div>
+            <div class="security-row">
+              <strong>Source-visible core</strong>
+              <span>The MIT-licensed CLI, core vault package, MCP server, skills, and plugin manifests can be inspected.</span>
+            </div>
+            <div class="security-row">
+              <strong>Known limits</strong>
+              <span>Vibe Vault cannot protect secrets after an approved process receives them, or against full local malware compromise.</span>
             </div>
           </div>
         </div>
@@ -1270,22 +1415,18 @@
         <div class="section-head reveal">
           <div>
             <p class="section-label">Pricing</p>
-            <h2>Pick the size of the team, not a list of artificial limits.</h2>
+            <h2>Protect the AI developers who can touch production.</h2>
           </div>
           <p class="section-copy">
-            Solo stays free. Paid plans add offline seats, support, rollout help, and the commercial
-            confidence teams need before agents touch production systems.
+            Solo stays free. Paid plans cover team rollout, offline license use, updates,
+            support, and a standard workflow for developers whose agents touch real credentials.
           </p>
-        </div>
-
-        <div id="config-warn" class="config-warn" role="status" hidden>
-          Checkout is temporarily unavailable. Team, Studio, and Company buy links will appear when configured.
         </div>
 
         <div class="pricing-grid reveal">
           <article class="plan">
-            <p class="plan-label">Solo builders</p>
-            <h3>For individual macOS AI-coding sessions.</h3>
+            <p class="plan-label">Individual</p>
+            <h3>Protect one builder working with AI.</h3>
             <div class="price">$0</div>
             <p class="plan-desc">A complete local vault for one builder: app, CLI, MCP, audit, scanning, and provider sync.</p>
             <ul class="feature-list">
@@ -1298,47 +1439,55 @@
           </article>
 
           <article class="plan featured">
-            <p class="plan-label">AI coding teams</p>
-            <h3>For small crews shipping with agents.</h3>
+            <p class="plan-label">Team coverage</p>
+            <h3>Protect a small engineering team.</h3>
             <div class="price">$19<span>/mo</span></div>
-            <p class="plan-desc">A 5-seat offline Team license with the same local-first runtime and practical support.</p>
+            <p class="plan-desc">Includes 5 developers, offline verification, deployment guidance, and email support.</p>
             <ul class="feature-list">
               <li><span class="mark">+</span><span>Everything in Solo</span></li>
-              <li><span class="mark">+</span><span>5-seat offline VV1 license</span></li>
+              <li><span class="mark">+</span><span>Protect 5 AI developers</span></li>
+              <li><span class="mark">+</span><span>Subscription includes updates and license use</span></li>
               <li><span class="mark">+</span><span>Team badge and email support</span></li>
-              <li><span class="mark">+</span><span>Git leak guard and audit workflows</span></li>
             </ul>
-            <a class="btn btn-primary buy" data-tier="team" href="#pricing">Buy Team</a>
+            <a class="btn btn-primary buy" data-tier="team" href="#pricing">Protect Your Team</a>
           </article>
 
           <article class="plan">
             <p class="plan-label">Studios</p>
-            <h3>For multi-repo studios standardizing AI work.</h3>
+            <h3>Secure every repo in a studio.</h3>
             <div class="price">$69<span>/mo</span></div>
-            <p class="plan-desc">More seats, priority support, retention guidance, and early shared-vault access.</p>
+            <p class="plan-desc">For multi-repo teams that need repeatable secret handling across client and product work.</p>
             <ul class="feature-list">
               <li><span class="mark">+</span><span>Everything in Team</span></li>
-              <li><span class="mark">+</span><span>20-seat offline Studio license</span></li>
+              <li><span class="mark">+</span><span>Protect 20 AI developers</span></li>
               <li><span class="mark">+</span><span>Priority email support</span></li>
-              <li><span class="mark">+</span><span>Early shared vault / relay</span></li>
+              <li><span class="mark">+</span><span>Audit retention and rollout guidance</span></li>
             </ul>
-            <a class="btn btn-secondary buy" data-tier="studio" href="#pricing">Buy Studio</a>
+            <a class="btn btn-secondary buy" data-tier="studio" href="#pricing">Standardize Studio</a>
           </article>
 
           <article class="plan">
             <p class="plan-label">Companies</p>
-            <h3>For org-wide macOS rollout.</h3>
+            <h3>Roll out AI credential governance.</h3>
             <div class="price">$249<span>/mo</span></div>
-            <p class="plan-desc">A 100-seat offline license with SLA support, onboarding, invoice checkout, and reissuance.</p>
+            <p class="plan-desc">For macOS engineering groups that want onboarding help and predictable support.</p>
             <ul class="feature-list">
               <li><span class="mark">+</span><span>Everything in Studio</span></li>
-              <li><span class="mark">+</span><span>100-seat offline Company license</span></li>
+              <li><span class="mark">+</span><span>Protect 100 AI developers</span></li>
               <li><span class="mark">+</span><span>Same business day SLA email</span></li>
               <li><span class="mark">+</span><span>Onboarding call and invoice checkout</span></li>
             </ul>
-            <a class="btn btn-secondary buy" data-tier="company" href="#pricing">Buy Company</a>
+            <a class="btn btn-secondary buy" data-tier="company" href="#pricing">Roll Out Company</a>
           </article>
         </div>
+
+        <p class="pricing-note">
+          Monthly subscriptions issue a signed offline license valid for the current billing period plus a renewal buffer.
+          Renewal sends a fresh signed license. If a subscription is canceled, the current license keeps working until it expires.
+          Verification remains offline: the app checks the signed license locally and does not contact a Vibe Vault license server to open.
+          Business controls such as SSO, MDM policy, SIEM export, and centralized admin are roadmap items,
+          not included in the current self-serve plans.
+        </p>
       </div>
     </section>
 
@@ -1347,18 +1496,54 @@
         <div class="section-head reveal">
           <div>
             <p class="section-label">FAQ</p>
-            <h2>Short answers for teams before they install.</h2>
+            <h2>Answers to the objections developers and buyers ask first.</h2>
           </div>
           <p class="section-copy">
-            The product stays intentionally narrow: local vault, agent audit, workflow setup,
-            provider sync, and offline licensing.
+            Vibe Vault starts narrow on purpose: credentials, agent access, local approval,
+            provider sync, and audit evidence for AI coding.
           </p>
         </div>
 
         <div class="faq reveal">
           <details open>
-            <summary>Does this replace ChatGPT Projects or Claude Projects?</summary>
-            <p>No. Those tools organize context and instructions. Vibe Vault protects the credentials those workflows need when agents run real commands.</p>
+            <summary>How is this different from 1Password?</summary>
+            <p>1Password is a strong human vault. Vibe Vault is the local credential runtime for AI coding: repo scanning, agent setup, command injection, provider sync, and per-agent audit.</p>
+          </details>
+          <details>
+            <summary>Why not keep using <code>.env</code> files?</summary>
+            <p><code>.env</code> is convenient until files drift, get copied, or reach git. Vibe Vault keeps the source of truth outside the repo and injects values only when needed.</p>
+          </details>
+          <details>
+            <summary>Can Cursor or Claude see every secret?</summary>
+            <p>No. Agents request values through the configured workflow. They receive the values you allow for the current project or command, not unrestricted vault access.</p>
+          </details>
+          <details>
+            <summary>Can an agent print or leak a credential?</summary>
+            <p>After an approved process receives a secret, Vibe Vault cannot control everything that process does with it. The product reduces exposure, scopes access, and records the read so misuse is visible.</p>
+          </details>
+          <details>
+            <summary>Can my employer see my keys?</summary>
+            <p>Solo secrets are local to your Mac. Team licensing covers seats and support; it does not move your vault into a LunaOS cloud account.</p>
+          </details>
+          <details>
+            <summary>What happens if my Mac dies?</summary>
+            <p>The current product is local-first. You should keep provider recovery paths and rotate credentials when a machine is lost. Shared vault and relay workflows are on the roadmap for larger teams.</p>
+          </details>
+          <details>
+            <summary>How do audits work?</summary>
+            <p>Reads are recorded with secret name, action, project context, agent or process, and timestamp so you can review what happened after an AI session.</p>
+          </details>
+          <details>
+            <summary>Can secret values appear in logs?</summary>
+            <p>Audit events are for access metadata, not raw values. Shell commands and third-party tools can still log values if you print or pass secrets to them unsafely.</p>
+          </details>
+          <details>
+            <summary>What data leaves my Mac?</summary>
+            <p>Solo vault data stays local. Data leaves the machine only through actions you initiate, such as provider sync, downloads, checkout, or support email.</p>
+          </details>
+          <details>
+            <summary>Can local malware read my secrets?</summary>
+            <p>No local secret manager can defend against complete device compromise. Vibe Vault relies on macOS Keychain, local approval, and reduced copy-paste exposure; it is not an anti-malware boundary.</p>
           </details>
           <details>
             <summary>Where do secrets live?</summary>
@@ -1366,7 +1551,11 @@
           </details>
           <details>
             <summary>Does Team phone home?</summary>
-            <p>No. Offline VV1 licenses verify against an embedded public key. The app does not need a license server to open.</p>
+            <p>No. Signed offline licenses verify against an embedded public key. The app does not need a license server to open.</p>
+          </details>
+          <details>
+            <summary>Why is a cloud-free product subscription based?</summary>
+            <p>The subscription covers updates, support, and license use. License verification stays offline; renewal issues a fresh signed license rather than requiring an always-online account.</p>
           </details>
           <details>
             <summary>What does <code>vibevault cursor prepare</code> do?</summary>
@@ -1377,8 +1566,12 @@
             <p>Yes. Vibe Vault can push to Cloudflare, Vercel, and PushCI when you explicitly run a sync command.</p>
           </details>
           <details>
-            <summary>What is the webhook URL for checkout?</summary>
-            <p><code>https://vibevault.lunaos.ai/webhooks/lemonsqueezy</code></p>
+            <summary>Does this replace ChatGPT Projects or Claude Projects?</summary>
+            <p>No. Those tools organize context and instructions. Vibe Vault protects the credentials those workflows need when agents run real commands.</p>
+          </details>
+          <details>
+            <summary>Is Windows or Linux supported?</summary>
+            <p>Not yet. Vibe Vault is macOS-first because it uses local developer machines and native Keychain security. Linux, Windows, and remote development environments are on the expansion path.</p>
           </details>
         </div>
       </div>
@@ -1387,10 +1580,10 @@
     <section class="final-cta">
       <div class="shell reveal">
         <p class="section-label">Start</p>
-        <h2>Give every AI coding session a vault boundary and an audit trail.</h2>
-        <p>Install the local app, prepare your agent, and stop treating secrets as disposable chat context.</p>
+        <h2>Never paste production credentials into AI chat again.</h2>
+        <p>Protect your first repository in minutes, then use the audit trail to prove what happened.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="/download">Download for macOS</a>
+          <a class="btn btn-primary" href="/download">Download Free</a>
           <a class="btn btn-secondary" href="#pricing">Compare plans</a>
         </div>
       </div>
@@ -1431,16 +1624,24 @@
       }
 
       (async function () {
-        var warn = document.getElementById("config-warn");
         var host = window.location.hostname;
         var isLocalPreview = host === "localhost" || host === "127.0.0.1" || window.location.protocol === "file:";
         var checkoutEndpoint = "/api/checkout";
+        function disableBuyLinks(label) {
+          document.querySelectorAll("a.buy[data-tier]").forEach(function (a) {
+            a.setAttribute("aria-disabled", "true");
+            a.removeAttribute("target");
+            a.removeAttribute("rel");
+            a.href = "#pricing";
+            a.textContent = label;
+          });
+        }
         if (isLocalPreview) return;
         try {
           var cfg = await (await fetch(checkoutEndpoint)).json();
           if (!cfg.configured) {
-            warn?.removeAttribute("hidden");
-            warn?.classList.add("show");
+            disableBuyLinks("Join Team Waitlist");
+            return;
           }
           document.querySelectorAll("a.buy[data-tier]").forEach(function (a) {
             var url = cfg[a.dataset.tier];
@@ -1453,8 +1654,7 @@
             }
           });
         } catch (_) {
-          warn?.removeAttribute("hidden");
-          warn?.classList.add("show");
+          disableBuyLinks("Try again later");
         }
       })();
     })();

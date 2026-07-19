@@ -15,8 +15,22 @@ if [ -z "${notes// }" ]; then
   notes="See CHANGELOG.md for details."
 fi
 
+assets=(
+  ".build/release/vibevault"
+  ".build/release/vibevault-mcp"
+)
+
+for optional in \
+  ".build/release/vibevault-browser-host" \
+  "build/VibeVault.dmg" \
+  "${BROWSER_EXTENSION_ZIP:-build/VibeVault-Browser-Importer.zip}"
+do
+  if [ -f "$optional" ]; then
+    assets+=("$optional")
+  fi
+done
+
 gh release create "$TAG" \
   --title "Vibe Vault $TAG" \
   --notes "$notes" \
-  .build/release/vibevault \
-  .build/release/vibevault-mcp
+  "${assets[@]}"

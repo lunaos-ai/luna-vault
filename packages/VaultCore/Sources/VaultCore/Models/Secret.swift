@@ -3,6 +3,7 @@ import Foundation
 public struct Secret: Equatable, Hashable, Sendable {
     public let name: String
     public let value: String
+    public let createdAt: Date
     public let updatedAt: Date
     public let notes: String?
     public let expiresAt: Date?
@@ -14,6 +15,7 @@ public struct Secret: Equatable, Hashable, Sendable {
         name: String,
         value: String,
         updatedAt: Date = Date(),
+        createdAt: Date? = nil,
         notes: String? = nil,
         expiresAt: Date? = nil,
         rotateEveryDays: Int? = nil,
@@ -22,6 +24,7 @@ public struct Secret: Equatable, Hashable, Sendable {
     ) {
         self.name = name
         self.value = value
+        self.createdAt = createdAt ?? updatedAt
         self.updatedAt = updatedAt
         self.notes = notes
         self.expiresAt = expiresAt
@@ -79,6 +82,7 @@ extension SecretError: CustomStringConvertible {
 /// JSON-encoded into kSecAttrComment alongside the secret in Keychain.
 struct SecretMetadata: Codable {
     var notes: String?
+    var createdAt: Date?
     var expiresAt: Date?
     var rotateEveryDays: Int?
     var lastRotatedAt: Date?
@@ -93,7 +97,7 @@ struct SecretMetadata: Codable {
     }
 
     func encode() -> String? {
-        if notes == nil, expiresAt == nil, rotateEveryDays == nil,
+        if notes == nil, createdAt == nil, expiresAt == nil, rotateEveryDays == nil,
            lastRotatedAt == nil, mcpAllowed == nil { return nil }
         guard let data = try? JSONEncoder.luna.encode(self),
               let s = String(data: data, encoding: .utf8) else { return nil }

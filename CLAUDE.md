@@ -17,7 +17,7 @@ Native macOS secret manager for AI-coding workflows. Replaces `.env` files and c
 
 ## Target user
 
-Solo developer or small team using AI coding tools (Cursor, Claude Code, Windsurf) on macOS who currently:
+Solo developer or small team using AI coding tools (Cursor, Claude Code, Devin) on macOS who currently:
 
 - Stores secrets in `.env` files committed by accident.
 - Copy-pastes from 1Password into terminal sessions.

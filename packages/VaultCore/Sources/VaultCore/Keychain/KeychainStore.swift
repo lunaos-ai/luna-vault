@@ -71,6 +71,7 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
     static func encodeMetadata(from secret: Secret) -> String? {
         let meta = SecretMetadata(
             notes: secret.notes,
+            createdAt: secret.createdAt,
             expiresAt: secret.expiresAt,
             rotateEveryDays: secret.rotateEveryDays,
             lastRotatedAt: secret.lastRotatedAt,
@@ -122,7 +123,7 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         let updatedAt = attrs[kSecAttrModificationDate as String] as? Date ?? Date()
         let meta = SecretMetadata.decode(attrs[kSecAttrComment as String] as? String)
         return Secret(
-            name: name, value: value, updatedAt: updatedAt,
+            name: name, value: value, updatedAt: updatedAt, createdAt: meta.createdAt ?? updatedAt,
             notes: meta.notes, expiresAt: meta.expiresAt,
             rotateEveryDays: meta.rotateEveryDays, lastRotatedAt: meta.lastRotatedAt,
             mcpAllowed: meta.mcpAllowed ?? false

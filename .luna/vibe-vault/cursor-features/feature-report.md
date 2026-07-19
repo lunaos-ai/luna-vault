@@ -7,7 +7,7 @@
 
 | Feature | Detail |
 |---------|--------|
-| Audit agent chips | Cursor / Claude / Windsurf / VS Code quick filters |
+| Audit agent chips | Cursor / Claude / Devin / VS Code quick filters |
 | `suggest_secrets_for_task` | MCP tool — names only from scan + task text |
 | `.gitignore` / `.cursorignore` | Via prepare + **Fix .gitignore** on git-leak banner |
 | `AGENTS.md` section | Written by `CursorProjectPrep` |

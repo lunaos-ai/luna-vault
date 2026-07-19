@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .library(name: "VaultCore", targets: ["VaultCore"]),
         .executable(name: "vibevault", targets: ["vibevault"]),
+        .executable(name: "vibevault-browser-host", targets: ["vibevault-browser-host"]),
         .executable(name: "vibevault-mcp", targets: ["vibevault-mcp"]),
         .executable(name: "VibeVaultApp", targets: ["VibeVaultApp"])
     ],
@@ -36,6 +37,11 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "cli/vibevault"
+        ),
+        .executableTarget(
+            name: "vibevault-browser-host",
+            dependencies: ["VaultCore"],
+            path: "cli/vibevault-browser-host"
         ),
         .executableTarget(
             name: "vibevault-mcp",

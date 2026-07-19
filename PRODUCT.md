@@ -7,27 +7,97 @@ product
 > Primary surface is the macOS app, CLI, and menu bar — design serves function.
 > A marketing landing page may follow on the brand register; treat it separately when it lands.
 
+## Positioning
+
+Vibe Vault is **secure credential access for AI coding agents**.
+
+The short version:
+
+> Give AI coding agents secure access to credentials without exposing the credentials themselves.
+
+The product starts with local secrets because credentials are the highest-risk primitive in AI-assisted development. The larger category is agent identity, permissions, approvals, and runtime governance for AI-native engineering teams.
+
 ## Users
 
-Solo developers and small teams using AI-coding tools (Cursor, Claude Code, Windsurf) on macOS 14+. They live in two contexts that bleed into each other:
+Solo developers and small teams using AI-coding tools (Cursor, Claude Code, Devin) on macOS 14+. They live in two contexts that bleed into each other:
 
 - **Active build sessions**: switching between IDE, terminal, and AI agent at midnight. They need a secret pasted into the next command in under three seconds, with zero modal friction.
 - **Audit-after-the-fact**: someone (themselves, a co-founder, future-self) asks "which agent read CF_API_TOKEN last week?" — they need to answer it in one click.
 
-Today they juggle `.env` files (which leak into commits), copy-paste from 1Password (no audit trail of which AI saw what), or pipe secrets through shell scripts (no rotation reminders). Vibe Vault replaces all three.
+Today they juggle `.env` files that leak into commits, copy-paste from password managers with no agent-level audit, or pipe secrets through shell scripts with no rotation context. Vibe Vault adds the missing access-control layer between local credentials and AI coding agents.
 
-The job: **trust a single local source for every secret, audited per AI agent, with zero cloud accounts.**
+The job: **trust a single local source for every credential, approved and audited per AI agent, with zero cloud accounts for Solo.**
 
 ## Product Purpose
 
-A native macOS secret manager designed for the AI-coding workflow.
+The credential and access-control layer for local AI-coding workflows.
 
 - Secrets live in an **encrypted local vault** (AES-GCM); the master key is held in **macOS Keychain**. Reads are Touch ID gated.
-- Every read is **audited per AI agent** — Claude Code, Cursor, Windsurf are tagged on every access.
+- Every read is **audited per AI agent** — Claude Code, Cursor, Devin are tagged on every access.
 - **Local-first**: no telemetry, no account, no cloud unless the user explicitly pushes to Cloudflare/Vercel/etc.
 - **One-command sync** to provider environments when needed, but never as a default.
+- **Runtime boundary**: agents request credentials through Vibe Vault instead of receiving a pasted vault dump.
 
 Success looks like a developer who, three weeks in, stops thinking about secret hygiene because it's automatic. No more `.env` in git, no more "which key did I rotate, when?" lookups.
+
+Activation metric: a user protects one repository and records one successful agent access during the first session.
+
+## Differentiation
+
+Traditional password managers store credentials for people. Vibe Vault controls how AI coding agents access credentials during development.
+
+Defensible layers:
+
+- Agent-aware access for Cursor, Claude Code, Devin, VS Code, terminal commands, and MCP clients.
+- Local runtime integration: CLI, MCP, agent rules, project scanning, git guards, and provider sync.
+- Per-agent audit history tying credentials, repositories, agents, actions, and timestamps together.
+- Future policy engine for repository scopes, allow/deny rules, temporary access, and blocked-access audit events.
+
+Keychain is an architecture choice, not the moat. The moat is workflow adoption, local policy enforcement, audit history, agent integrations, provider integrations, and the future access graph.
+
+## Platform Path
+
+Phase 1: individual developer value.
+
+- Keychain-backed vault
+- Cursor and Claude Code setup
+- reliable audit log
+- `.env` guard and git leak protection
+- provider sync
+- signed and notarized distribution
+- clear CLI diagnostics and docs
+
+Phase 2: team adoption.
+
+- deployment package
+- shared configuration templates
+- admin policy files
+- seat management
+- audit export
+- longer retention
+- offboarding workflow
+- MDM deployment
+
+Phase 3: agent identity.
+
+- unique identity per agent
+- scoped credentials
+- time-limited access
+- approval policies
+- per-project permissions
+- deny rules
+- access reason
+- credential rotation and revocation
+
+Phase 4: enterprise governance.
+
+- SSO and SCIM
+- SIEM export
+- central policy management
+- organization audit view
+- approval workflows
+- compliance exports
+- restricted-environment operation
 
 ## Brand Personality
 

@@ -56,7 +56,7 @@ struct AuditLogView: View {
                 agentChip("All", value: "")
                 agentChip("Cursor", value: "cursor")
                 agentChip("Claude", value: "claude")
-                agentChip("Windsurf", value: "windsurf")
+                agentChip("Devin", value: "devin")
                 agentChip("VS Code", value: "vscode")
                 Spacer()
             }

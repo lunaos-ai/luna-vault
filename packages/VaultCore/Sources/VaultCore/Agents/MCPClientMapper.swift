@@ -6,7 +6,6 @@ public enum MCPClientMapper {
         if key.hasPrefix("mcp:") { key = String(key.dropFirst(4)) }
         if key.contains("cursor") { return "cursor" }
         if key.contains("devin") { return "devin" }
-        if key.contains("windsurf") || key.contains("codeium") { return "windsurf" }
         if key.contains("copilot") || key.contains("vscode") || key == "code"
             || key.contains("vs code") || key.contains("vs-code") { return "vscode" }
         if key.contains("claude") {

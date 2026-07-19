@@ -17,7 +17,7 @@ struct AISkillSection: View {
                     Text("Agent skill").font(.subheadline.weight(.semibold))
                     Text(anyOutdated
                          ? "Update available (v\(AgentSkillContent.version))"
-                         : "Teaches Cursor, Claude, and Windsurf how to use Vibe Vault.")
+                         : "Teaches Cursor, Claude, and Devin how to use Vibe Vault.")
                         .font(.caption)
                         .foregroundStyle(anyOutdated ? Tokens.Status.warning : Tokens.Text.secondary)
                 }

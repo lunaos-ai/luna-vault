@@ -10,7 +10,7 @@ struct AIAgentsView: View {
     @State private var binaryPath: String = MCPBinaryLocator.resolve()
 
     private var priorityClients: [MCPClientID] {
-        [.cursor, .vscode, .devin, .claudeCode, .windsurf, .claudeDesktop]
+        [.cursor, .vscode, .devin, .claudeCode, .claudeDesktop]
     }
 
     var body: some View {

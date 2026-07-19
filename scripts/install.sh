@@ -11,7 +11,29 @@ if command -v brew >/dev/null 2>&1; then
     echo "Tap not available yet — building from this checkout..."
     ROOT="$(cd "$(dirname "$0")/.." && pwd)"
     (cd "$ROOT" && swift build -c release --product vibevault --product vibevault-mcp)
-    echo "Binaries: $ROOT/.build/release/vibevault"
+
+    BIN_DIR=""
+    for candidate in "$(brew --prefix)/bin" /usr/local/bin; do
+      if [ -d "$candidate" ] && [ -w "$candidate" ]; then
+        BIN_DIR="$candidate"
+        break
+      fi
+    done
+    if [ -z "$BIN_DIR" ]; then
+      BIN_DIR="$HOME/.local/bin"
+      mkdir -p "$BIN_DIR"
+    fi
+
+    for bin in vibevault vibevault-mcp; do
+      ln -sf "$ROOT/.build/release/$bin" "$BIN_DIR/$bin"
+    done
+    echo "Linked vibevault and vibevault-mcp into $BIN_DIR"
+
+    if ! command -v vibevault >/dev/null 2>&1; then
+      echo "WARNING: $BIN_DIR is not on your PATH."
+      echo "Add it to your shell profile, e.g.:  export PATH=\"$BIN_DIR:\$PATH\""
+      exit 1
+    fi
   fi
 else
   echo "Homebrew not found. Download the app: https://vibevault.lunaos.ai/download"

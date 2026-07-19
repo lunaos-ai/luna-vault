@@ -54,7 +54,6 @@ struct AIAgentClientRow: View {
         case .vscode: return "chevron.left.forwardslash.chevron.right"
         case .devin: return "cpu"
         case .claudeCode, .claudeDesktop: return "sparkles"
-        case .windsurf: return "wind"
         }
     }
 

@@ -19,10 +19,10 @@
 
 Worker lives in `workers/vibevault/`. See that README for deploy + secrets.
 
-On `order_created` (or `subscription_created`):
+On `order_created`, `subscription_created`, `subscription_updated`, or `subscription_payment_success`:
 
 1. Worker verifies Lemon Squeezy signature (`X-Signature` HMAC).
-2. Signs a `VV1` key with `VIBEVAULT_LICENSE_PRIVATE_KEY`.
+2. Signs a 35-day `VV1` key with `VIBEVAULT_LICENSE_PRIVATE_KEY`.
 3. Emails the key if `RESEND_API_KEY` is set. Without Resend, the webhook response includes `licenseKey` for manual delivery/testing.
 
 Manual issue (local):
@@ -35,7 +35,7 @@ bash scripts/issue-license.sh \
   --product-id "$PRODUCT_ID"
 ```
 
-On refund / cancel: optionally email the customer; the app cannot revoke offline keys without expiry. Prefer time-limited keys (`--days 365`) for subscriptions.
+On refund / cancel: optionally email the customer; the app cannot revoke offline keys before expiry. Worker-issued monthly keys expire after 35 days, and renewal events send fresh keys.
 
 ## Activate (customer)
 

@@ -13,7 +13,11 @@ LANDING_SRC="marketing/landing/index.html"
 if [ ! -d "$WORK/.git" ]; then
     echo "==> Cloning $REPO..."
     rm -rf "$WORK"
-    gh repo clone "$REPO" "$WORK" -- --depth 1
+    if command -v gh >/dev/null 2>&1; then
+        gh repo clone "$REPO" "$WORK" -- --depth 1
+    else
+        git clone --depth 1 "https://github.com/$REPO.git" "$WORK"
+    fi
 fi
 
 # Landing (GTM)

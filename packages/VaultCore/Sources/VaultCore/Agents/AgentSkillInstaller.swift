@@ -3,13 +3,13 @@ import Foundation
 public enum AgentSkillTarget: String, CaseIterable, Sendable {
     case cursor
     case claude
-    case windsurf
+    case devin
 
     public var displayName: String {
         switch self {
         case .cursor: return "Cursor"
         case .claude: return "Claude Code"
-        case .windsurf: return "Windsurf"
+        case .devin: return "Devin"
         }
     }
 
@@ -18,7 +18,7 @@ public enum AgentSkillTarget: String, CaseIterable, Sendable {
         switch self {
         case .cursor: return home.appendingPathComponent(".cursor/skills/vibevault")
         case .claude: return home.appendingPathComponent(".claude/skills/vibevault")
-        case .windsurf: return home.appendingPathComponent(".codeium/windsurf/skills/vibevault")
+        case .devin: return home.appendingPathComponent(".devin/skills/vibevault")
         }
     }
 }

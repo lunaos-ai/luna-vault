@@ -48,7 +48,7 @@ struct OnboardingScene: View {
     private var featureRows: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.lg) {
             row(icon: "sparkles", title: "AI-native MCP",
-                body: "Cursor, VS Code Copilot, Devin, Claude Code, Windsurf. Opt-in per secret.")
+                body: "Cursor, VS Code Copilot, Devin, Claude Code. Opt-in per secret.")
             row(icon: "touchid", title: "Touch ID on every read",
                 body: "Humans confirm in the app. Agents use MCP with audit only.")
             row(icon: "cloud.fill", title: "Cloudflare Workers",
@@ -126,7 +126,7 @@ struct OnboardingScene: View {
     private func quickInstallSkill() {
         do {
             try AgentSkillInstaller.installAll()
-            installStatus = "Agent skill installed for Cursor, Claude, and Windsurf."
+            installStatus = "Agent skill installed for Cursor, Claude, and Devin."
         } catch {
             installStatus = "\(error)"
         }

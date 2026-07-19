@@ -1,0 +1,167 @@
+#vv-importer {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483647;
+  width: min(390px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid rgba(16, 24, 40, 0.18);
+  border-radius: 8px;
+  background: #101828;
+  color: #f8fafc;
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.28);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+#vv-importer * {
+  box-sizing: border-box;
+  font: inherit;
+  letter-spacing: 0;
+}
+
+#vv-importer .vv-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+#vv-importer .vv-title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#vv-importer .vv-subtitle {
+  margin-top: 2px;
+  color: #b8c5d6;
+  font-size: 12px;
+}
+
+#vv-importer .vv-icon-button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+#vv-importer .vv-rows {
+  display: grid;
+  gap: 10px;
+}
+
+#vv-importer .vv-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#vv-importer .vv-secret {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#vv-importer .vv-provider {
+  overflow: hidden;
+  color: #c7d2fe;
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#vv-importer code {
+  color: #d1fae5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#vv-importer .vv-name {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #101828;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 650;
+  outline: none;
+}
+
+#vv-importer .vv-name:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.24);
+}
+
+#vv-importer .vv-save {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #2dd4bf;
+  color: #042f2e;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+#vv-importer .vv-save:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+#vv-importer .vv-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #dbe4f0;
+  font-size: 12px;
+}
+
+#vv-importer .vv-check input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+#vv-importer .vv-status {
+  min-height: 18px;
+  margin-top: 10px;
+  color: #b8c5d6;
+  font-size: 12px;
+}
+
+#vv-importer .vv-status[data-state="ok"] {
+  color: #5eead4;
+}
+
+#vv-importer .vv-status[data-state="error"] {
+  color: #fda4af;
+}
+
+@media (max-width: 480px) {
+  #vv-importer {
+    right: 12px;
+    bottom: 12px;
+  }
+}

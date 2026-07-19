@@ -25,7 +25,7 @@ struct MCPStatusCommand: AsyncParsableCommand {
 struct MCPInstallCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(commandName: "install", abstract: "Install MCP config for AI clients.")
 
-    @Option(name: .long, help: "Client id: cursor, vscode, devin, claude-code, windsurf, claude-desktop, all.")
+    @Option(name: .long, help: "Client id: cursor, vscode, devin, claude-code, claude-desktop, all.")
     var client: String = "all"
 
     @Option(name: .long, help: "Path to vibevault-mcp binary.")

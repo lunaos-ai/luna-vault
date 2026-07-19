@@ -35,12 +35,23 @@ type LsMeta = { event_name?: string };
 type LsOrderAttrs = {
   identifier?: string;
   user_email?: string;
+  product_id?: number | string;
+  variant_id?: number | string;
+  quantity?: number;
   first_order_item?: {
-    product_id?: number;
-    variant_id?: number;
+    product_id?: number | string;
+    variant_id?: number | string;
     quantity?: number;
   };
 };
+
+const LICENSE_DAYS = 35;
+const LICENSE_EVENTS = new Set([
+  "order_created",
+  "subscription_created",
+  "subscription_updated",
+  "subscription_payment_success",
+]);
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -58,6 +69,12 @@ export default {
       return json(checkoutConfig(env), 200, {
         "cache-control": "public, max-age=60",
         ...checkoutCorsHeaders(),
+      });
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/privacy") {
+      return html(privacyPolicyHTML(), 200, {
+        "cache-control": "public, max-age=3600",
       });
     }
 
@@ -100,6 +117,59 @@ function checkoutCorsHeaders(): Record<string, string> {
   };
 }
 
+function privacyPolicyHTML(): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vibe Vault Importer Privacy Policy</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; background: #f8fafc; }
+    body { margin: 0; }
+    main { max-width: 760px; margin: 0 auto; padding: 64px 24px 80px; }
+    h1 { font-size: 36px; line-height: 1.1; margin: 0 0 12px; }
+    h2 { font-size: 18px; margin: 32px 0 10px; }
+    p, li { font-size: 16px; line-height: 1.65; color: #334155; }
+    ul { padding-left: 22px; }
+    a { color: #0f766e; }
+    .updated { color: #64748b; margin-bottom: 32px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Vibe Vault Importer Privacy Policy</h1>
+    <p class="updated">Last updated: July 19, 2026</p>
+    <p>Vibe Vault Importer does not sell or share user data.</p>
+    <p>The extension does not use chrome.storage, localStorage, IndexedDB, analytics, telemetry, or remote logging.</p>
+
+    <h2>How API keys are handled</h2>
+    <p>API key values are kept in page memory only long enough to show the save panel. A raw key is sent to the local native messaging host only after the user clicks Save. The native host writes the key to the local encrypted Vibe Vault store.</p>
+    <p>The extension requests access only to supported provider dashboard domains. It does not run on arbitrary websites.</p>
+
+    <h2>Data handled</h2>
+    <ul>
+      <li>API key values visible on supported provider dashboards</li>
+      <li>Suggested secret names entered by the user</li>
+      <li>Current provider page URL, stored only as local Vibe Vault notes for source context</li>
+    </ul>
+
+    <h2>Data not collected</h2>
+    <ul>
+      <li>Browsing history</li>
+      <li>Account profile data</li>
+      <li>Payment data</li>
+      <li>Personal communications</li>
+      <li>Analytics or usage telemetry</li>
+    </ul>
+
+    <h2>Contact</h2>
+    <p>For support, visit <a href="https://vibevault.lunaos.ai/">vibevault.lunaos.ai</a>.</p>
+  </main>
+</body>
+</html>`;
+}
+
 function pick(env: Env, ...keys: string[]): string | undefined {
   for (const k of keys) {
     const v = env[k];
@@ -130,7 +200,7 @@ async function handleLemonWebhook(
   }
 
   const event = body.meta?.event_name || "";
-  if (event !== "order_created" && event !== "subscription_created") {
+  if (!LICENSE_EVENTS.has(event)) {
     return json({ ok: true, ignored: event });
   }
 
@@ -139,10 +209,10 @@ async function handleLemonWebhook(
   const orderId = String(attrs.identifier || body.data?.id || "");
   const item = attrs.first_order_item || {};
   const productId = String(
-    item.product_id || pick(env, "VIBEVAULT_PRODUCT_ID", "vibevault_product_id") || "team"
+    item.product_id || attrs.product_id || pick(env, "VIBEVAULT_PRODUCT_ID", "vibevault_product_id") || "team"
   );
-  const variantId = String(item.variant_id || "");
-  const seats = seatsForVariant(env, variantId, item.quantity);
+  const variantId = String(item.variant_id || attrs.variant_id || "");
+  const seats = seatsForVariant(env, variantId, item.quantity || attrs.quantity);
   const priv = pick(env, "VIBEVAULT_LICENSE_PRIVATE_KEY", "vibevault_license_private_key");
 
   if (!email || !orderId) return json({ error: "missing_email_or_order" }, 400);
@@ -156,7 +226,7 @@ async function handleLemonWebhook(
       orderId,
       productId,
       privateKeyB64: priv,
-      days: event === "subscription_created" ? 365 : undefined,
+      days: LICENSE_DAYS,
     });
   } catch (e) {
     console.error(JSON.stringify({ err: "sign_failed", message: String(e) }));
@@ -166,14 +236,14 @@ async function handleLemonWebhook(
   const resend = pick(env, "VIBEVAULT_RESEND_API_KEY", "RESEND_API_KEY", "vibevault_resend_api_key");
   if (resend) {
     try {
-      await emailLicense(env, resend, email, licenseKey, seats);
+      await emailLicense(env, resend, email, licenseKey, seats, LICENSE_DAYS);
     } catch (e) {
       console.error(JSON.stringify({ err: "email_failed", message: String(e) }));
       return json({ error: "email_failed" }, 502);
     }
   }
 
-  const response: Record<string, unknown> = { ok: true, emailed: Boolean(resend) };
+  const response: Record<string, unknown> = { ok: true, emailed: Boolean(resend), licenseDays: LICENSE_DAYS };
   if (!resend) response.licenseKey = licenseKey;
 
   console.log(JSON.stringify({
@@ -183,6 +253,7 @@ async function handleLemonWebhook(
     variantId,
     seats,
     issued: true,
+    licenseDays: LICENSE_DAYS,
     emailed: Boolean(resend),
     manualDelivery: !resend,
   }));
@@ -277,7 +348,8 @@ async function emailLicense(
   apiKey: string,
   to: string,
   licenseKey: string,
-  seats: number
+  seats: number,
+  days: number
 ): Promise<void> {
   const from = (typeof env.FROM_EMAIL === "string" && env.FROM_EMAIL) || "licenses@lunaos.ai";
   const res = await fetch("https://api.resend.com/emails", {
@@ -294,6 +366,8 @@ async function emailLicense(
         "Thanks for purchasing Vibe Vault.",
         "",
         `Seats: ${seats}`,
+        `Valid for: ${days} days`,
+        "A fresh license key is issued on renewal.",
         "",
         "Activate with:",
         `  vibevault license activate '${licenseKey}'`,
@@ -325,5 +399,12 @@ function json(data: unknown, status = 200, headers: Record<string, string> = {})
   return new Response(JSON.stringify(data), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", ...headers },
+  });
+}
+
+function html(data: string, status = 200, headers: Record<string, string> = {}): Response {
+  return new Response(data, {
+    status,
+    headers: { "content-type": "text/html; charset=utf-8", ...headers },
   });
 }

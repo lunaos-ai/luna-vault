@@ -6,7 +6,6 @@ public enum MCPClientID: String, CaseIterable, Sendable {
     case devin
     case claudeCode = "claude-code"
     case claudeDesktop = "claude-desktop"
-    case windsurf
 
     public var displayName: String {
         switch self {
@@ -15,7 +14,6 @@ public enum MCPClientID: String, CaseIterable, Sendable {
         case .devin: return "Devin"
         case .claudeCode: return "Claude Code"
         case .claudeDesktop: return "Claude Desktop"
-        case .windsurf: return "Windsurf"
         }
     }
 
@@ -28,7 +26,6 @@ public enum MCPClientID: String, CaseIterable, Sendable {
         case .devin: return "~/.devin/mcp.json (or Devin workspace MCP settings)"
         case .claudeCode: return "~/.claude/mcp.json"
         case .claudeDesktop: return "~/Library/Application Support/Claude/claude_desktop_config.json"
-        case .windsurf: return "~/.codeium/windsurf/mcp_config.json"
         }
     }
 
@@ -42,7 +39,6 @@ public enum MCPClientID: String, CaseIterable, Sendable {
         case .claudeCode: return home.appendingPathComponent(".claude/mcp.json")
         case .claudeDesktop:
             return home.appendingPathComponent("Library/Application Support/Claude/claude_desktop_config.json")
-        case .windsurf: return home.appendingPathComponent(".codeium/windsurf/mcp_config.json")
         }
     }
 }

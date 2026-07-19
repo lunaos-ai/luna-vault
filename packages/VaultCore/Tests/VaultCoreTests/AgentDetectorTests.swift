@@ -17,6 +17,13 @@ final class AgentDetectorTests: XCTestCase {
         XCTAssertEqual(agent.confidence, .medium)
     }
 
+    func test_devin_parent_process_maps() {
+        let det = AgentDetector(env: [:], parentProcessLookup: { "/Applications/Devin.app/Contents/MacOS/devin" })
+        let agent = det.detect()
+        XCTAssertEqual(agent.name, "devin")
+        XCTAssertEqual(agent.confidence, .medium)
+    }
+
     func test_unknown_parent_returns_low() {
         let det = AgentDetector(env: [:], parentProcessLookup: { "/bin/some-random-shell" })
         let agent = det.detect()

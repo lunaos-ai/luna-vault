@@ -25,7 +25,6 @@ public final class AgentDetector: AgentDetecting, @unchecked Sendable {
         "claude-code": "claude-code",
         "cursor": "cursor",
         "cursor-agent": "cursor",
-        "windsurf": "windsurf",
         "code": "vscode",
         "code.exe": "vscode",
         "copilot": "vscode",

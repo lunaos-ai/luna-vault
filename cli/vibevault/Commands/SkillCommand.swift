@@ -13,7 +13,7 @@ struct SkillCommand: AsyncParsableCommand {
 struct SkillInstallCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(commandName: "install")
 
-    @Option(name: .long, help: "Target: cursor, claude, windsurf, all.")
+    @Option(name: .long, help: "Target: cursor, claude, devin, all.")
     var target: String = "all"
 
     mutating func run() async throws {

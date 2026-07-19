@@ -70,6 +70,15 @@ final class VaultServiceTests: XCTestCase {
         let secret = try await service.read(name: "CACHED")
         XCTAssertEqual(secret.value, "new")
     }
+
+    func test_update_preserves_creation_date() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        try service.add(name: "CREATED", value: "old", createdAt: createdAt)
+        try service.update(name: "CREATED", value: "new")
+        let secret = try store.read(name: "CREATED")
+        XCTAssertEqual(secret.createdAt, createdAt)
+        XCTAssertGreaterThanOrEqual(secret.updatedAt, createdAt)
+    }
 }
 
 private final class InMemoryStore: KeychainStoring, @unchecked Sendable {

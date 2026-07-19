@@ -56,10 +56,11 @@ public final class VaultService: @unchecked Sendable {
 
     public func add(
         name: String, value: String, notes: String? = nil,
-        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false,
+        createdAt: Date? = nil
     ) throws {
         let secret = Secret(
-            name: name, value: value, notes: notes,
+            name: name, value: value, createdAt: createdAt, notes: notes,
             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, mcpAllowed: mcpAllowed
         )
         try store.add(secret)
@@ -69,10 +70,12 @@ public final class VaultService: @unchecked Sendable {
 
     public func update(
         name: String, value: String, notes: String? = nil,
-        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false,
+        createdAt: Date? = nil
     ) throws {
+        let existingCreatedAt = createdAt ?? (try? store.read(name: name).createdAt)
         let secret = Secret(
-            name: name, value: value, notes: notes,
+            name: name, value: value, createdAt: existingCreatedAt, notes: notes,
             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, mcpAllowed: mcpAllowed
         )
         try store.update(secret)
@@ -84,6 +87,7 @@ public final class VaultService: @unchecked Sendable {
         let existing = try await read(name: name, reason: "Toggle MCP access for \(name)")
         let updated = Secret(
             name: existing.name, value: existing.value, updatedAt: Date(),
+            createdAt: existing.createdAt,
             notes: existing.notes, expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
             mcpAllowed: allowed
@@ -97,6 +101,7 @@ public final class VaultService: @unchecked Sendable {
         let existing = try await read(name: name, reason: "Rotate \(name)")
         let updated = Secret(
             name: existing.name, value: newValue ?? existing.value, updatedAt: Date(),
+            createdAt: existing.createdAt,
             notes: existing.notes, expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: Date()
         )
@@ -130,7 +135,8 @@ public final class VaultService: @unchecked Sendable {
             do {
                 if try store.exists(name: item.name) {
                     if overwrite {
-                        try store.update(Secret(name: item.name, value: item.value, notes: item.notes))
+                        let createdAt = try store.read(name: item.name).createdAt
+                        try store.update(Secret(name: item.name, value: item.value, createdAt: createdAt, notes: item.notes))
                         updated.append(item.name)
                         invalidateCache(name: item.name)
                     } else {
