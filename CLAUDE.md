@@ -71,7 +71,7 @@ Overall: **>=90% line, >=85% branch** per portfolio rules.
 - [ ] Smoke test from plan §"Verification" passes on both Apple Silicon and Intel.
 - [ ] Apple HIG review: menu bar icon, sidebar nav, content-first detail pane, dark mode, dynamic type, VoiceOver labels.
 - [ ] CHANGELOG.md updated.
-- [ ] Homebrew formula updated (luna-os/homebrew-tap).
+- [ ] Homebrew formula updated (finsavvyai/homebrew-tap).
 - [ ] DMG ≤20 MB.
 
 ## Skills to use
@@ -79,3 +79,18 @@ Overall: **>=90% line, >=85% branch** per portfolio rules.
 - `cloudflare-deploy` — only for marketing site; product itself doesn't deploy to CF.
 - `figma-implement-design` — when product designer hands off menu bar / window mocks.
 - `skill-creator` — if a repeated workflow emerges (e.g. provider adapter generator).
+
+<!-- vibe-vault -->
+## Secrets (Vibe Vault)
+
+Project: **luna-vault**
+Policy version: 1.2.0
+
+- Use Vibe Vault for real API keys and tokens.
+- Run `vibevault scan` before secret-dependent work in this repo.
+- Do not create `.env` / `.env.*` files with real secret values.
+- If a secret is missing, ask the user to import it into Vibe Vault; never ask them to paste the raw value into chat.
+- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Keep `.env.example` only for required names and safe defaults.
+
+<!-- /vibe-vault -->

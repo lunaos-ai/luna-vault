@@ -2,6 +2,9 @@
 
 Vibe Vault Importer requires the Vibe Vault macOS app or CLI and the native messaging host.
 
+The extension has no hosted login flow. Solo users connect a local native host;
+Team licenses are handled by the Vibe Vault app or CLI and are verified offline.
+
 ## Test Setup
 
 1. Install/build Vibe Vault.
@@ -10,10 +13,12 @@ Vibe Vault Importer requires the Vibe Vault macOS app or CLI and the native mess
 4. Run:
 
    ```bash
-   vibevault browser install --browser chrome --extension-id <extension-id>
+   vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfbeienkckbpc
    ```
 
-5. Open a supported provider page such as Google AI Studio. When a generated key is visible, the Vibe Vault panel offers to save it.
+5. Open a supported provider page such as Google AI Studio. When a generated key is visible, or after the user clicks a provider "Copy API key" button, the Vibe Vault panel offers to save it.
+
+The extension requests `clipboardRead` only for provider dashboards that hide API key values behind a copy button. Clipboard text is read after the user clicks a provider copy control, filtered against provider API-key patterns, kept in page memory only long enough to show the save panel, and sent to the native host only after the user clicks Save.
 
 ## Native Host
 

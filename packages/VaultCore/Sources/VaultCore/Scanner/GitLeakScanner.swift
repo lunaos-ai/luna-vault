@@ -5,7 +5,8 @@ public enum GitLeakScanner {
     public static let sensitivePatterns: [String] = [
         ".env", ".env.local", ".env.development", ".env.production",
         ".env.staging", ".env.test", ".env.development.local",
-        ".env.production.local", ".env.staging.local"
+        ".env.production.local", ".env.staging.local",
+        ".mcp.json"
     ]
 
     /// Relative paths of tracked files that look like dotenv leaks.
@@ -26,16 +27,27 @@ public enum GitLeakScanner {
 
     public static func isSensitivePath(_ relative: String) -> Bool {
         let base = (relative as NSString).lastPathComponent
+        let normalized = relative.replacingOccurrences(of: "\\", with: "/")
         if sensitivePatterns.contains(base) { return true }
         if base.hasPrefix(".env.") && !base.hasSuffix(".example") && !base.hasSuffix(".sample") {
             return true
         }
+        if normalized.hasSuffix(".claude/settings.local.json") { return true }
+        if normalized.hasSuffix(".cursor/mcp.json") { return true }
         return base == ".env"
     }
 
     public static func suggestGitignoreLines(for leaks: [String]) -> [String] {
         guard !leaks.isEmpty else { return [] }
-        return [".env", ".env.*", "!.env.example", "!.env.sample"]
+        return [
+            ".env",
+            ".env.*",
+            "!.env.example",
+            "!.env.sample",
+            ".mcp.json",
+            ".cursor/mcp.json",
+            ".claude/settings.local.json"
+        ]
     }
 
     private static func isGitRepo(

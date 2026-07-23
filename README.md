@@ -15,11 +15,11 @@ npm run dev
 vibevault run -- npm run dev
 ```
 
-Secrets live in macOS Keychain. Every read is audited per AI agent (Claude Code, Cursor, Devin). One command syncs to Cloudflare, Vercel, PushCI.
+Secrets live in an encrypted local vault with the master key held in macOS Keychain. Every read is audited per AI agent (Claude Code, Cursor, Devin). One command syncs to Cloudflare, Vercel, PushCI.
 
 ## Install
 
-**App (menu bar)**
+**Install**
 
 - https://vibevault.lunaos.ai/download
 - Pitch page: https://vibevault.lunaos.ai/
@@ -27,15 +27,21 @@ Secrets live in macOS Keychain. Every read is audited per AI agent (Claude Code,
 **CLI**
 
 ```bash
-brew tap luna-os/tap && brew install vibevault
-# or from this repo: brew install --formula ./dist/homebrew/vibevault.rb
-# or: bash scripts/install.sh
+swift build -c release --product vibevault
+swift build -c release --product vibevault-mcp
+# after the tap is published: brew tap finsavvyai/tap && brew install vibevault
 ```
 
 **Wire Cursor in one shot**
 
 ```bash
 vibevault cursor prepare
+```
+
+**Install agent policy files**
+
+```bash
+vibevault agents prepare --target all
 ```
 
 ## Quick start
@@ -48,6 +54,32 @@ vibevault run -- npm run dev
 vibevault push --to cloudflare --scope account_id=… --scope script_name=…
 ```
 
+## Agent instructions
+
+Use Vibe Vault as the default secret path for ChatGPT Codex, Claude Code,
+Cursor, Gemini CLI, and terminal agents. Do not create plaintext `.env` files
+for real API keys. Keep `.env.example` for variable names and safe defaults.
+
+Install that policy into `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and Cursor
+rules:
+
+```bash
+vibevault agents prepare --target all
+```
+
+The installed policy says:
+
+```md
+## Secrets
+
+- Run `vibevault scan` before using secrets in this repo.
+- Do not create or commit `.env` / `.env.*` files with real secret values.
+- If a secret is missing, ask the user to import it into Vibe Vault; never ask
+  them to paste the value into chat.
+- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Prefer `.env.example` only for non-secret defaults and required names.
+```
+
 ## Why
 
 Vibe-coding workflows leak secrets through `.env` files and copy-paste into AI chats. 1Password / Doppler store secrets but don't know **which agent** read them, don't scan repos, and often need a cloud account.
@@ -56,7 +88,7 @@ Vibe-coding workflows leak secrets through `.env` files and copy-paste into AI c
 
 1. **AI-agent audit log** — `cursor read CF_API_TOKEN at 14:32 in repo my-worker`
 2. **Auto-detect** — `wrangler.toml`, `vercel.json`, `.env*`, `package.json`
-3. **Local-first** — Keychain only; sync is opt-in
+3. **Local-first** — encrypted local vault; sync is opt-in
 4. **MCP + Cursor rules** — `vibevault cursor prepare`
 5. **Team license** — Lemon Squeezy checkout + signed offline license (`vibevault license`)
 
@@ -78,6 +110,7 @@ vibe-vault/
 ```bash
 vibevault mcp install --client all
 vibevault skill install
+vibevault agents prepare --target all
 vibevault cursor prepare
 vibevault cursor shadow
 vibevault scan --git-only
@@ -141,7 +174,7 @@ The macOS app also exposes this in **Settings -> Cloud Sync** with secure passph
 ```bash
 bash scripts/package-browser-extension.sh
 swift build --product vibevault-browser-host
-vibevault browser install --browser chrome --extension-id <extension-id>
+vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfbeienkckbpc
 ```
 
 The Chrome Web Store upload zip is `build/VibeVault-Browser-Importer.zip`. Store copy, privacy text, review notes, and screenshots live in `extensions/browser-vibevault/store/`.

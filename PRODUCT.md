@@ -59,7 +59,7 @@ Keychain is an architecture choice, not the moat. The moat is workflow adoption,
 
 Phase 1: individual developer value.
 
-- Keychain-backed vault
+- encrypted vault with Keychain-held master key
 - Cursor and Claude Code setup
 - reliable audit log
 - `.env` guard and git leak protection

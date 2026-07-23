@@ -2,6 +2,11 @@
 
 Chrome-compatible extension for importing freshly generated provider API keys into Vibe Vault without copying them into chat, local storage, or command arguments.
 
+Solo use does not require a Vibe Vault browser login or hosted account. The
+extension connects to the local native messaging host and stores keys in the
+local macOS vault. Team licensing and encrypted sync are handled by the app or
+CLI, not by a browser account session.
+
 ## Setup
 
 1. Build the CLI and native host:
@@ -20,7 +25,7 @@ Chrome-compatible extension for importing freshly generated provider API keys in
 3. Copy the extension id from Chrome and install the native host manifest:
 
    ```bash
-   ./.build/debug/vibevault browser install --browser chrome --extension-id <extension-id>
+   vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfbeienkckbpc
    ```
 
    For Brave, Edge, or Chromium, replace `chrome` with `brave`, `edge`, `chromium`, or `all`.
@@ -37,22 +42,9 @@ The Web Store upload zip is written to `build/VibeVault-Browser-Importer.zip`. L
 
 ## Supported Pages
 
-- Google AI Studio / Gemini
-- OpenAI platform
-- Anthropic console
-- Groq console
-- Mistral console
-- Cohere dashboard
-- Together AI
-- DeepSeek platform
-- OpenRouter
-- Replicate
-- Stripe dashboard
-- GitHub tokens
-- Vercel tokens
-- Cloudflare dashboard
+The extension runs only on API-key dashboard pages declared in `manifest.json` host permissions. On those pages it can detect a visible generated key, or a user-triggered copy action, and offer to save the value into Vibe Vault. Unsupported pages are ignored.
 
-The extension also accepts a selected value on those pages when it looks like a secret but does not match a provider-specific pattern.
+The extension also accepts a selected value on supported pages when it looks like a secret but does not match a provider-specific pattern.
 
 ## Security Model
 

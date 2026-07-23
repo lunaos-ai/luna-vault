@@ -24,6 +24,8 @@ struct AddSecretSheet: View {
                 Text("Secret")
             }
 
+            SecretValueGeneratorSection(value: $value)
+
             Section {
                 Toggle("Set expiry", isOn: $hasExpiry)
                 if hasExpiry {

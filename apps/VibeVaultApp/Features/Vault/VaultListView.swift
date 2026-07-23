@@ -65,7 +65,7 @@ struct VaultListView: View {
                 .padding(.horizontal, Tokens.Space.lg)
                 .padding(.top, Tokens.Space.md)
                 .padding(.bottom, Tokens.Space.sm)
-            highlightedSearch
+            VaultSearchField(search: $search, isFocused: $searchFocused)
                 .padding(.horizontal, Tokens.Space.lg)
                 .padding(.bottom, Tokens.Space.sm)
             Picker("", selection: $filter) {
@@ -90,42 +90,6 @@ struct VaultListView: View {
         .background(.regularMaterial)
         .navigationTitle("Vault")
         .navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 460)
-    }
-
-    private var highlightedSearch: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(searchFocused || !search.isEmpty ? Tokens.Palette.accent : Tokens.Text.secondary)
-                .frame(width: 18, height: 18)
-            TextField("Search secrets", text: $search)
-                .textFieldStyle(.plain)
-                .focused($searchFocused)
-            if !search.isEmpty {
-                Button {
-                    search = ""
-                    searchFocused = true
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Tokens.Text.tertiary)
-                }
-                .buttonStyle(.plain)
-                .help("Clear search")
-            }
-        }
-        .padding(.horizontal, Tokens.Space.md)
-        .frame(height: 38)
-        .background(
-            (searchFocused || !search.isEmpty ? Tokens.Palette.accent.opacity(0.12) : Tokens.Surface.elevated.opacity(0.75)),
-            in: RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
-                .strokeBorder(
-                    searchFocused || !search.isEmpty ? Tokens.Palette.accent.opacity(0.8) : Tokens.Surface.separator.opacity(0.55),
-                    lineWidth: searchFocused || !search.isEmpty ? Tokens.Stroke.thin : Tokens.Stroke.hairline
-                )
-        )
     }
 
     @ViewBuilder
@@ -238,52 +202,5 @@ struct VaultListView: View {
         search = ""
         filter = .all
         onHighlightHandled?()
-    }
-}
-
-private struct VaultListOptionsBar: View {
-    @Binding var sort: VaultListSort
-    @Binding var grouping: VaultListGrouping
-
-    var body: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Picker(selection: $sort) {
-                ForEach(VaultListSort.allCases) { option in
-                    Text(option.label).tag(option)
-                }
-            } label: {
-                Label("Sort", systemImage: "arrow.up.arrow.down")
-            }
-            .pickerStyle(.menu)
-            .help("Sort secrets")
-
-            Picker(selection: $grouping) {
-                ForEach(VaultListGrouping.allCases) { option in
-                    Text(option.label).tag(option)
-                }
-            } label: {
-                Label("Group", systemImage: "rectangle.3.group")
-            }
-            .pickerStyle(.menu)
-            .help("Group secrets")
-
-            Spacer(minLength: 0)
-        }
-        .controlSize(.small)
-    }
-}
-
-private struct VaultListSectionHeader: View {
-    let title: String
-    let count: Int
-
-    var body: some View {
-        HStack(spacing: Tokens.Space.xs) {
-            Text(title)
-            Text("\(count)")
-                .foregroundStyle(Tokens.Text.tertiary)
-        }
-        .sectionLabel()
-        .padding(.top, Tokens.Space.xs)
     }
 }

@@ -22,6 +22,7 @@ SKIP_GITHUB=0
 
 BROWSER_EXTENSION_DIR="extensions/browser-vibevault"
 BROWSER_EXTENSION_ZIP="${BROWSER_EXTENSION_ZIP:-build/VibeVault-Browser-Importer.zip}"
+WRANGLER_BIN="${WRANGLER_BIN:-}"
 
 usage() {
     cat <<'USAGE'
@@ -145,6 +146,36 @@ require_command() {
         exit 127
 }
 
+ensure_node_path() {
+    if command -v node >/dev/null 2>&1; then
+        return
+    fi
+    local bundled_node="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
+    if [ -x "$bundled_node" ]; then
+        export PATH="$(dirname "$bundled_node"):$PATH"
+    fi
+}
+
+resolve_wrangler() {
+    ensure_node_path
+    if [ -n "$WRANGLER_BIN" ]; then
+        return
+    fi
+    if [ -x workers/vibevault/node_modules/.bin/wrangler ]; then
+        WRANGLER_BIN="./node_modules/.bin/wrangler"
+    elif command -v wrangler >/dev/null 2>&1; then
+        WRANGLER_BIN="$(command -v wrangler)"
+    elif command -v npx >/dev/null 2>&1; then
+        WRANGLER_BIN="npx wrangler"
+    elif [ "$DRY_RUN" = "1" ]; then
+        WRANGLER_BIN="npx wrangler"
+        echo "warn: required command not found for real publish: wrangler" >&2
+    else
+        echo "error: required command not found: wrangler" >&2
+        exit 127
+    fi
+}
+
 confirm_publish() {
     if [ "$DRY_RUN" = "1" ] || [ "$YES" = "1" ]; then
         return
@@ -173,13 +204,13 @@ preflight() {
     require_command ditto
 
     if [ "$SKIP_WORKER" != "1" ]; then
-        require_command npx
+        resolve_wrangler
         if [ ! -d workers/vibevault/node_modules ]; then
             require_command npm
         fi
     fi
     if [ "$SKIP_WEBSITE" != "1" ]; then
-        require_command wrangler
+        resolve_wrangler
     fi
     if [ "$SKIP_GITHUB" != "1" ] && [ -n "$TAG" ]; then
         require_command gh
@@ -245,7 +276,7 @@ deploy_worker() {
     if [ ! -d workers/vibevault/node_modules ]; then
         run_shell "cd workers/vibevault && npm ci"
     fi
-    run_shell "cd workers/vibevault && npx wrangler deploy"
+    run_shell "cd workers/vibevault && $WRANGLER_BIN deploy"
 }
 
 publish_website() {

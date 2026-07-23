@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vibe Vault Importer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Save newly generated provider API keys directly into Vibe Vault.",
   "minimum_chrome_version": "114",
   "icons": {
@@ -10,7 +10,7 @@
     "48": "assets/icon-48.png",
     "128": "assets/icon-128.png"
   },
-  "permissions": ["nativeMessaging"],
+  "permissions": ["nativeMessaging", "clipboardRead"],
   "host_permissions": [
     "https://aistudio.google.com/*",
     "https://makersuite.google.com/*",

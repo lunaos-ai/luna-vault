@@ -40,4 +40,4 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
-[0.1.0]: https://github.com/luna-os/luna-vault/releases/tag/v0.1.0
+[0.1.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.0

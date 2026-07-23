@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vibe Vault Scanner | Find local AI-agent secret risk</title>
+  <meta name="description" content="Run vibevault scan to find expected env names and tracked local secret-bearing files before Cursor, Claude Code, or another AI agent touches a repo." />
+  <link rel="canonical" href="https://vibevault.lunaos.ai/scan" />
+  <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090909;
+      --panel: #141516;
+      --panel-2: #1B1C1D;
+      --line: rgba(248, 248, 248, 0.13);
+      --text: #F8F8F8;
+      --muted: #B7B7B7;
+      --dim: #777A7E;
+      --accent: #A5B4FC;
+      --accent-strong: #4F46E5;
+      --green: #91C8A9;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --radius: 8px;
+      --shell: 1080px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(var(--shell), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav a,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+
+    .btn {
+      color: #090909;
+      background: var(--accent);
+      border: 1px solid transparent;
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(248, 248, 248, 0.18);
+    }
+
+    .hero {
+      position: relative;
+      padding: 96px 0 76px;
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(9, 9, 9, 0.98), rgba(9, 9, 9, 0.76), rgba(9, 9, 9, 0.92)),
+        url("../assets/vibe-vault-open-graph.png") center right / cover no-repeat;
+    }
+
+    .hero-inner {
+      max-width: 720px;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 760px;
+      font-size: 62px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      margin: 20px 0 0;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .command {
+      width: fit-content;
+      max-width: 100%;
+      margin: 22px 0 0;
+      overflow-x: auto;
+      color: #D9D9D9;
+      background: rgba(0, 0, 0, 0.62);
+      border: 1px solid rgba(248, 248, 248, 0.18);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(260px, 0.42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 38px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .card {
+      min-height: 220px;
+      padding: 26px;
+      background: var(--panel);
+    }
+
+    .card strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .card ul {
+      margin: 16px 0 0;
+      padding-left: 18px;
+    }
+
+    .terminal {
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--panel-2);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .line {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 10px;
+      padding: 13px 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: #DCDCDC;
+    }
+
+    .line:first-child { border-top: 0; }
+    .prompt { color: var(--accent); }
+    .ok { color: var(--green); }
+
+    .source {
+      margin-top: 18px;
+      color: var(--dim);
+      font-size: 12px;
+    }
+
+    .source a {
+      color: var(--accent);
+      text-decoration-color: rgba(165, 180, 252, 0.38);
+      text-underline-offset: 3px;
+    }
+
+    footer {
+      padding: 36px 0;
+      color: var(--dim);
+      font-size: 13px;
+    }
+
+    @media (max-width: 820px) {
+      .nav { display: none; }
+      .hero { padding: 68px 0 56px; }
+      h1 { font-size: 44px; }
+      .section-head,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="topbar" aria-label="Primary">
+      <a class="brand" href="/">
+        <img src="../assets/vibe-vaulta-app-icon.png" width="30" height="30" alt="" />
+        Vibe Vault
+      </a>
+      <div class="nav">
+        <a href="/">Product</a>
+        <a href="/#security">Security</a>
+        <a href="/#pricing">Pricing</a>
+        <a class="btn" href="/download">Install</a>
+      </div>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="shell">
+      <div class="hero-inner">
+        <p class="eyebrow">Free repo scanner</p>
+        <h1>Find local secret risk before your AI agent does.</h1>
+        <p class="lede">
+          Run one command to identify expected environment names and tracked
+          local secret-bearing files such as <code>.env</code>, MCP configs,
+          and Claude local settings.
+        </p>
+        <pre class="command" tabindex="0">vibevault scan
+vibevault scan --git-only
+vibevault guard install</pre>
+        <div class="cta-row">
+          <a class="btn" href="/download">Install CLI</a>
+          <a class="btn secondary" href="https://github.com/lunaos-ai/luna-vault">View Source</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">What it checks</p>
+            <h2>The scanner is the first step before vault setup.</h2>
+          </div>
+          <p class="section-copy">
+            You do not need to change your workflow to learn where the risk is.
+            Scan the repo first, then decide what should move into the vault.
+          </p>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <strong>Expected secrets</strong>
+            <p>Reads common project files and reports env names the repo expects.</p>
+            <ul>
+              <li><code>.env.example</code></li>
+              <li><code>package.json</code></li>
+              <li><code>next.config</code></li>
+              <li><code>wrangler.toml</code></li>
+              <li><code>vercel.json</code></li>
+            </ul>
+          </article>
+          <article class="card">
+            <strong>Tracked local leaks</strong>
+            <p>Flags local secret-bearing files that should not be committed.</p>
+            <ul>
+              <li><code>.env</code> and <code>.env.*</code></li>
+              <li><code>.mcp.json</code></li>
+              <li><code>.cursor/mcp.json</code></li>
+              <li><code>.claude/settings.local.json</code></li>
+            </ul>
+          </article>
+          <article class="card">
+            <strong>Next action</strong>
+            <p>Install the git guard after the first scan so risky files are blocked before commit.</p>
+            <ul>
+              <li>Untrack local secret files</li>
+              <li>Add ignore rules</li>
+              <li>Move keys into Vibe Vault</li>
+              <li>Prepare Cursor with MCP</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Example</p>
+            <h2>A no-commitment check before agent work.</h2>
+          </div>
+          <p class="section-copy">
+            Scanner output gives developers a concrete reason to protect the
+            repo without starting from security theory.
+          </p>
+        </div>
+
+        <div class="terminal" aria-label="Scanner example output">
+          <div class="line"><span class="prompt">$</span><span>vibevault scan</span></div>
+          <div class="line"><span></span><span>Required (3): CF_API_TOKEN, OPENAI_API_KEY, STRIPE_SECRET_KEY</span></div>
+          <div class="line"><span></span><span>Missing  (2): OPENAI_API_KEY, STRIPE_SECRET_KEY</span></div>
+          <div class="line"><span></span><span>Git leaks (2): .env, .claude/settings.local.json</span></div>
+          <div class="line"><span class="ok">></span><span>Hint: vibevault guard install</span></div>
+        </div>
+
+        <p class="source">
+          Market context:
+          <a href="https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/">GitGuardian reported 28.65M new public GitHub secrets in 2025</a>;
+          <a href="https://www.lakera.ai/blog/your-ai-coding-assistant-just-shipped-your-api-keys">Lakera found sensitive data in shipped Claude local settings files</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      Vibe Vault is local-first. The scanner reports names and risky paths; it does not upload your repo.
+    </div>
+  </footer>
+</body>
+</html>

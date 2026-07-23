@@ -3,7 +3,7 @@
 
 # Homebrew formula for vibe-vault CLI + MCP helper.
 # Install (when published to the tap):
-#   brew tap luna-os/tap
+#   brew tap finsavvyai/tap
 #   brew install vibevault
 #
 # Or from this repo during GTM:
@@ -17,7 +17,7 @@ class Vibevault < Formula
 
   # Prefer GitHub release tarball after first `gh release create v0.1.0`.
   # Until then, HEAD build from the monorepo.
-  head "https://github.com/luna-os/luna-vault.git", branch: "main"
+  head "https://github.com/lunaos-ai/luna-vault.git", branch: "main"
 
   on_macos do
     depends_on xcode: ["15.0", :build]

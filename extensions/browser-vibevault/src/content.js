@@ -133,6 +133,7 @@
       attributeFilter: ["value", "aria-label", "data-testid"]
     });
     document.addEventListener("selectionchange", scheduleScan, { passive: true });
+    document.addEventListener("click", handlePotentialCopyClick, true);
     window.addEventListener("focus", scheduleScan, { passive: true });
     setInterval(scheduleScan, 5000);
   }
@@ -201,6 +202,40 @@
         if (value) remember(value, provider.label);
       }
     }
+  }
+
+  async function handlePotentialCopyClick(event) {
+    const control = event.target.closest?.("button, [role='button'], a");
+    if (!control || control.closest("#vv-importer")) return;
+
+    const label = [
+      control.innerText,
+      control.textContent,
+      control.getAttribute("aria-label"),
+      control.getAttribute("title")
+    ].filter(Boolean).join(" ");
+    if (!/(copy|content_copy|api key|token|secret)/i.test(label)) return;
+
+    window.setTimeout(async () => {
+      try {
+        const text = await navigator.clipboard?.readText?.();
+        const value = normalizedSecret(text || "");
+        if (!value || !isLikelySecret(value) || !matchesProvider(value)) return;
+        remember(value, `${provider.label} clipboard`);
+        renderPanel();
+      } catch (_) {
+        // Clipboard access can be denied by the browser or provider page. The
+        // regular DOM/selection scanner still covers visible one-time keys.
+      }
+    }, 150);
+  }
+
+  function matchesProvider(value) {
+    if (provider.patterns.length === 0) return true;
+    return provider.patterns.some((pattern) => {
+      pattern.lastIndex = 0;
+      return pattern.test(value);
+    });
   }
 
   function remember(value, sourceLabel) {

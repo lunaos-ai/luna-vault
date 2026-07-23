@@ -6,6 +6,7 @@ struct CLICommandsReference: View {
     private static let rows: [(cmd: String, blurb: String)] = [
         ("vibevault list", "List secrets in the vault"),
         ("vibevault scan", "Detect required env vars in a project"),
+        ("vibevault agents prepare", "Install Codex, Claude, Gemini, Cursor policy"),
         ("vibevault cursor prepare", "Rules, skill, MCP, and .env guard"),
         ("vibevault mcp install --client cursor", "Wire vibe-vault into Cursor"),
         ("vibevault mcp test", "Smoke-test the MCP server"),

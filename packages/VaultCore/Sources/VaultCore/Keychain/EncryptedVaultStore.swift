@@ -11,12 +11,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
     private var key: SymmetricKey?
 
     public static func defaultDirectory() -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        let dir = base.appendingPathComponent("vibe-vault", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        excludeFromBackup(dir)
-        return dir
+        VaultPaths.defaultDirectory()
     }
 
     public init(directory: URL = EncryptedVaultStore.defaultDirectory()) {
@@ -26,7 +21,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
         self.keyAccount = leaf == "vibe-vault"
             ? KeychainMasterKey.defaultAccount
             : "vault.master.\(leaf)"
-        Self.excludeFromBackup(directory)
+        VaultPaths.excludeFromBackup(directory)
     }
 
     public func add(_ secret: Secret) throws {
@@ -112,14 +107,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600], ofItemAtPath: fileURL.path
         )
-        Self.excludeFromBackup(fileURL)
-    }
-
-    private static func excludeFromBackup(_ url: URL) {
-        var values = URLResourceValues()
-        values.isExcludedFromBackup = true
-        var mutable = url
-        try? mutable.setResourceValues(values)
+        VaultPaths.excludeFromBackup(fileURL)
     }
 
     private struct Record: Codable {

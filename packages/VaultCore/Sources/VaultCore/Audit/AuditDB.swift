@@ -14,11 +14,7 @@ public final class AuditDB: AuditLogging, @unchecked Sendable {
     private static let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     public static func defaultURL() -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        let dir = base.appendingPathComponent("vibe-vault", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("audit.db")
+        VaultPaths.defaultDirectory().appendingPathComponent("audit.db")
     }
 
     public init(url: URL = AuditDB.defaultURL()) throws {

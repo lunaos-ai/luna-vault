@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install Vibe Vault | CLI-first launch</title>
+  <meta name="description" content="Install Vibe Vault CLI and MCP from source while the notarized macOS app distribution is pending Apple Developer ID access." />
+  <link rel="canonical" href="https://vibevault.lunaos.ai/download" />
+  <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090909;
+      --panel: #141516;
+      --panel-2: #1B1C1D;
+      --line: rgba(248, 248, 248, 0.13);
+      --text: #F8F8F8;
+      --muted: #B7B7B7;
+      --dim: #777A7E;
+      --accent: #A5B4FC;
+      --warn: #FFD28A;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --radius: 8px;
+      --shell: 1040px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    code {
+      font-family: var(--mono);
+      color: var(--accent);
+      background: rgba(79, 70, 229, 0.1);
+      border: 1px solid rgba(165, 180, 252, 0.18);
+      border-radius: 4px;
+      padding: 0.08em 0.32em;
+    }
+
+    .shell {
+      width: min(var(--shell), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav a,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+
+    .btn {
+      color: #090909;
+      background: var(--accent);
+      border: 1px solid transparent;
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(248, 248, 248, 0.18);
+    }
+
+    .hero {
+      padding: 88px 0 70px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(9, 9, 9, 0.98), rgba(9, 9, 9, 0.78), rgba(9, 9, 9, 0.94)),
+        url("../assets/vibe-vault-open-graph.png") center right / cover no-repeat;
+    }
+
+    .hero-inner { max-width: 740px; }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 60px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      margin: 20px 0 0;
+      max-width: 650px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    section {
+      padding: 70px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(260px, 0.42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 38px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .steps,
+    .grid {
+      display: grid;
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .step,
+    .card {
+      padding: 24px;
+      background: var(--panel);
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(165, 180, 252, 0.34);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .step strong,
+    .card strong {
+      display: block;
+      font-size: 19px;
+      line-height: 1.2;
+    }
+
+    .step p,
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .command {
+      margin: 14px 0 0;
+      overflow-x: auto;
+      color: #D9D9D9;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(248, 248, 248, 0.18);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .note {
+      margin-top: 22px;
+      padding: 18px;
+      border: 1px solid rgba(255, 210, 138, 0.28);
+      border-radius: var(--radius);
+      background: rgba(255, 210, 138, 0.08);
+      color: #FFE4B8;
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 36px 0;
+      color: var(--dim);
+      font-size: 13px;
+    }
+
+    @media (max-width: 820px) {
+      .nav { display: none; }
+      .hero { padding: 68px 0 56px; }
+      h1 { font-size: 42px; }
+      .section-head,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="topbar" aria-label="Primary">
+      <a class="brand" href="/">
+        <img src="../assets/vibe-vaulta-app-icon.png" width="30" height="30" alt="" />
+        Vibe Vault
+      </a>
+      <div class="nav">
+        <a href="/">Product</a>
+        <a href="/scan">Scanner</a>
+        <a href="/security">Security</a>
+        <a class="btn" href="https://github.com/lunaos-ai/luna-vault">Source</a>
+      </div>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="shell">
+      <div class="hero-inner">
+        <p class="eyebrow">CLI-first launch path</p>
+        <h1>Install Vibe Vault without waiting for the notarized Mac app.</h1>
+        <p class="lede">
+          The local CLI, MCP server, scanner, git guard, browser host, and core vault package
+          can ship source-first. The native DMG is held until Developer ID notarization is available.
+        </p>
+        <div class="cta-row">
+          <a class="btn" href="#source">Build from source</a>
+          <a class="btn secondary" href="/security">Security architecture</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="source">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Recommended now</p>
+            <h2>Build the CLI and MCP server from source.</h2>
+          </div>
+          <p class="section-copy">
+            This avoids asking security-minded users to bypass Gatekeeper for an unnotarized app.
+            It also gives HN and developer communities an inspectable path.
+          </p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-index">01</span>
+            <div>
+              <strong>Clone and build</strong>
+              <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
+cd luna-vault
+swift build -c release --product vibevault
+swift build -c release --product vibevault-mcp</pre>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">02</span>
+            <div>
+              <strong>Run the scanner first</strong>
+              <pre class="command" tabindex="0">.build/release/vibevault scan
+.build/release/vibevault scan --git-only
+.build/release/vibevault guard install</pre>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">03</span>
+            <div>
+              <strong>Prepare Cursor or MCP clients</strong>
+              <pre class="command" tabindex="0">.build/release/vibevault cursor prepare
+.build/release/vibevault mcp install --client all</pre>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          Native app status: the macOS menu-bar app exists, but the public DMG is not promoted until it is
+          signed with Developer ID, submitted to Apple notarization, stapled, and accepted by Gatekeeper.
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Homebrew</p>
+            <h2>Use the tap once it is published.</h2>
+          </div>
+          <p class="section-copy">
+            The Homebrew formula is prepared in the repo. Use this path after the tap is reachable
+            from a clean machine.
+          </p>
+        </div>
+        <pre class="command" tabindex="0">brew tap finsavvyai/tap
+brew install vibevault
+vibevault --version</pre>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Why no DMG yet?</p>
+            <h2>Apple Developer ID is required for the public Mac app path.</h2>
+          </div>
+          <p class="section-copy">
+            Apple requires Apple Developer Program membership to request Apple-issued signing
+            certificates. Developer ID distribution also requires a Developer ID certificate and
+            notarization before Gatekeeper-safe public distribution.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <strong>Safe public path</strong>
+            <p>CLI/source-first launch with scanner, MCP, guard, and docs.</p>
+          </article>
+          <article class="card">
+            <strong>Held path</strong>
+            <p>Native DMG distribution waits for Developer ID signing and notarization.</p>
+          </article>
+          <article class="card">
+            <strong>Do not lead with</strong>
+            <p>Instructions that ask first-time users to bypass Gatekeeper for a security tool.</p>
+          </article>
+        </div>
+        <div class="cta-row">
+          <a class="btn secondary" href="https://developer.apple.com/support/certificates/">Apple certificate requirements</a>
+          <a class="btn secondary" href="https://developer.apple.com/support/developer-id/">Apple Developer ID docs</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      Vibe Vault Solo is local-first. The CLI path gives developers an inspectable way to try the product while app notarization is blocked.
+    </div>
+  </footer>
+</body>
+</html>

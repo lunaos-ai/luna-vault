@@ -14,6 +14,7 @@
 export interface Env {
   LANDING_URL: string;
   DOWNLOAD_URL: string;
+  DOWNLOAD_DMG_URL?: string;
   FROM_EMAIL: string;
   VARIANT_SEATS_JSON: string;
   VIBEVAULT_VARIANT_TEAM?: string;
@@ -78,8 +79,28 @@ export default {
       });
     }
 
-    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/download") {
-      return Response.redirect(env.DOWNLOAD_URL || "https://lunaos.ai/download/vibevault", 302);
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/scan") {
+      const scanURL = new URL("/scan/index.html", url);
+      return env.ASSETS.fetch(new Request(scanURL, request));
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/security") {
+      const securityURL = new URL("/security/index.html", url);
+      return env.ASSETS.fetch(new Request(securityURL, request));
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/agents") {
+      const agentsURL = new URL("/agents/index.html", url);
+      return env.ASSETS.fetch(new Request(agentsURL, request));
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && (url.pathname === "/download" || url.pathname === "/install")) {
+      const installURL = new URL("/install/index.html", url);
+      return env.ASSETS.fetch(new Request(installURL, request));
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/downloads/VibeVault.dmg") {
+      return Response.redirect(downloadDmgURL(env), 302);
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/lemonsqueezy") {
@@ -107,6 +128,10 @@ function checkoutConfig(env: Env) {
     seats: { team: 5, studio: 20, company: 100 },
     configured: Boolean(team && studio && company),
   };
+}
+
+function downloadDmgURL(env: Env): string {
+  return pick(env, "DOWNLOAD_DMG_URL", "download_dmg_url") || "https://lunaos.ai/downloads/VibeVault.dmg";
 }
 
 function checkoutCorsHeaders(): Record<string, string> {
@@ -144,12 +169,12 @@ function privacyPolicyHTML(): string {
     <p>The extension does not use chrome.storage, localStorage, IndexedDB, analytics, telemetry, or remote logging.</p>
 
     <h2>How API keys are handled</h2>
-    <p>API key values are kept in page memory only long enough to show the save panel. A raw key is sent to the local native messaging host only after the user clicks Save. The native host writes the key to the local encrypted Vibe Vault store.</p>
+    <p>API key values are kept in page memory only long enough to show the save panel. For providers that expose keys through a copy button, the extension may read the clipboard immediately after that user click so it can show the same save panel. A raw key is sent to the local native messaging host only after the user clicks Save. The native host writes the key to the local encrypted Vibe Vault store.</p>
     <p>The extension requests access only to supported provider dashboard domains. It does not run on arbitrary websites.</p>
 
     <h2>Data handled</h2>
     <ul>
-      <li>API key values visible on supported provider dashboards</li>
+      <li>API key values visible on supported provider dashboards or copied from provider copy buttons</li>
       <li>Suggested secret names entered by the user</li>
       <li>Current provider page URL, stored only as local Vibe Vault notes for source context</li>
     </ul>

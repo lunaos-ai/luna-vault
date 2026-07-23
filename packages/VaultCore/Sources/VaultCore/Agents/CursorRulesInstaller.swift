@@ -3,7 +3,7 @@ import Foundation
 /// Installs `.cursor/rules/vibevault.mdc` so Cursor agents follow vault workflow.
 public enum CursorRulesInstaller {
     public static let fileName = "vibevault.mdc"
-    public static let version = "1.1.0"
+    public static let version = "1.2.0"
 
     public static func rulesDirectory(projectURL: URL) -> URL {
         projectURL.appendingPathComponent(".cursor/rules")
@@ -41,10 +41,13 @@ public enum CursorRulesInstaller {
         # Vibe Vault
 
         - Never ask the user to paste secret values into chat.
+        - Prefer Vibe Vault over creating plaintext `.env` files for real API keys or tokens.
+        - Keep `.env.example` only for required names and safe defaults.
         - Prefer MCP tools from the `vibe-vault` server: `scan_project`, `list_secrets`, `read_secret`.
         - Call `scan_project` with the workspace root before assuming env vars exist.
         - Only `read_secret` when the secret is MCP-allowed; otherwise tell the user to allow it in Vibe Vault.
-        - Never commit `.env` or `.env.*` (except `.env.example`). Suggest `vibevault guard install`.
+        - Never commit `.env` or `.env.*` with real secrets. Suggest `vibevault guard install`.
+        - When asked to create a secret-bearing `.env`, create or update `.env.example` and tell the user to import real values into Vibe Vault.
         - Push to Cloudflare / Vercel / PushCI via MCP `push_secrets` or Providers UI — not by pasting tokens.
         - On "who read this secret?", use MCP `get_audit_log`.
 

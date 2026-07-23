@@ -387,6 +387,20 @@
       line-height: 1.5;
     }
 
+    .metric-sources {
+      margin: 14px 0 0;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .metric-sources a {
+      color: var(--gold-soft);
+      text-decoration: underline;
+      text-decoration-color: rgba(165, 180, 252, 0.38);
+      text-underline-offset: 3px;
+    }
+
     .compare {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1028,11 +1042,13 @@
       </a>
       <div class="nav-links">
         <a href="#why">Risk</a>
+        <a href="https://vibevault.lunaos.ai/agents">Agents</a>
         <a href="#workflow">Demo</a>
+        <a href="/scan">Scanner</a>
         <a href="#compare">Compare</a>
-        <a href="#security">Security</a>
+        <a href="/security">Security</a>
         <a href="#pricing">Pricing</a>
-        <a class="download" href="https://vibevault.lunaos.ai/download">Download</a>
+        <a class="download" href="https://vibevault.lunaos.ai/download">Install</a>
       </div>
     </nav>
   </div>
@@ -1049,13 +1065,16 @@
         </p>
         <p class="trust-line">Free for solo developers · macOS 14+ · Local-first · No account required</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://vibevault.lunaos.ai/download">Download Free</a>
+          <a class="btn btn-primary" href="https://vibevault.lunaos.ai/download">Install CLI</a>
           <a class="btn btn-secondary" href="#workflow">Watch Demo</a>
         </div>
-        <pre class="install" tabindex="0">brew tap luna-os/tap &amp;&amp; brew install vibevault</pre>
+        <pre class="install" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
+cd luna-vault &amp;&amp; swift build -c release --product vibevault
+.build/release/vibevault scan</pre>
         <div class="hero-chips" aria-label="Trust signals">
           <span class="hero-chip">Never paste into chat</span>
           <span class="hero-chip">Secrets stay local</span>
+          <span class="hero-chip">Generate secure keys</span>
           <span class="hero-chip">Touch ID controlled</span>
           <span class="hero-chip">Agent access audited</span>
         </div>
@@ -1081,25 +1100,31 @@
         <div class="metrics reveal" aria-label="AI coding credential risks">
           <div class="metric">
             <span>01</span>
-            <strong>Secret exposed in a prompt</strong>
-            <p>A model transcript should never become the place your production credentials live.</p>
+            <strong>28.65M new secrets</strong>
+            <p>GitGuardian reported 28.65M new hardcoded secrets in public GitHub commits in 2025.</p>
           </div>
           <div class="metric">
             <span>02</span>
-            <strong>Secret committed to Git</strong>
-            <p>Each repo becomes another secret inventory that can drift, leak, or get indexed.</p>
+            <strong>AI leaks up 81%</strong>
+            <p>AI-service secrets were one of the fastest-growing leak categories in the same report.</p>
           </div>
           <div class="metric">
             <span>03</span>
-            <strong>Wrong agent reads production</strong>
-            <p>Local tools inherit credentials easily when there is no project-aware boundary.</p>
+            <strong>Agents raise exposure</strong>
+            <p>Agent sessions touch terminals, repos, provider tools, local config, and runtime env.</p>
           </div>
           <div class="metric">
             <span>04</span>
-            <strong>No record of access</strong>
-            <p>When Cursor, Claude Code, or a shell command reads a value, teams need evidence.</p>
+            <strong>Config files ship keys</strong>
+            <p>Lakera found credentials inside published npm packages containing Claude local settings files.</p>
           </div>
         </div>
+        <p class="metric-sources reveal">
+          Sources:
+          <a href="https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/">GitGuardian State of Secrets Sprawl 2026</a>
+          and
+          <a href="https://www.lakera.ai/blog/your-ai-coding-assistant-just-shipped-your-api-keys">Lakera AI coding assistant credential scan</a>.
+        </p>
       </div>
     </section>
 
@@ -1131,6 +1156,7 @@
             <h3>After Vibe Vault</h3>
             <ul class="compare-list">
               <li><span class="mark">+</span><span>One local vault becomes the source of truth for AI-coding credentials.</span></li>
+              <li><span class="mark">+</span><span>Generate new local secrets as Hex, Base64 URL, Base64, password, UUID, or prefixed tokens.</span></li>
               <li><span class="mark">+</span><span>Your secrets never leave your Mac unless you explicitly sync or inject them.</span></li>
               <li><span class="mark">+</span><span>Each access is logged with agent, project, action, and time.</span></li>
               <li><span class="mark">+</span><span>Secure an AI coding environment with <code>vibevault cursor prepare</code>.</span></li>
@@ -1148,7 +1174,7 @@
             <h2>A complete credential access flow in under a minute.</h2>
           </div>
           <p class="section-copy">
-            Add a key, prepare Cursor, approve access, let the agent run, then see both successful
+            Add or generate a key, prepare Cursor, approve access, let the agent run, then see both successful
             and denied reads in the audit log.
           </p>
         </div>
@@ -1184,7 +1210,7 @@
                 <span class="flow-index">01</span>
                 <div>
                   <strong>Add credential</strong>
-                  <span><code>OPENAI_API_KEY</code> is stored in the local vault backed by macOS Keychain.</span>
+                  <span><code>OPENAI_API_KEY</code> is stored or generated in the encrypted local vault.</span>
                 </div>
                 <span class="flow-status">stored</span>
               </div>
@@ -1269,9 +1295,9 @@
             <p>Keep your password manager. Use Vibe Vault when AI tools need scoped, audited credential reads.</p>
           </article>
           <article class="alternative">
-            <span class="label">macOS Keychain</span>
+            <span class="label">Encrypted local vault</span>
             <h3>A primitive is not a workflow.</h3>
-            <p>Vibe Vault builds scanning, approvals, audit, MCP setup, and provider sync on top of local Keychain storage.</p>
+            <p>Vibe Vault builds scanning, approvals, audit, MCP setup, and provider sync around encrypted local storage with a Keychain-held master key.</p>
           </article>
           <article class="alternative">
             <span class="label">CI/CD stores</span>
@@ -1281,7 +1307,7 @@
           <article class="alternative">
             <span class="label">Vibe Vault</span>
             <h3>Local storage, agent access, audit, and setup.</h3>
-            <p>One workflow covers Keychain storage, AI-agent access, repo protection, provider sync, and audit.</p>
+            <p>One workflow covers local vault storage, AI-agent access, repo protection, provider sync, and audit.</p>
           </article>
         </div>
       </div>
@@ -1309,12 +1335,17 @@
           <article class="proof">
             <span class="label">Multi-repo work</span>
             <h3>Stop duplicating <code>.env</code> files.</h3>
-            <p>Use one controlled local source across workers, apps, scripts, and provider projects.</p>
+            <p>Run <a href="/scan"><code>vibevault scan</code></a> to find expected env names and tracked local secret files before an agent session.</p>
           </article>
           <article class="proof">
             <span class="label">Deployment sync</span>
             <h3>Push selected credentials only when you choose.</h3>
             <p>Sync to Cloudflare, Vercel, and PushCI without turning Vibe Vault into a cloud vault.</p>
+          </article>
+          <article class="proof">
+            <span class="label">Key creation</span>
+            <h3>Generate new secrets in the app.</h3>
+            <p>Create Hex, Base64 URL, Base64, password, UUID, or prefixed token values without leaving the local vault UI.</p>
           </article>
           <article class="proof">
             <span class="label">Team onboarding</span>
@@ -1431,11 +1462,12 @@
             <p class="plan-desc">A complete local vault for one builder: app, CLI, MCP, audit, scanning, and provider sync.</p>
             <ul class="feature-list">
               <li><span class="mark">+</span><span>Local encrypted vault</span></li>
+              <li><span class="mark">+</span><span>Random key generator for new secrets</span></li>
               <li><span class="mark">+</span><span>Touch ID gated reads</span></li>
               <li><span class="mark">+</span><span>CLI, MCP, and cursor prepare</span></li>
               <li><span class="mark">+</span><span>Cloudflare, Vercel, PushCI sync</span></li>
             </ul>
-            <a class="btn btn-secondary" href="https://vibevault.lunaos.ai/download">Start free</a>
+            <a class="btn btn-secondary" href="https://vibevault.lunaos.ai/download">Install free</a>
           </article>
 
           <article class="plan featured">
@@ -1583,7 +1615,7 @@
         <h2>Never paste production credentials into AI chat again.</h2>
         <p>Protect your first repository in minutes, then use the audit trail to prove what happened.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://vibevault.lunaos.ai/download">Download Free</a>
+          <a class="btn btn-primary" href="https://vibevault.lunaos.ai/download">Install CLI</a>
           <a class="btn btn-secondary" href="#pricing">Compare plans</a>
         </div>
       </div>
@@ -1595,8 +1627,8 @@
       <div>(c) LunaOS | macOS 14+</div>
       <div>
         <a href="https://lunaos.ai">lunaos.ai</a> |
-        <a href="https://github.com/luna-os/luna-vault">GitHub</a> |
-        <a href="https://vibevault.lunaos.ai/download">Download</a>
+        <a href="https://github.com/lunaos-ai/luna-vault">GitHub</a> |
+        <a href="https://vibevault.lunaos.ai/download">Install</a>
       </div>
     </footer>
   </div>

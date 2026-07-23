@@ -4,14 +4,14 @@
 
 `dist/homebrew/vibevault.rb`
 
-## Publish to `luna-os/homebrew-tap`
+## Publish to `finsavvyai/homebrew-tap`
 
 ```bash
 # After tagging v0.1.0 and attaching a source tarball / bottle (optional):
-gh repo clone luna-os/homebrew-tap /tmp/homebrew-tap
+gh repo clone finsavvyai/homebrew-tap /tmp/homebrew-tap
 cp dist/homebrew/vibevault.rb /tmp/homebrew-tap/Formula/vibevault.rb
 # Edit url/sha256 when a release asset exists:
-#   url "https://github.com/luna-os/luna-vault/archive/refs/tags/v0.1.0.tar.gz"
+#   url "https://github.com/lunaos-ai/luna-vault/archive/refs/tags/v0.1.0.tar.gz"
 #   sha256 "…"
 cd /tmp/homebrew-tap
 git checkout -b vibevault-0.1.0

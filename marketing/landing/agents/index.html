@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vibe Vault for AI Agents | Local credential access for Cursor and Claude Code</title>
+  <meta name="description" content="Give Cursor, Claude Code, Devin, VS Code, and terminal agents permissioned credential access through a local macOS vault with audit, scanner, and MCP setup." />
+  <link rel="canonical" href="https://vibevault.lunaos.ai/agents" />
+  <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090909;
+      --panel: #141516;
+      --panel-2: #1B1C1D;
+      --line: rgba(248, 248, 248, 0.13);
+      --text: #F8F8F8;
+      --muted: #B7B7B7;
+      --dim: #777A7E;
+      --accent: #A5B4FC;
+      --green: #91C8A9;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --radius: 8px;
+      --shell: 1080px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    code {
+      font-family: var(--mono);
+      color: var(--accent);
+      background: rgba(165, 180, 252, 0.1);
+      border: 1px solid rgba(165, 180, 252, 0.18);
+      border-radius: 4px;
+      padding: 0.08em 0.32em;
+    }
+
+    .shell {
+      width: min(var(--shell), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav a,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+
+    .btn {
+      color: #090909;
+      background: var(--accent);
+      border: 1px solid transparent;
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(248, 248, 248, 0.18);
+    }
+
+    .hero {
+      padding: 94px 0 76px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(9, 9, 9, 0.98), rgba(9, 9, 9, 0.74), rgba(9, 9, 9, 0.94)),
+        url("../assets/vibe-vault-open-graph.png") center right / cover no-repeat;
+    }
+
+    .hero-inner { max-width: 760px; }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 62px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      margin: 20px 0 0;
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .command {
+      width: fit-content;
+      max-width: 100%;
+      margin: 22px 0 0;
+      overflow-x: auto;
+      color: #D9D9D9;
+      background: rgba(0, 0, 0, 0.62);
+      border: 1px solid rgba(248, 248, 248, 0.18);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.74fr) minmax(260px, 0.42fr);
+      gap: 42px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 38px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .card {
+      min-height: 216px;
+      padding: 26px;
+      background: var(--panel);
+    }
+
+    .card strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .card ul {
+      margin: 16px 0 0;
+      padding-left: 18px;
+    }
+
+    .flow {
+      display: grid;
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) minmax(130px, auto);
+      gap: 16px;
+      align-items: center;
+      padding: 18px;
+      background: var(--panel-2);
+    }
+
+    .step span:first-child {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(165, 180, 252, 0.34);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .step p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .step em {
+      color: var(--green);
+      font-style: normal;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .terminal {
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--panel-2);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .line {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 10px;
+      padding: 13px 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: #DCDCDC;
+    }
+
+    .line:first-child { border-top: 0; }
+    .prompt { color: var(--accent); }
+    .ok { color: var(--green); }
+
+    footer {
+      padding: 36px 0;
+      color: var(--dim);
+      font-size: 13px;
+    }
+
+    @media (max-width: 820px) {
+      .nav { display: none; }
+      .hero { padding: 68px 0 56px; }
+      h1 { font-size: 44px; }
+      .section-head,
+      .grid,
+      .step {
+        grid-template-columns: 1fr;
+      }
+      .step span:first-child { width: 34px; height: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="topbar" aria-label="Primary">
+      <a class="brand" href="/">
+        <img src="../assets/vibe-vaulta-app-icon.png" width="30" height="30" alt="" />
+        Vibe Vault
+      </a>
+      <div class="nav">
+        <a href="/">Product</a>
+        <a href="/scan">Scanner</a>
+        <a href="/security">Security</a>
+        <a class="btn" href="/download">Install</a>
+      </div>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="shell">
+      <div class="hero-inner">
+        <p class="eyebrow">Credential boundary for AI agents</p>
+        <h1>Give agents access without handing them your vault.</h1>
+        <p class="lede">
+          Vibe Vault lets Cursor, Claude Code, Devin, VS Code, and terminal agents
+          request credentials through a local macOS boundary with explicit approval,
+          MCP setup, repo scanning, and per-agent audit.
+        </p>
+        <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
+cd luna-vault &amp;&amp; swift build -c release --product vibevault
+.build/release/vibevault cursor prepare</pre>
+        <div class="cta-row">
+          <a class="btn" href="/download">Install CLI</a>
+          <a class="btn secondary" href="/security">Security model</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Why this exists</p>
+            <h2>AI coding agents now touch the same surfaces as deployment scripts.</h2>
+          </div>
+          <p class="section-copy">
+            They inspect repos, run shell commands, edit config, call tools, and generate
+            code that may deploy. The old default was to give the whole session broad
+            environment access or paste keys into chat.
+          </p>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <strong>Prompt paste is not a boundary</strong>
+            <p>Once a raw key enters chat, notes, shell history, or a copied `.env`, it is hard to reason about where it went.</p>
+          </article>
+          <article class="card">
+            <strong>Environment dumps are too broad</strong>
+            <p>A local agent usually needs one named value for one task, not every credential available to the shell.</p>
+          </article>
+          <article class="card">
+            <strong>Password managers are human-first</strong>
+            <p>They store secrets well, but they do not know which local agent requested which value inside which repo.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Workflow</p>
+            <h2>A local permission path for agent work.</h2>
+          </div>
+          <p class="section-copy">
+            Vibe Vault keeps the credential source of truth outside the repo while still
+            making agent workflows fast enough for daily use.
+          </p>
+        </div>
+
+        <div class="flow">
+          <div class="step">
+            <span>01</span>
+            <div><strong>Scan the repo</strong><p>Find expected env names and tracked local secret-bearing files before the agent session starts.</p></div>
+            <em>vibevault scan</em>
+          </div>
+          <div class="step">
+            <span>02</span>
+            <div><strong>Prepare the agent runtime</strong><p>Install MCP, Cursor rules, the agent skill, ignore rules, and the git guard for the current project.</p></div>
+            <em>cursor prepare</em>
+          </div>
+          <div class="step">
+            <span>03</span>
+            <div><strong>Approve named access</strong><p>Agents request specific secrets through CLI or MCP instead of receiving a copied vault dump.</p></div>
+            <em>named read</em>
+          </div>
+          <div class="step">
+            <span>04</span>
+            <div><strong>Audit after the run</strong><p>Review which agent or command accessed which credential, in which project context, and when.</p></div>
+            <em>audit log</em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Agent surfaces</p>
+            <h2>Built for local coding agents, not generic vault browsing.</h2>
+          </div>
+          <p class="section-copy">
+            The product is narrow on purpose: secret storage, runtime access, scanner
+            setup, browser import, provider sync, and audit for AI-assisted development.
+          </p>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <strong>Cursor and Claude Code</strong>
+            <ul>
+              <li>MCP server install</li>
+              <li>Project rules and skill install</li>
+              <li>Repo guard before agent edits</li>
+            </ul>
+          </article>
+          <article class="card">
+            <strong>Terminal agents and scripts</strong>
+            <ul>
+              <li>Scoped env injection</li>
+              <li>Named secret reads</li>
+              <li>Audited command context</li>
+            </ul>
+          </article>
+          <article class="card">
+            <strong>Provider key creation</strong>
+            <ul>
+              <li><a href="https://chromewebstore.google.com/detail/vibe-vault-importer/nfeigikipagiccmhlolgfbeienkckbpc">Chrome Web Store importer</a></li>
+              <li>Local random key generation</li>
+              <li>Explicit provider sync</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Agent instruction</p>
+            <h2>Tell agents to stop creating plaintext secret files.</h2>
+          </div>
+          <p class="section-copy">
+            Run <code>vibevault agents prepare --target all</code> to install
+            this policy into <code>AGENTS.md</code>, <code>CLAUDE.md</code>,
+            <code>GEMINI.md</code>, and Cursor rules so ChatGPT Codex, Claude,
+            Gemini, Cursor, and terminal agents suggest Vibe Vault before raw
+            <code>.env</code> files.
+          </p>
+        </div>
+
+        <div class="terminal" aria-label="Agent secret policy">
+          <div class="line"><span class="prompt">$</span><span>vibevault agents prepare --target all</span></div>
+          <div class="line"><span class="prompt">#</span><span>Run <code>vibevault scan</code> before secret-dependent work.</span></div>
+          <div class="line"><span class="prompt">#</span><span>Do not create <code>.env</code> / <code>.env.*</code> files with real secret values.</span></div>
+          <div class="line"><span class="prompt">#</span><span>Ask the user to import missing secrets into Vibe Vault instead of pasting values in chat.</span></div>
+          <div class="line"><span class="prompt">#</span><span>Use Vibe Vault MCP or <code>vibevault run -- &lt;command&gt;</code> for scoped access.</span></div>
+          <div class="line"><span class="ok">></span><span>Keep <code>.env.example</code> only for required names and safe defaults.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Start here</p>
+            <h2>Protect one repo before the next agent session.</h2>
+          </div>
+          <p class="section-copy">
+            The first useful outcome is simple: scan a real repo, move one credential
+            into the local vault, prepare Cursor or MCP, and verify one audited read.
+          </p>
+        </div>
+
+        <div class="terminal" aria-label="Agent setup commands">
+          <div class="line"><span class="prompt">$</span><span>vibevault scan</span></div>
+          <div class="line"><span class="prompt">$</span><span>vibevault guard install</span></div>
+          <div class="line"><span class="prompt">$</span><span>vibevault cursor prepare</span></div>
+          <div class="line"><span class="ok">></span><span>Agents now request named credentials through the local vault boundary.</span></div>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn" href="/download">Install CLI</a>
+          <a class="btn secondary" href="/scan">Run the scanner first</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      Vibe Vault is local-first for solo developers. Data leaves the machine only through actions you initiate.
+    </div>
+  </footer>
+</body>
+</html>

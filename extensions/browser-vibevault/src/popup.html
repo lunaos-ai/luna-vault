@@ -5,99 +5,217 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Vibe Vault</title>
     <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --ink: #101828;
+        --muted: #475467;
+        --line: #d0d5dd;
+        --soft: #eef2f7;
+        --primary: #101828;
+        --ok-bg: #ccfbf1;
+        --ok-text: #115e59;
+        --err-bg: #ffe4e6;
+        --err-text: #9f1239;
+      }
+
+      * { box-sizing: border-box; }
+
       body {
-        width: 340px;
+        width: 360px;
         margin: 0;
-        background: #f8fafc;
-        color: #101828;
+        background: var(--bg);
+        color: var(--ink);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-size: 13px;
         letter-spacing: 0;
       }
 
       main {
-        padding: 14px;
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
       }
 
       h1 {
-        margin: 0 0 4px;
-        font-size: 16px;
-        letter-spacing: 0;
+        font-size: 18px;
+        line-height: 1.15;
+      }
+
+      h2 {
+        font-size: 13px;
+        line-height: 1.25;
       }
 
       p {
-        margin: 0 0 12px;
-        color: #475467;
+        color: var(--muted);
         line-height: 1.45;
       }
 
+      .lede {
+        font-size: 13px;
+      }
+
+      .status,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
       .status {
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+      }
+
+      .status-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        margin: 12px 0;
-        padding: 10px;
-        border: 1px solid #d0d5dd;
-        border-radius: 8px;
-        background: #ffffff;
       }
 
       .pill {
-        padding: 3px 8px;
+        flex: 0 0 auto;
+        padding: 4px 9px;
         border-radius: 999px;
         background: #f2f4f7;
         color: #344054;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 750;
       }
 
       .pill.ok {
-        background: #ccfbf1;
-        color: #115e59;
+        background: var(--ok-bg);
+        color: var(--ok-text);
       }
 
       .pill.error {
-        background: #ffe4e6;
-        color: #9f1239;
+        background: var(--err-bg);
+        color: var(--err-text);
+      }
+
+      .detail {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .setup {
+        display: grid;
+        gap: 8px;
+      }
+
+      .label {
+        color: #344054;
+        font-size: 12px;
+        font-weight: 750;
       }
 
       code {
         display: block;
         overflow-wrap: anywhere;
         padding: 10px;
-        border: 1px solid #d0d5dd;
+        border: 1px solid var(--line);
         border-radius: 8px;
-        background: #ffffff;
-        color: #101828;
+        background: var(--panel);
+        color: var(--ink);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: 12px;
         line-height: 1.45;
       }
 
       button {
-        width: 100%;
-        min-height: 34px;
-        margin-top: 10px;
+        min-height: 36px;
         border: 0;
         border-radius: 6px;
-        background: #101828;
-        color: #ffffff;
         cursor: pointer;
         font-weight: 750;
+      }
+
+      .primary {
+        width: 100%;
+        background: var(--primary);
+        color: #ffffff;
+      }
+
+      .secondary-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .secondary {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .card {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .link-button {
+        border: 1px solid var(--line);
+        background: var(--soft);
+        color: var(--ink);
+      }
+
+      .fine {
+        color: #667085;
+        font-size: 11px;
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>Vibe Vault</h1>
-      <p>Use this command once after loading the unpacked extension.</p>
-      <div class="status">
-        <span>Native host</span>
-        <span id="status" class="pill">Checking</span>
-      </div>
-      <code id="command"></code>
-      <button id="copy" type="button">Copy command</button>
+      <section>
+        <h1>Vibe Vault Importer</h1>
+        <p class="lede">No browser login is required. Connect the local macOS vault once, then save new provider keys directly into Vibe Vault.</p>
+      </section>
+
+      <section class="status" aria-label="Connection status">
+        <div class="status-row">
+          <strong>Local native host</strong>
+          <span id="status" class="pill">Checking</span>
+        </div>
+        <p id="status-detail" class="detail">Testing the local Vibe Vault connection.</p>
+      </section>
+
+      <section class="setup">
+        <div class="label">Terminal setup command</div>
+        <code id="command"></code>
+        <button id="copy" class="primary" type="button">Copy command</button>
+        <div class="secondary-row">
+          <button id="retry" class="secondary" type="button">Test again</button>
+          <button id="install" class="secondary" type="button">Install guide</button>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Account and license">
+        <h2>Account</h2>
+        <p>Solo use is local-first: no extension account, no hosted vault, and no secret upload. Team licenses and encrypted sync are managed in the app or CLI.</p>
+        <div class="actions">
+          <button id="license" class="link-button" type="button">License</button>
+          <button id="security" class="link-button" type="button">Security</button>
+        </div>
+      </section>
+
+      <p class="fine">After installing the native host, restart Chrome or click Test again.</p>
     </main>
     <script src="popup.js"></script>
   </body>

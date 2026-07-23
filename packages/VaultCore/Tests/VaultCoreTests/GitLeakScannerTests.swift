@@ -11,17 +11,25 @@ final class GitLeakScannerTests: XCTestCase {
         XCTAssertFalse(GitLeakScanner.isSensitivePath("README.md"))
     }
 
+    func test_isSensitivePath_matchesAgentConfigFiles() {
+        XCTAssertTrue(GitLeakScanner.isSensitivePath(".mcp.json"))
+        XCTAssertTrue(GitLeakScanner.isSensitivePath(".cursor/mcp.json"))
+        XCTAssertTrue(GitLeakScanner.isSensitivePath(".claude/settings.local.json"))
+        XCTAssertTrue(GitLeakScanner.isSensitivePath("packages/api/.claude/settings.local.json"))
+        XCTAssertFalse(GitLeakScanner.isSensitivePath(".claude/settings.json"))
+    }
+
     func test_trackedLeaks_filtersWithInjectedRunner() {
         let root = URL(fileURLWithPath: "/tmp/proj")
         let runner: (URL, [String]) throws -> String = { _, args in
             if args == ["rev-parse", "--is-inside-work-tree"] { return "true\n" }
             if args.first == "ls-files" {
-                return ".env\0README.md\0apps/.env.local\0.env.example\0"
+                return ".env\0README.md\0apps/.env.local\0.env.example\0.claude/settings.local.json\0"
             }
             return ""
         }
         let leaks = GitLeakScanner.trackedLeaks(projectURL: root, runner: runner)
-        XCTAssertEqual(leaks, [".env", "apps/.env.local"])
+        XCTAssertEqual(leaks, [".claude/settings.local.json", ".env", "apps/.env.local"])
     }
 
     func test_trackedLeaks_emptyWhenNotGit() {
@@ -34,6 +42,8 @@ final class GitLeakScannerTests: XCTestCase {
         let lines = GitLeakScanner.suggestGitignoreLines(for: [".env"])
         XCTAssertTrue(lines.contains(".env"))
         XCTAssertTrue(lines.contains("!.env.example"))
+        XCTAssertTrue(lines.contains(".claude/settings.local.json"))
+        XCTAssertTrue(lines.contains(".mcp.json"))
         XCTAssertEqual(GitLeakScanner.suggestGitignoreLines(for: []), [])
     }
 

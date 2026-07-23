@@ -1,6 +1,6 @@
 import Foundation
 
-/// Installs a lightweight pre-commit hook that blocks committing dotenv leaks.
+/// Installs a lightweight pre-commit hook that blocks committing local secret-bearing files.
 public enum PreCommitGuard {
     public static let marker = "# vibe-vault-guard"
 
@@ -8,12 +8,12 @@ public enum PreCommitGuard {
         """
         #!/bin/sh
         \(marker)
-        # Blocks committing tracked .env files. Install: vibevault guard install
+        # Blocks committing tracked local secret files. Install: vibevault guard install
         if command -v vibevault >/dev/null 2>&1; then
           vibevault scan --git-only >/dev/null 2>&1
           status=$?
           if [ "$status" -eq 4 ]; then
-            echo "vibe-vault: tracked .env files found. Untrack or add to .gitignore." >&2
+            echo "vibe-vault: tracked local secret files found. Untrack or add to .gitignore." >&2
             vibevault scan --git-only >&2
             exit 1
           fi
