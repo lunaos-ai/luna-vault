@@ -46,6 +46,13 @@ final class SecretValueGeneratorTests: XCTestCase {
         XCTAssertTrue(value.hasPrefix("vv_"))
     }
 
+    func test_prefixed_token_accepts_custom_prefix() throws {
+        let value = try SecretValueGenerator.generate(format: .prefixedToken, length: 42, prefix: "Gemini API")
+
+        XCTAssertTrue(value.hasPrefix("gemini_api_"))
+        XCTAssertGreaterThanOrEqual(value.count, 42)
+    }
+
     func test_lengths_are_clamped_to_format_ranges() throws {
         let shortHex = try SecretValueGenerator.generate(format: .hex, length: 4)
         let longToken = try SecretValueGenerator.generate(format: .prefixedToken, length: 400)

@@ -54,6 +54,33 @@ vibevault run -- npm run dev
 vibevault push --to cloudflare --scope account_id=… --scope script_name=…
 ```
 
+## Add and import secrets
+
+The macOS app can generate new values as API keys, webhook tokens, database
+passwords, human app passwords, CSRF tokens, UUIDs, or custom-prefixed tokens.
+Generated drafts can be revealed or copied before Save; saved secret values are
+still copied through the audited read path.
+
+Import paths:
+
+```bash
+# Clipboard or dotenv-style files
+vibevault import --from clipboard
+vibevault import --from dotenv --path .env.local
+
+# Shell env and 1Password CLI
+vibevault import --from env --pattern 'CF_*' 'STRIPE_*'
+vibevault import --from op --item 'Cloudflare API'
+
+# Password app CSV exports
+vibevault import --from password-csv --path passwords.csv --profile auto
+vibevault import --from password-csv --path bitwarden.csv --profile bitwarden
+```
+
+Supported password CSV profiles are `auto`, `applePasswords`, `bitwarden`,
+`onePasswordCSV`, `lastPass`, and `dashlane`. The app opens imported rows in a
+review sheet so names can be changed before writing to the vault.
+
 ## Agent instructions
 
 Use Vibe Vault as the default secret path for ChatGPT Codex, Claude Code,

@@ -27,6 +27,42 @@ struct SecretValueRow: View {
         .padding(.horizontal, Tokens.Space.lg)
         .padding(.vertical, Tokens.Space.lg)
         .deepInset(radius: Tokens.Radius.md)
+        .overlay(alignment: .trailing) {
+            if copiedFlash {
+                Text("Copied")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Tokens.Status.success)
+                    .padding(.horizontal, Tokens.Space.sm)
+                    .padding(.vertical, Tokens.Space.xs)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.trailing, 76)
+                    .transition(.opacity.combined(with: .scale))
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { Task { await copyWithFlash() } }
+        .contextMenu {
+            Button(revealed ? "Hide value" : "Reveal value") {
+                Task { await reveal() }
+            }
+            Button("Copy value") {
+                Task { await copyWithFlash() }
+            }
+            Button("Copy key name") {
+                env.copySecretName(secret.name)
+            }
+            Button("Copy KEY=value") {
+                Task {
+                    guard await env.copyDotenvLine(name: secret.name) else { return }
+                    await flashCopied()
+                }
+            }
+            Divider()
+            Button("Clear clipboard") {
+                env.clearClipboard()
+            }
+        }
+        .help(env.sessionUnlocked ? "Double-click to copy value" : "Double-click to copy value (Touch ID)")
         .onChange(of: secret.id) { _, _ in
             revealed = false
             revealedValue = ""
@@ -48,7 +84,7 @@ struct SecretValueRow: View {
     }
 
     private var copyButton: some View {
-        Button { Task { await copy() } } label: {
+        Button { Task { await copyWithFlash() } } label: {
             Image(systemName: copiedFlash ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(copiedFlash ? Tokens.Status.success : Tokens.Text.secondary)
@@ -77,8 +113,13 @@ struct SecretValueRow: View {
         } catch { env.lastError = "\(error)" }
     }
 
-    private func copy() async {
+    private func copyWithFlash() async {
         guard await env.copySecret(name: secret.name) else { return }
+        await flashCopied()
+    }
+
+    @MainActor
+    private func flashCopied() async {
         Motion.animate(reduceMotion) { copiedFlash = true }
         try? await Task.sleep(nanoseconds: 1_200_000_000)
         Motion.animate(reduceMotion) { copiedFlash = false }

@@ -78,7 +78,7 @@ public enum SecretValueGenerator {
     private static let base64Alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
     private static let passwordAlphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-+=@#%:~")
 
-    public static func generate(format: SecretValueFormat, length requestedLength: Int? = nil) throws -> String {
+    public static func generate(format: SecretValueFormat, length requestedLength: Int? = nil, prefix requestedPrefix: String? = nil) throws -> String {
         switch format {
         case .hex:
             let length = format.clampedLength(requestedLength ?? format.defaultLength)
@@ -96,9 +96,28 @@ public enum SecretValueGenerator {
             return UUID().uuidString
         case .prefixedToken:
             let length = format.clampedLength(requestedLength ?? format.defaultLength)
-            let suffix = try randomString(length: length - 3, alphabet: base64URLAlphabet)
-            return "vv_" + suffix
+            let prefix = normalizedPrefix(requestedPrefix)
+            let tokenPrefix = "\(prefix)_"
+            let suffixLength = max(8, length - tokenPrefix.count)
+            let suffix = try randomString(length: suffixLength, alphabet: base64URLAlphabet)
+            return tokenPrefix + suffix
         }
+    }
+
+    public static func normalizedPrefix(_ requestedPrefix: String?) -> String {
+        let raw = (requestedPrefix ?? "vv").trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleaned = raw
+            .lowercased()
+            .map { char -> Character in
+                if char.isLetter || char.isNumber { return char }
+                if char == "_" || char == "-" { return char }
+                return "_"
+            }
+        let joined = String(cleaned)
+            .split(separator: "_")
+            .joined(separator: "_")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "_-"))
+        return joined.isEmpty ? "vv" : String(joined.prefix(24))
     }
 
     private static func hex(length: Int) throws -> String {

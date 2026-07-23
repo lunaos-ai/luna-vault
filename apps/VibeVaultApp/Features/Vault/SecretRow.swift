@@ -20,6 +20,18 @@ struct SecretRow: View {
             }
             Spacer()
             trailing
+            if isHovering {
+                Button {
+                    env.copySecretName(secret.name)
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(Tokens.Text.secondary)
+                .help("Copy key name")
+                .accessibilityLabel("Copy key name")
+            }
         }
         .padding(.horizontal, Tokens.Space.xs)
         .padding(.vertical, 6)
@@ -33,8 +45,19 @@ struct SecretRow: View {
         .onHover { hovering in
             Motion.animate(reduceMotion) { isHovering = hovering }
         }
+        .onTapGesture(count: 2) {
+            env.copySecretName(secret.name)
+        }
         .contextMenu {
             Button("Copy key name") { env.copySecretName(secret.name) }
+            Button("Copy value") {
+                Task { await env.copySecret(name: secret.name) }
+            }
+            Button("Copy KEY=value") {
+                Task { await env.copyDotenvLine(name: secret.name) }
+            }
+            Divider()
+            Button("Clear clipboard") { env.clearClipboard() }
         }
         // Do not attach pressableScale here — DragGesture steals List selection on macOS.
     }

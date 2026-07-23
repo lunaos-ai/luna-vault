@@ -5,16 +5,18 @@ import VaultCore
 struct ImportCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "import",
-        abstract: "Import secrets from dotenv files, environment, 1Password, clipboard, or system Keychain."
+        abstract: "Import secrets from dotenv files, environment, password apps, clipboard, or system Keychain."
     )
 
-    @Option(name: .long, help: "Source: dotenv, env, op, clipboard, keychain.") var from: String
+    @Option(name: .long, help: "Source: dotenv, env, op, clipboard, keychain, password-csv.") var from: String
 
-    @Option(name: .long, help: "Path (for dotenv).") var path: String?
+    @Option(name: .long, help: "Path (for dotenv or password-csv).") var path: String?
 
     @Option(name: .long, parsing: .upToNextOption, help: "Glob patterns (for env source). Example: --pattern 'CF_*' 'STRIPE_*'") var pattern: [String] = []
 
     @Option(name: .long, help: "1Password item reference (for op source).") var item: String?
+
+    @Option(name: .long, help: "Password CSV profile: auto, applePasswords, bitwarden, onePasswordCSV, lastPass, dashlane.") var profile: PasswordManagerImportProfile = .auto
 
     @Flag(name: .long, help: "Overwrite existing secrets if name matches.") var overwrite = false
 
@@ -53,8 +55,13 @@ struct ImportCommand: AsyncParsableCommand {
             return ClipboardImporter.read()
         case "keychain":
             return try SystemKeychainImporter.scan()
+        case "password-csv", "csv", "passwords":
+            guard let p = path else { throw ValidationError("--path required for password-csv") }
+            return try PasswordManagerCSVImporter.parseFile(at: URL(fileURLWithPath: p), profile: profile)
         default:
-            throw ValidationError("unknown source: \(from). Use dotenv|env|op|clipboard|keychain")
+            throw ValidationError("unknown source: \(from). Use dotenv|env|op|clipboard|keychain|password-csv")
         }
     }
 }
+
+extension PasswordManagerImportProfile: ExpressibleByArgument {}

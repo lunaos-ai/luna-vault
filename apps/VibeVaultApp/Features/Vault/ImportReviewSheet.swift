@@ -138,7 +138,7 @@ struct ImportReviewSheet: View {
             VaultService.ImportItem(
                 name: row.vaultName(prefix: prefix),
                 value: row.value,
-                notes: notes
+                notes: row.notes ?? notes
             )
         }
         do {
