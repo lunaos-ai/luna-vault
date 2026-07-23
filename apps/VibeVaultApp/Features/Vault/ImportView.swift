@@ -25,124 +25,139 @@ struct ImportView: View {
             if let status = env.importStatus {
                 ImportStatusBanner(message: status)
                     .padding(.horizontal, Tokens.Space.xl)
-                    .padding(.top, Tokens.Space.lg)
-                    .padding(.bottom, Tokens.Space.sm)
+                    .padding(.top, Tokens.Space.md)
+                    .padding(.bottom, Tokens.Space.xs)
             }
             importHero
-            Form {
-                Section {
-                    Toggle("Overwrite existing", isOn: $overwrite)
-                } header: {
-                    Text("Options")
-                } footer: {
-                    Text("When off, secrets that already exist in your vault are skipped.")
-                }
-
-                Section {
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 156), spacing: Tokens.Space.sm)],
-                        alignment: .leading,
-                        spacing: Tokens.Space.sm
+            ScrollView {
+                VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+                    CompactImportSection(
+                        title: "Options",
+                        footer: "When off, secrets that already exist in your vault are skipped."
                     ) {
-                        ForEach(PasswordManagerImportProfile.allCases) { profile in
-                            PasswordAppImportButton(profile: profile) {
-                                pickPasswordExport(profile: profile)
+                        HStack(spacing: Tokens.Space.md) {
+                            Text("Overwrite existing")
+                                .font(.subheadline.weight(.medium))
+                            Spacer()
+                            Toggle("", isOn: $overwrite)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                        }
+                    }
+
+                    CompactImportSection(
+                        title: "Known password apps",
+                        footer: "Use exported CSV files for Apple Passwords, Bitwarden, 1Password, LastPass, and Dashlane. Direct 1Password import uses the signed-in op CLI."
+                    ) {
+                        LazyVGrid(
+                            columns: [GridItem(.adaptive(minimum: 148), spacing: Tokens.Space.sm)],
+                            alignment: .leading,
+                            spacing: Tokens.Space.sm
+                        ) {
+                            ForEach(PasswordManagerImportProfile.allCases) { profile in
+                                PasswordAppImportButton(profile: profile) {
+                                    pickPasswordExport(profile: profile)
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        HStack(spacing: Tokens.Space.sm) {
+                            TextField("1Password item reference", text: $opItemRef, prompt: Text("Cloudflare API"))
+                            Button("Review from op") {
+                                openOnePasswordReview()
+                            }
+                            .disabled(opItemRef.isEmpty)
+                        }
+
+                        HStack(spacing: Tokens.Space.sm) {
+                            Button {
+                                Task { opCLIStatus = await probeOpCLI() }
+                            } label: {
+                                Label("Check 1Password CLI", systemImage: "checkmark.circle")
+                            }
+                            if let s = opCLIStatus {
+                                Text(s)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
                             }
                         }
                     }
 
-                    Divider()
-
-                    HStack {
-                        TextField("1Password item reference", text: $opItemRef, prompt: Text("Cloudflare API"))
-                        Button("Review from op") {
-                            openOnePasswordReview()
+                    CompactImportSection(
+                        title: "Screenshots",
+                        footer: "Reads visible credential labels from screenshots, then lets you review and rename every candidate before import."
+                    ) {
+                        Button {
+                            pickCredentialImage()
+                        } label: {
+                            Label(
+                                imageOCRRunning ? "Reading image…" : "Choose screenshot or image…",
+                                systemImage: "doc.viewfinder"
+                            )
                         }
-                        .disabled(opItemRef.isEmpty)
+                        .disabled(imageOCRRunning)
+                        if let status = imageOCRStatus {
+                            Text(status)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
-                    Button {
-                        Task { opCLIStatus = await probeOpCLI() }
-                    } label: {
-                        Label("Check 1Password CLI", systemImage: "checkmark.circle")
+                    CompactImportSection(title: "Clipboard") {
+                        ClipboardImportSection(overwrite: overwrite) { items in
+                            reviewSheet = ImportReviewPayload(
+                                subtitle: "Clipboard",
+                                rows: ImportRowState.from(items),
+                                notes: "imported from clipboard"
+                            )
+                        }
                     }
-                    if let s = opCLIStatus {
-                        Text(s).font(.caption).foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("Known password apps")
-                } footer: {
-                    Text("Use exported CSV files for Apple Passwords, Bitwarden, 1Password, LastPass, and Dashlane. Direct 1Password import uses the signed-in `op` CLI.")
-                }
 
-                Section {
-                    Button {
-                        pickCredentialImage()
-                    } label: {
-                        Label(
-                            imageOCRRunning ? "Reading image…" : "Choose screenshot or image…",
-                            systemImage: "doc.viewfinder"
-                        )
-                    }
-                    .disabled(imageOCRRunning)
-                    if let status = imageOCRStatus {
-                        Text(status)
+                    CompactImportSection(title: "Files") {
+                        HStack(spacing: Tokens.Space.md) {
+                            Text(".env file")
+                                .font(.subheadline.weight(.medium))
+                            Spacer()
+                            Button("Choose…") { pickDotenv() }
+                        }
+                        Text("Comments and export prefixes handled.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                } header: {
-                    Text("Screenshots")
-                } footer: {
-                    Text("Reads visible credential labels from screenshots, then lets you review and rename every candidate before import.")
-                }
 
-                Section {
-                    ClipboardImportSection(overwrite: overwrite) { items in
-                        reviewSheet = ImportReviewPayload(
-                            subtitle: "Clipboard",
-                            rows: ImportRowState.from(items),
-                            notes: "imported from clipboard"
-                        )
+                    CompactImportSection(
+                        title: "Shell environment",
+                        footer: "Pulls secrets from your current shell env matching any glob."
+                    ) {
+                        HStack(spacing: Tokens.Space.sm) {
+                            TextField("Globs", text: $envGlobs, prompt: Text("CF_* STRIPE_*"))
+                                .font(.system(.body, design: .monospaced))
+                            Button("Import from environment") {
+                                let globs = envGlobs.split(separator: " ").map(String.init)
+                                env.importEnv(globs: globs, overwrite: overwrite)
+                            }
+                        }
                     }
-                } header: {
-                    Text("Clipboard")
-                }
 
-                Section {
-                    LabeledContent(".env file") {
-                        Button("Choose…") { pickDotenv() }
-                    }
-                    Text("Comments and `export` prefixes handled.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("Files")
-                }
-
-                Section {
-                    TextField("Globs", text: $envGlobs, prompt: Text("CF_* STRIPE_*"))
-                        .font(.system(.body, design: .monospaced))
-                    Button("Import from environment") {
-                        let globs = envGlobs.split(separator: " ").map(String.init)
-                        env.importEnv(globs: globs, overwrite: overwrite)
-                    }
-                } header: {
-                    Text("Shell environment")
-                } footer: {
-                    Text("Pulls secrets from your current shell env matching any glob.")
-                }
-
-                Section {
-                    LabeledContent("System Keychain") {
-                        Text("`vibevault import --from keychain`")
+                    CompactImportSection(title: "Other CLI sources") {
+                        HStack(spacing: Tokens.Space.md) {
+                            Text("System Keychain")
+                                .font(.subheadline.weight(.medium))
+                            Spacer()
+                            Text("vibevault import --from keychain")
                             .font(.system(.caption, design: .monospaced))
                             .foregroundStyle(.secondary)
+                        }
                     }
-                } header: {
-                    Text("Other CLI sources")
                 }
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(.horizontal, Tokens.Space.xxl)
+                .padding(.bottom, Tokens.Space.xxl)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .formStyle(.grouped)
             .scrollContentBackground(.hidden)
         }
         .background(PremiumBackdrop())
@@ -178,7 +193,8 @@ struct ImportView: View {
             Spacer()
         }
         .padding(.horizontal, Tokens.Space.xxl)
-        .padding(.vertical, Tokens.Space.lg)
+        .padding(.top, Tokens.Space.md)
+        .padding(.bottom, Tokens.Space.sm)
     }
 
     private func pickDotenv() {
@@ -317,15 +333,61 @@ struct ImportView: View {
     }
 }
 
+private struct CompactImportSection<Content: View>: View {
+    let title: String
+    let footer: String?
+    private let content: Content
+
+    init(
+        title: String,
+        footer: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.footer = footer
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Tokens.Text.primary)
+
+            VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+                content
+            }
+            .padding(Tokens.Space.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Tokens.Surface.elevated.opacity(0.45),
+                in: RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)
+                    .strokeBorder(Tokens.Surface.separator.opacity(0.6), lineWidth: Tokens.Stroke.hairline)
+            )
+
+            if let footer {
+                Text(footer)
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Text.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Tokens.Space.xs)
+            }
+        }
+    }
+}
+
 private struct PasswordAppImportButton: View {
     let profile: PasswordManagerImportProfile
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+            VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Image(systemName: profile.systemImage)
-                    .font(.title3)
+                    .font(.body)
                     .foregroundStyle(profile.tint)
                 Text(profile.label)
                     .font(.subheadline.weight(.semibold))
@@ -333,8 +395,8 @@ private struct PasswordAppImportButton: View {
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.secondary)
             }
-            .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-            .padding(Tokens.Space.md)
+            .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
+            .padding(Tokens.Space.sm)
             .background(
                 Tokens.Surface.elevated.opacity(0.7),
                 in: RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous)

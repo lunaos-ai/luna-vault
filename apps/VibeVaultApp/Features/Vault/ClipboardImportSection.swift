@@ -15,7 +15,7 @@ struct ClipboardImportSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Space.md) {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
             HStack(spacing: Tokens.Space.sm) {
                 Button(action: readClipboard) {
                     Label("Read clipboard", systemImage: "doc.on.clipboard")
@@ -70,7 +70,8 @@ struct ClipboardImportSection: View {
             Image(systemName: icon).foregroundStyle(tint)
             Text(text).font(.subheadline).foregroundStyle(Tokens.Text.primary)
         }
-        .padding(Tokens.Space.sm)
+        .padding(.horizontal, Tokens.Space.sm)
+        .padding(.vertical, Tokens.Space.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(tint.opacity(0.08),
                     in: RoundedRectangle(cornerRadius: Tokens.Radius.sm, style: .continuous))
