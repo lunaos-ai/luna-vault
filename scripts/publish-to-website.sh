@@ -93,6 +93,12 @@ if ! grep -q "downloads/VibeVault" "$WORK/_redirects" 2>/dev/null; then
 /vibevault/scan /vibevault/scan/index.html 200
 /vibevault/security /vibevault/security/index.html 200
 /vibevault/agents /vibevault/agents/index.html 200
+/vibevault/alternatives https://vibevault.lunaos.ai/alternatives 302
+/vibevault/vs-env-files https://vibevault.lunaos.ai/vs-env-files 302
+/vibevault/vs-1password https://vibevault.lunaos.ai/vs-1password 302
+/vibevault/vs-bitwarden-mcp https://vibevault.lunaos.ai/vs-bitwarden-mcp 302
+/vibevault/vs-doppler https://vibevault.lunaos.ai/vs-doppler 302
+/vibevault/vs-infisical https://vibevault.lunaos.ai/vs-infisical 302
 REDIR
 elif ! grep -q "/vibevault" "$WORK/_redirects"; then
     echo "/vibevault /vibevault/index.html 200" >> "$WORK/_redirects"
@@ -100,6 +106,11 @@ fi
 for page in install scan security agents; do
     if ! grep -q "/vibevault/$page" "$WORK/_redirects" 2>/dev/null; then
         echo "/vibevault/$page /vibevault/$page/index.html 200" >> "$WORK/_redirects"
+    fi
+done
+for page in alternatives vs-env-files vs-1password vs-bitwarden-mcp vs-doppler vs-infisical; do
+    if ! grep -q "/vibevault/$page" "$WORK/_redirects" 2>/dev/null; then
+        echo "/vibevault/$page https://vibevault.lunaos.ai/$page 302" >> "$WORK/_redirects"
     fi
 done
 

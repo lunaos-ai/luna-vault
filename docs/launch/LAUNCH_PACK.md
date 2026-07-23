@@ -6,6 +6,7 @@ the unnotarized DMG to first-time users.
 
 Primary URL: https://vibevault.lunaos.ai/
 Install URL: https://vibevault.lunaos.ai/download
+Alternatives URL: https://vibevault.lunaos.ai/alternatives
 
 ---
 
@@ -364,6 +365,16 @@ No. Keep your password manager for human login and general secret storage. Vibe
 Vault is the local runtime boundary for AI coding: MCP setup, repo scanning,
 agent-aware reads, audit, provider sync, browser import, and command injection.
 
+More detail: https://vibevault.lunaos.ai/vs-1password
+
+**Why not just use `.env` files?**
+
+Keep `.env.example` for safe names and defaults. Vibe Vault is for real API
+keys used by agents, where you want values outside the repo, scoped access, and
+an audit row after the session.
+
+More detail: https://vibevault.lunaos.ai/vs-env-files
+
 **Why not just use environment variables?**
 
 Always-on environment variables are broad access. Vibe Vault makes the read
@@ -374,6 +385,8 @@ explicit, scoped to the workflow, and auditable after the session.
 Those are strong infrastructure/cloud secret systems. Vibe Vault starts at the
 local AI coding workflow: one Mac, one repo, one agent requesting a credential
 through a local boundary.
+
+More detail: https://vibevault.lunaos.ai/vs-doppler
 
 **Does cloud sync make this a cloud vault?**
 

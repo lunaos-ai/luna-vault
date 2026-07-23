@@ -6,7 +6,16 @@ Primary URL: https://vibevault.lunaos.ai/
 Agent URL: https://vibevault.lunaos.ai/agents
 Install URL: https://vibevault.lunaos.ai/download
 Security URL: https://vibevault.lunaos.ai/security
+Alternatives URL: https://vibevault.lunaos.ai/alternatives
 Chrome Web Store: https://chromewebstore.google.com/detail/vibe-vault-importer/nfeigikipagiccmhlolgfbeienkckbpc
+
+Comparison URLs:
+
+- https://vibevault.lunaos.ai/vs-env-files
+- https://vibevault.lunaos.ai/vs-1password
+- https://vibevault.lunaos.ai/vs-bitwarden-mcp
+- https://vibevault.lunaos.ai/vs-doppler
+- https://vibevault.lunaos.ai/vs-infisical
 
 For AI coding agents:
 

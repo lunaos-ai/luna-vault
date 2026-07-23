@@ -29,6 +29,35 @@ Unlike cloud secrets managers and password managers, Vibe Vault is built for
 the agent-on-your-laptop threat model: local-first, no cloud account for Solo,
 and running where the agents run.
 
+## Competitive Positioning
+
+The category now includes serious incumbents and adjacent platforms:
+1Password, Bitwarden, Doppler, Infisical, HashiCorp Vault, Keeper, and Aembit
+are all moving around AI-agent access, MCP, workload identity, or non-human
+credentials.
+
+Do not claim broad category ownership. The sharper GTM wedge is:
+
+```text
+Local credential boundary for AI coding agents on macOS: scan a repo, move
+secrets out of .env, wire MCP and agent rules, import newly generated provider
+keys from the browser, and audit which agent accessed what.
+```
+
+Public comparison pages now support that positioning:
+
+- `https://vibevault.lunaos.ai/alternatives`
+- `https://vibevault.lunaos.ai/vs-env-files`
+- `https://vibevault.lunaos.ai/vs-1password`
+- `https://vibevault.lunaos.ai/vs-bitwarden-mcp`
+- `https://vibevault.lunaos.ai/vs-doppler`
+- `https://vibevault.lunaos.ai/vs-infisical`
+
+Use these pages in technical launch replies when users ask why this is not just
+1Password, Bitwarden, Doppler, Infisical, or `.env` with better habits. The
+source-of-truth competitive notes live in
+`docs/launch/COMPETITIVE_ANALYSIS.md`.
+
 ## Why Now
 
 Use quantified evidence in launch copy and content:

@@ -6,6 +6,7 @@ Primary campaign URL: https://vibevault.lunaos.ai/agents
 Install URL: https://vibevault.lunaos.ai/download  
 Scanner URL: https://vibevault.lunaos.ai/scan  
 Security URL: https://vibevault.lunaos.ai/security
+Alternatives URL: https://vibevault.lunaos.ai/alternatives
 Chrome Web Store: https://chromewebstore.google.com/detail/vibe-vault-importer/nfeigikipagiccmhlolgfbeienkckbpc
 
 ## Current Launch Mode
@@ -38,6 +39,7 @@ Use this language:
 - "keeps raw API keys out of prompts, `.env`, shell history, and notes"
 - "Homebrew-first while notarized native distribution is pending"
 - "Chrome Web Store importer is live for saving newly generated provider keys"
+- "comparison pages explain where Vibe Vault fits next to 1Password, Bitwarden, Doppler, Infisical, and .env"
 
 Avoid this language:
 
@@ -152,6 +154,9 @@ https://vibevault.lunaos.ai/download
 
 Security model:
 https://vibevault.lunaos.ai/security
+
+Alternatives:
+https://vibevault.lunaos.ai/alternatives
 ```
 
 ## Show HN

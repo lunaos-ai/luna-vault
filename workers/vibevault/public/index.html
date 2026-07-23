@@ -660,6 +660,11 @@
       background: var(--panel);
     }
 
+    .alternative {
+      color: inherit;
+      text-decoration: none;
+    }
+
     .proof .label,
     .alternative .label {
       color: var(--gold-soft);
@@ -1045,7 +1050,7 @@
         <a href="/agents">Agents</a>
         <a href="#workflow">Demo</a>
         <a href="/scan">Scanner</a>
-        <a href="#compare">Compare</a>
+        <a href="/alternatives">Compare</a>
         <a href="/security">Security</a>
         <a href="#pricing">Pricing</a>
         <a class="download" href="/download">Install</a>
@@ -1273,42 +1278,42 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
             <h2>General vaults protect credentials for people. Vibe Vault controls access for agents.</h2>
           </div>
           <p class="section-copy">
-            Password managers, Keychain, tool-specific secrets, and <code>.env</code> files each solve
-            part of the problem. AI coding needs the workflow boundary between all of them.
+            Password managers, cloud secrets platforms, and <code>.env</code> files each solve
+            part of the problem. AI coding needs a local workflow boundary around all of them.
           </p>
         </div>
 
         <div class="alternative-grid reveal">
-          <article class="alternative">
+          <a class="alternative" href="/vs-env-files">
             <span class="label">.env</span>
             <h3>Easy until it leaks, forks, or drifts.</h3>
             <p>Vibe Vault scans gaps, guards git, and injects values only when a command or agent session needs them.</p>
-          </article>
-          <article class="alternative">
-            <span class="label">Shell env</span>
-            <h3>Fast, inherited, and hard to audit.</h3>
-            <p>Environment variables can flow into child processes without a clear record of who used what.</p>
-          </article>
-          <article class="alternative">
+          </a>
+          <a class="alternative" href="/vs-1password">
             <span class="label">1Password</span>
-            <h3>A human vault is not an agent access log.</h3>
-            <p>Keep your password manager. Use Vibe Vault when AI tools need scoped, audited credential reads.</p>
-          </article>
-          <article class="alternative">
-            <span class="label">Encrypted local vault</span>
-            <h3>A primitive is not a workflow.</h3>
-            <p>Vibe Vault builds scanning, approvals, audit, MCP setup, and provider sync around encrypted local storage with a Keychain-held master key.</p>
-          </article>
-          <article class="alternative">
-            <span class="label">CI/CD stores</span>
-            <h3>Deployment secrets are not local AI access.</h3>
-            <p>Provider stores are useful after a push. Vibe Vault protects the developer machine before deployment.</p>
-          </article>
-          <article class="alternative">
+            <h3>A strong human vault, not the full repo workflow.</h3>
+            <p>Keep it for passwords and browser logins. Use Vibe Vault for local agent API-key access, scanning, and audit.</p>
+          </a>
+          <a class="alternative" href="/vs-bitwarden-mcp">
+            <span class="label">Bitwarden MCP</span>
+            <h3>Important category validation.</h3>
+            <p>Vibe Vault packages the local Mac coding flow around scanner, MCP, browser import, and project audit.</p>
+          </a>
+          <a class="alternative" href="/vs-doppler">
+            <span class="label">Doppler</span>
+            <h3>Centralized secrets are different from local agent access.</h3>
+            <p>Doppler fits cloud SecretsOps. Vibe Vault protects the machine before a secret reaches deployment.</p>
+          </a>
+          <a class="alternative" href="/vs-infisical">
+            <span class="label">Infisical</span>
+            <h3>A broad platform versus a narrow local wedge.</h3>
+            <p>Use Vibe Vault when the first job is moving real API keys out of repos used by AI coding agents.</p>
+          </a>
+          <a class="alternative" href="/alternatives">
             <span class="label">Vibe Vault</span>
             <h3>Local storage, agent access, audit, and setup.</h3>
             <p>One workflow covers local vault storage, AI-agent access, repo protection, provider sync, and audit.</p>
-          </article>
+          </a>
         </div>
       </div>
     </section>
@@ -1628,6 +1633,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
       <div>
         <a href="https://lunaos.ai">lunaos.ai</a> |
         <a href="https://github.com/lunaos-ai/luna-vault">GitHub</a> |
+        <a href="/alternatives">Alternatives</a> |
         <a href="/download">Install</a>
       </div>
     </footer>
