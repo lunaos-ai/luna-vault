@@ -15,8 +15,9 @@ class Vibevault < Formula
   version "0.1.0"
   license "MIT"
 
-  # Prefer GitHub release tarball after first `gh release create v0.1.0`.
-  # Until then, HEAD build from the monorepo.
+  url "https://github.com/lunaos-ai/luna-vault/archive/v0.1.0.tar.gz"
+  sha256 "8d1b78fc78f3e57268e39d162e7a3b42960face16d906df52a86dae843df1f43"
+
   head "https://github.com/lunaos-ai/luna-vault.git", branch: "main"
 
   on_macos do
