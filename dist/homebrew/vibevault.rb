@@ -15,24 +15,29 @@ class Vibevault < Formula
   version "0.1.0"
   license "MIT"
 
-  url "https://github.com/lunaos-ai/luna-vault/archive/v0.1.0.tar.gz"
-  sha256 "8d1b78fc78f3e57268e39d162e7a3b42960face16d906df52a86dae843df1f43"
+  if Hardware::CPU.arm?
+    url "https://github.com/lunaos-ai/luna-vault/releases/download/v0.1.0/vibevault_0.1.0_darwin_arm64.tar.gz"
+    sha256 "e1cb25342a6bef84680312fd058b69940ff14f7c7379bc6233202a2c63d8879b"
+  end
 
   head "https://github.com/lunaos-ai/luna-vault.git", branch: "main"
-
-  on_macos do
-    depends_on xcode: ["15.0", :build]
-  end
 
   depends_on macos: :sonoma
 
   def install
-    system "swift", "build", "-c", "release", "--product", "vibevault"
-    system "swift", "build", "-c", "release", "--product", "vibevault-mcp"
-    system "swift", "build", "-c", "release", "--product", "vibevault-browser-host"
-    bin.install ".build/release/vibevault"
-    bin.install ".build/release/vibevault-mcp"
-    bin.install ".build/release/vibevault-browser-host"
+    if build.head?
+      system "swift", "build", "-c", "release", "--product", "vibevault"
+      system "swift", "build", "-c", "release", "--product", "vibevault-mcp"
+      system "swift", "build", "-c", "release", "--product", "vibevault-browser-host"
+      bin.install ".build/release/vibevault"
+      bin.install ".build/release/vibevault-mcp"
+      bin.install ".build/release/vibevault-browser-host"
+    else
+      odie "Stable binary is currently available for Apple Silicon Macs only. Use --HEAD to build from source." unless Hardware::CPU.arm?
+      bin.install "vibevault"
+      bin.install "vibevault-mcp"
+      bin.install "vibevault-browser-host"
+    end
   end
 
   def caveats
