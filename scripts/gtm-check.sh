@@ -30,7 +30,7 @@ grep -q '0\.1\.0' cli/vibevault/VibeVault.swift && ok "CLI version 0.1.0" || fai
 [ -f dist/cursor-directory/vibe-vault.json ] && ok "Cursor directory draft" || fail "Cursor directory draft missing"
 
 grep -qi 'Generate new local secrets' workers/vibevault/public/index.html && ok "Landing mentions key generator" || fail "Landing missing key generator copy"
-grep -qi 'CLI-first launch path' workers/vibevault/public/install/index.html && ok "CLI-first install page" || fail "Install page missing CLI-first path"
+grep -qi 'Homebrew-first launch path' workers/vibevault/public/install/index.html && ok "Homebrew-first install page" || fail "Install page missing Homebrew-first path"
 grep -qi 'Credential boundary for AI agents' workers/vibevault/public/agents/index.html && ok "AI-agent landing page" || fail "AI-agent landing page missing"
 grep -q 'vibevault agents prepare --target all' workers/vibevault/public/agents/index.html && ok "Agent policy install CTA" || fail "Agents page missing policy install CTA"
 [ -f workers/vibevault/public/llms.txt ] && grep -q 'vibevault agents prepare --target all' workers/vibevault/public/llms.txt && ok "LLM guidance file" || fail "LLM guidance file missing"

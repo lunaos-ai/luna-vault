@@ -288,14 +288,14 @@
   <header class="hero">
     <div class="shell">
       <div class="hero-inner">
-        <p class="eyebrow">CLI-first launch path</p>
+        <p class="eyebrow">Homebrew-first launch path</p>
         <h1>Install Vibe Vault without waiting for the notarized Mac app.</h1>
         <p class="lede">
           The local CLI, MCP server, scanner, git guard, browser host, and core vault package
-          can ship source-first. The native DMG is held until Developer ID notarization is available.
+          are available through Homebrew. The native DMG is held until Developer ID notarization is available.
         </p>
         <div class="cta-row">
-          <a class="btn" href="#source">Build from source</a>
+          <a class="btn" href="#homebrew">Install with Homebrew</a>
           <a class="btn secondary" href="/security">Security architecture</a>
         </div>
       </div>
@@ -303,44 +303,43 @@
   </header>
 
   <main>
-    <section id="source">
+    <section id="homebrew">
       <div class="shell">
         <div class="section-head">
           <div>
             <p class="eyebrow">Recommended now</p>
-            <h2>Build the CLI and MCP server from source.</h2>
+            <h2>Install the CLI, MCP server, and browser host with Homebrew.</h2>
           </div>
           <p class="section-copy">
             This avoids asking security-minded users to bypass Gatekeeper for an unnotarized app.
-            It also gives HN and developer communities an inspectable path.
+            It installs the same local-first CLI path, including the native host used by the Chrome importer.
           </p>
         </div>
         <div class="steps">
           <div class="step">
             <span class="step-index">01</span>
             <div>
-              <strong>Clone and build</strong>
-              <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
-cd luna-vault
-swift build -c release --product vibevault
-swift build -c release --product vibevault-mcp</pre>
+              <strong>Install</strong>
+              <pre class="command" tabindex="0">brew tap finsavvyai/tap
+brew install vibevault</pre>
             </div>
           </div>
           <div class="step">
             <span class="step-index">02</span>
             <div>
               <strong>Run the scanner first</strong>
-              <pre class="command" tabindex="0">.build/release/vibevault scan
-.build/release/vibevault scan --git-only
-.build/release/vibevault guard install</pre>
+              <pre class="command" tabindex="0">vibevault scan
+vibevault scan --git-only
+vibevault guard install</pre>
             </div>
           </div>
           <div class="step">
             <span class="step-index">03</span>
             <div>
               <strong>Prepare Cursor or MCP clients</strong>
-              <pre class="command" tabindex="0">.build/release/vibevault cursor prepare
-.build/release/vibevault mcp install --client all</pre>
+              <pre class="command" tabindex="0">vibevault cursor prepare
+vibevault mcp install --client all
+vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfbeienkckbpc</pre>
             </div>
           </div>
         </div>
@@ -355,17 +354,19 @@ swift build -c release --product vibevault-mcp</pre>
       <div class="shell">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Homebrew</p>
-            <h2>Use the tap once it is published.</h2>
+            <p class="eyebrow">Source</p>
+            <h2>Build from source if you want to inspect locally.</h2>
           </div>
           <p class="section-copy">
-            The Homebrew formula is prepared in the repo. Use this path after the tap is reachable
-            from a clean machine.
+            The MIT-licensed CLI, VaultCore package, MCP server, and browser host are public. Use
+            this path for code review or local development.
           </p>
         </div>
-        <pre class="command" tabindex="0">brew tap finsavvyai/tap
-brew install vibevault
-vibevault --version</pre>
+        <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
+cd luna-vault
+swift build -c release --product vibevault
+swift build -c release --product vibevault-mcp
+swift build -c release --product vibevault-browser-host</pre>
       </div>
     </section>
 
@@ -385,7 +386,7 @@ vibevault --version</pre>
         <div class="grid">
           <article class="card">
             <strong>Safe public path</strong>
-            <p>CLI/source-first launch with scanner, MCP, guard, and docs.</p>
+            <p>Homebrew-first CLI launch with scanner, MCP, guard, browser host, and docs.</p>
           </article>
           <article class="card">
             <strong>Held path</strong>
