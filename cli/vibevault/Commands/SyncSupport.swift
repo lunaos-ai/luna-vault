@@ -69,7 +69,9 @@ enum SyncImporter {
         try service.update(
             name: item.name, value: item.value, notes: item.notes,
             expiresAt: item.expiresAt, rotateEveryDays: item.rotateEveryDays,
-            mcpAllowed: item.mcpAllowed, createdAt: item.createdAt
+            lastRotatedAt: item.lastRotatedAt,
+            mcpAllowed: item.mcpAllowed, totpAuthURL: item.totpAuthURL,
+            createdAt: item.createdAt
         )
     }
 
@@ -77,7 +79,9 @@ enum SyncImporter {
         try service.add(
             name: item.name, value: item.value, notes: item.notes,
             expiresAt: item.expiresAt, rotateEveryDays: item.rotateEveryDays,
-            mcpAllowed: item.mcpAllowed, createdAt: item.createdAt
+            lastRotatedAt: item.lastRotatedAt,
+            mcpAllowed: item.mcpAllowed, totpAuthURL: item.totpAuthURL,
+            createdAt: item.createdAt
         )
     }
 }

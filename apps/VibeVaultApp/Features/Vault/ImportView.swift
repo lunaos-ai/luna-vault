@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 import VaultCore
 
 struct ImportView: View {
@@ -8,6 +9,8 @@ struct ImportView: View {
     @State private var envGlobs = "CF_* STRIPE_* *_TOKEN *_API_KEY"
     @State private var opItemRef = ""
     @State private var opCLIStatus: String?
+    @State private var imageOCRStatus: String?
+    @State private var imageOCRRunning = false
     @State private var reviewSheet: ImportReviewPayload?
 
     struct ImportReviewPayload: Identifiable {
@@ -70,6 +73,27 @@ struct ImportView: View {
                     Text("Known password apps")
                 } footer: {
                     Text("Use exported CSV files for Apple Passwords, Bitwarden, 1Password, LastPass, and Dashlane. Direct 1Password import uses the signed-in `op` CLI.")
+                }
+
+                Section {
+                    Button {
+                        pickCredentialImage()
+                    } label: {
+                        Label(
+                            imageOCRRunning ? "Reading image…" : "Choose screenshot or image…",
+                            systemImage: "doc.viewfinder"
+                        )
+                    }
+                    .disabled(imageOCRRunning)
+                    if let status = imageOCRStatus {
+                        Text(status)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Screenshots")
+                } footer: {
+                    Text("Reads visible credential labels from screenshots, then lets you review and rename every candidate before import.")
                 }
 
                 Section {
@@ -147,7 +171,7 @@ struct ImportView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Bring secrets into the vault")
                     .font(.headline)
-                Text("Clipboard, dotenv, shell env, or 1Password CLI.")
+                Text("Clipboard, screenshots, dotenv, shell env, or 1Password CLI.")
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.secondary)
             }
@@ -184,6 +208,19 @@ struct ImportView: View {
         }
     }
 
+    private func pickCredentialImage() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.image]
+        panel.treatsFilePackagesAsDirectories = true
+        panel.begin { resp in
+            if resp == .OK, let url = panel.url {
+                openCredentialImageReview(url)
+            }
+        }
+    }
+
     private func openDotenvReview(_ url: URL) {
         do {
             let items = try DotenvImporter.parseFile(at: url)
@@ -215,6 +252,33 @@ struct ImportView: View {
             )
         } catch {
             env.importStatus = "error: \(error)"
+        }
+    }
+
+    private func openCredentialImageReview(_ url: URL) {
+        imageOCRRunning = true
+        imageOCRStatus = "Reading \(url.lastPathComponent)…"
+        Task {
+            do {
+                let items = try await Task.detached {
+                    try ImageCredentialImporter.recognizeFile(at: url)
+                }.value
+                imageOCRRunning = false
+                guard !items.isEmpty else {
+                    imageOCRStatus = "No credential fields found in \(url.lastPathComponent)"
+                    return
+                }
+                imageOCRStatus = "Found \(items.count) candidate\(items.count == 1 ? "" : "s")"
+                reviewSheet = ImportReviewPayload(
+                    subtitle: "Image OCR · \(url.lastPathComponent)",
+                    rows: ImportRowState.from(items, sourceFile: url.lastPathComponent),
+                    notes: "imported from image OCR: \(url.lastPathComponent)"
+                )
+            } catch {
+                imageOCRRunning = false
+                imageOCRStatus = "error: \(error)"
+                env.importStatus = "error: \(error)"
+            }
         }
     }
 

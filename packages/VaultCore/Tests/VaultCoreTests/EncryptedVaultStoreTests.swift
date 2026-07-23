@@ -46,6 +46,16 @@ final class EncryptedVaultStoreTests: XCTestCase {
         XCTAssertEqual(try again.read(name: "PERSIST").value, "keep")
     }
 
+    func test_totp_is_preserved_but_not_exposed_by_list() throws {
+        let authURL = "otpauth://totp/App:me@example.com?secret=JBSWY3DPEHPK3PXP&issuer=App"
+        try store.add(Secret(name: "APP_PASSWORD", value: "secret-value", totpAuthURL: authURL))
+
+        let listed = try store.list()
+        XCTAssertEqual(listed.first?.hasTOTP, true)
+        XCTAssertNil(listed.first?.totpAuthURL)
+        XCTAssertEqual(try store.read(name: "APP_PASSWORD").totpAuthURL, authURL)
+    }
+
     func test_tampered_blob_fails_closed() throws {
         try store.add(Secret(name: "T", value: "v"))
         let vault = dir.appendingPathComponent("secrets.vault")

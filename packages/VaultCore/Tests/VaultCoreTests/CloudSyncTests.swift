@@ -33,7 +33,8 @@ final class CloudSyncTests: XCTestCase {
                     expiresAt: expiresAt,
                     rotateEveryDays: 30,
                     lastRotatedAt: exportedAt,
-                    mcpAllowed: true
+                    mcpAllowed: true,
+                    totpAuthURL: "otpauth://totp/Gemini:dev@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Gemini"
                 )
             ]
         )

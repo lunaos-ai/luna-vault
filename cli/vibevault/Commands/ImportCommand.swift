@@ -5,12 +5,12 @@ import VaultCore
 struct ImportCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "import",
-        abstract: "Import secrets from dotenv files, environment, password apps, clipboard, or system Keychain."
+        abstract: "Import secrets from dotenv files, environment, password apps, images, clipboard, or system Keychain."
     )
 
-    @Option(name: .long, help: "Source: dotenv, env, op, clipboard, keychain, password-csv.") var from: String
+    @Option(name: .long, help: "Source: dotenv, env, op, clipboard, keychain, password-csv, image.") var from: String
 
-    @Option(name: .long, help: "Path (for dotenv or password-csv).") var path: String?
+    @Option(name: .long, help: "Path (for dotenv, password-csv, or image).") var path: String?
 
     @Option(name: .long, parsing: .upToNextOption, help: "Glob patterns (for env source). Example: --pattern 'CF_*' 'STRIPE_*'") var pattern: [String] = []
 
@@ -58,8 +58,11 @@ struct ImportCommand: AsyncParsableCommand {
         case "password-csv", "csv", "passwords":
             guard let p = path else { throw ValidationError("--path required for password-csv") }
             return try PasswordManagerCSVImporter.parseFile(at: URL(fileURLWithPath: p), profile: profile)
+        case "image", "screenshot", "ocr":
+            guard let p = path else { throw ValidationError("--path required for image") }
+            return try ImageCredentialImporter.recognizeFile(at: URL(fileURLWithPath: p))
         default:
-            throw ValidationError("unknown source: \(from). Use dotenv|env|op|clipboard|keychain|password-csv")
+            throw ValidationError("unknown source: \(from). Use dotenv|env|op|clipboard|keychain|password-csv|image")
         }
     }
 }

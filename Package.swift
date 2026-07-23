@@ -22,7 +22,8 @@ let package = Package(
                 .linkedLibrary("sqlite3"),
                 .linkedFramework("Security"),
                 .linkedFramework("LocalAuthentication"),
-                .linkedFramework("CryptoKit")
+                .linkedFramework("CryptoKit"),
+                .linkedFramework("Vision")
             ]
         ),
         .testTarget(

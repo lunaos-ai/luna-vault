@@ -72,14 +72,19 @@ vibevault import --from dotenv --path .env.local
 vibevault import --from env --pattern 'CF_*' 'STRIPE_*'
 vibevault import --from op --item 'Cloudflare API'
 
-# Password app CSV exports
+# Password app CSV exports; MFA setup keys are attached when present
 vibevault import --from password-csv --path passwords.csv --profile auto
 vibevault import --from password-csv --path bitwarden.csv --profile bitwarden
+
+# Screenshots and credential images
+vibevault import --from image --path slack-credentials.png --dry-run
 ```
 
 Supported password CSV profiles are `auto`, `applePasswords`, `bitwarden`,
 `onePasswordCSV`, `lastPass`, and `dashlane`. The app opens imported rows in a
-review sheet so names can be changed before writing to the vault.
+review sheet so names can be changed before writing to the vault. Credentials
+can also carry an attached MFA/TOTP setup key; unlock the secret detail view to
+copy the current rotating code.
 
 ## Agent instructions
 

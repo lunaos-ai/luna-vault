@@ -28,12 +28,15 @@ final class SecretMetadataTests: XCTestCase {
         let exp = Date(timeIntervalSinceNow: 86_400 * 30)
         let secret = Secret(
             name: "META_TEST", value: "abc", notes: "from test",
-            expiresAt: exp, rotateEveryDays: 60
+            expiresAt: exp, rotateEveryDays: 60,
+            totpAuthURL: "otpauth://totp/App:me@example.com?secret=JBSWY3DPEHPK3PXP&issuer=App"
         )
         try store.add(secret)
         let read = try store.read(name: "META_TEST")
         XCTAssertEqual(read.notes, "from test")
         XCTAssertEqual(read.rotateEveryDays, 60)
+        XCTAssertEqual(read.hasTOTP, true)
+        XCTAssertEqual(read.totpAuthURL, "otpauth://totp/App:me@example.com?secret=JBSWY3DPEHPK3PXP&issuer=App")
         XCTAssertNotNil(read.expiresAt)
         if let readExp = read.expiresAt {
             XCTAssertEqual(readExp.timeIntervalSince1970, exp.timeIntervalSince1970, accuracy: 1.0)

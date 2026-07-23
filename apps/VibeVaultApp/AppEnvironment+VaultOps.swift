@@ -104,14 +104,26 @@ extension AppEnvironment {
     func addSecret(
         name: String, value: String, notes: String?,
         expiresAt: Date? = nil, rotateEveryDays: Int? = nil,
-        mcpAllowed: Bool = false
+        mcpAllowed: Bool = false,
+        totpAuthURL: String? = nil
     ) {
         do {
             try service.add(name: name, value: value, notes: notes,
                             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
-                            mcpAllowed: mcpAllowed)
+                            mcpAllowed: mcpAllowed, totpAuthURL: totpAuthURL)
             refresh()
         } catch { lastError = "\(error)" }
+    }
+
+    func setTOTP(name: String, authURL: String?) async {
+        do {
+            try await service.setTOTP(name: name, authURL: authURL)
+            refresh()
+            showToast(authURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? "MFA code attached" : "MFA code removed")
+        } catch {
+            lastError = "\(error)"
+            showToast("Could not update MFA", feedback: .caution)
+        }
     }
 
     func setMCPAllowed(name: String, allowed: Bool) async {

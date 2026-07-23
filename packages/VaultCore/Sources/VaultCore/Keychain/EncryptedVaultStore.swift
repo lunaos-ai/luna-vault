@@ -66,7 +66,9 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
 
     public func list() throws -> [Secret] {
         try queue.sync {
-            try loadAll().values.map { $0.asSecret(maskValue: true) }.sorted { $0.name < $1.name }
+            try loadAll().values
+                .map { $0.asSecret(maskValue: true, includeTOTP: false) }
+                .sorted { $0.name < $1.name }
         }
     }
 
@@ -120,6 +122,7 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
         var rotateEveryDays: Int?
         var lastRotatedAt: Date?
         var mcpAllowed: Bool
+        var totpAuthURL: String?
 
         init(_ s: Secret) {
             name = s.name; value = s.value; updatedAt = s.updatedAt
@@ -127,13 +130,16 @@ public final class EncryptedVaultStore: KeychainStoring, @unchecked Sendable {
             notes = s.notes; expiresAt = s.expiresAt
             rotateEveryDays = s.rotateEveryDays; lastRotatedAt = s.lastRotatedAt
             mcpAllowed = s.mcpAllowed
+            totpAuthURL = s.totpAuthURL
         }
 
-        func asSecret(maskValue: Bool = false) -> Secret {
+        func asSecret(maskValue: Bool = false, includeTOTP: Bool = true) -> Secret {
             Secret(
                 name: name, value: maskValue ? "" : value, updatedAt: updatedAt, createdAt: createdAt ?? updatedAt,
                 notes: notes, expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
-                lastRotatedAt: lastRotatedAt, mcpAllowed: mcpAllowed
+                lastRotatedAt: lastRotatedAt, mcpAllowed: mcpAllowed,
+                hasTOTP: totpAuthURL != nil,
+                totpAuthURL: includeTOTP ? totpAuthURL : nil
             )
         }
     }

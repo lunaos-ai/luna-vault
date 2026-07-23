@@ -82,7 +82,9 @@ extension AppEnvironment {
                     notes: item.notes,
                     expiresAt: item.expiresAt,
                     rotateEveryDays: item.rotateEveryDays,
+                    lastRotatedAt: item.lastRotatedAt,
                     mcpAllowed: item.mcpAllowed,
+                    totpAuthURL: item.totpAuthURL,
                     createdAt: item.createdAt
                 )
                 updated += 1
@@ -93,7 +95,9 @@ extension AppEnvironment {
                     notes: item.notes,
                     expiresAt: item.expiresAt,
                     rotateEveryDays: item.rotateEveryDays,
+                    lastRotatedAt: item.lastRotatedAt,
                     mcpAllowed: item.mcpAllowed,
+                    totpAuthURL: item.totpAuthURL,
                     createdAt: item.createdAt
                 )
                 imported += 1

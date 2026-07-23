@@ -75,7 +75,8 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
             expiresAt: secret.expiresAt,
             rotateEveryDays: secret.rotateEveryDays,
             lastRotatedAt: secret.lastRotatedAt,
-            mcpAllowed: secret.mcpAllowed ? true : nil
+            mcpAllowed: secret.mcpAllowed ? true : nil,
+            totpAuthURL: secret.totpAuthURL
         )
         return meta.encode()
     }
@@ -103,7 +104,7 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         }
         return array.compactMap { dict in
             guard let name = dict[kSecAttrAccount as String] as? String else { return nil }
-            return secretFrom(name: name, value: "", attrs: dict)
+            return secretFrom(name: name, value: "", attrs: dict, includeTOTP: false)
         }
     }
 
@@ -119,14 +120,16 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         return true
     }
 
-    private func secretFrom(name: String, value: String, attrs: [String: Any]) -> Secret {
+    private func secretFrom(name: String, value: String, attrs: [String: Any], includeTOTP: Bool = true) -> Secret {
         let updatedAt = attrs[kSecAttrModificationDate as String] as? Date ?? Date()
         let meta = SecretMetadata.decode(attrs[kSecAttrComment as String] as? String)
         return Secret(
             name: name, value: value, updatedAt: updatedAt, createdAt: meta.createdAt ?? updatedAt,
             notes: meta.notes, expiresAt: meta.expiresAt,
             rotateEveryDays: meta.rotateEveryDays, lastRotatedAt: meta.lastRotatedAt,
-            mcpAllowed: meta.mcpAllowed ?? false
+            mcpAllowed: meta.mcpAllowed ?? false,
+            hasTOTP: meta.totpAuthURL != nil,
+            totpAuthURL: includeTOTP ? meta.totpAuthURL : nil
         )
     }
 

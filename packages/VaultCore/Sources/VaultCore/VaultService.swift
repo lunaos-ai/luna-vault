@@ -56,12 +56,16 @@ public final class VaultService: @unchecked Sendable {
 
     public func add(
         name: String, value: String, notes: String? = nil,
-        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false,
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, lastRotatedAt: Date? = nil,
+        mcpAllowed: Bool = false,
+        totpAuthURL: String? = nil,
         createdAt: Date? = nil
     ) throws {
         let secret = Secret(
             name: name, value: value, createdAt: createdAt, notes: notes,
-            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, mcpAllowed: mcpAllowed
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, lastRotatedAt: lastRotatedAt,
+            mcpAllowed: mcpAllowed,
+            totpAuthURL: totpAuthURL
         )
         try store.add(secret)
         invalidateCache(name: name)
@@ -70,13 +74,17 @@ public final class VaultService: @unchecked Sendable {
 
     public func update(
         name: String, value: String, notes: String? = nil,
-        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, mcpAllowed: Bool = false,
+        expiresAt: Date? = nil, rotateEveryDays: Int? = nil, lastRotatedAt: Date? = nil,
+        mcpAllowed: Bool = false,
+        totpAuthURL: String? = nil,
         createdAt: Date? = nil
     ) throws {
         let existingCreatedAt = createdAt ?? (try? store.read(name: name).createdAt)
         let secret = Secret(
             name: name, value: value, createdAt: existingCreatedAt, notes: notes,
-            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, mcpAllowed: mcpAllowed
+            expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, lastRotatedAt: lastRotatedAt,
+            mcpAllowed: mcpAllowed,
+            totpAuthURL: totpAuthURL
         )
         try store.update(secret)
         invalidateCache(name: name)
@@ -90,7 +98,7 @@ public final class VaultService: @unchecked Sendable {
             createdAt: existing.createdAt,
             notes: existing.notes, expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
-            mcpAllowed: allowed
+            mcpAllowed: allowed, totpAuthURL: existing.totpAuthURL
         )
         try store.update(updated)
         invalidateCache(name: name)
@@ -103,7 +111,8 @@ public final class VaultService: @unchecked Sendable {
             name: existing.name, value: newValue ?? existing.value, updatedAt: Date(),
             createdAt: existing.createdAt,
             notes: existing.notes, expiresAt: existing.expiresAt,
-            rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: Date()
+            rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: Date(),
+            mcpAllowed: existing.mcpAllowed, totpAuthURL: existing.totpAuthURL
         )
         try store.update(updated)
         invalidateCache(name: name)
@@ -114,8 +123,9 @@ public final class VaultService: @unchecked Sendable {
         public let name: String
         public let value: String
         public let notes: String?
-        public init(name: String, value: String, notes: String? = nil) {
-            self.name = name; self.value = value; self.notes = notes
+        public let totpAuthURL: String?
+        public init(name: String, value: String, notes: String? = nil, totpAuthURL: String? = nil) {
+            self.name = name; self.value = value; self.notes = notes; self.totpAuthURL = totpAuthURL
         }
     }
 
@@ -135,8 +145,18 @@ public final class VaultService: @unchecked Sendable {
             do {
                 if try store.exists(name: item.name) {
                     if overwrite {
-                        let createdAt = try store.read(name: item.name).createdAt
-                        try store.update(Secret(name: item.name, value: item.value, createdAt: createdAt, notes: item.notes))
+                        let existing = try store.read(name: item.name)
+                        try store.update(Secret(
+                            name: item.name,
+                            value: item.value,
+                            createdAt: existing.createdAt,
+                            notes: item.notes,
+                            expiresAt: existing.expiresAt,
+                            rotateEveryDays: existing.rotateEveryDays,
+                            lastRotatedAt: existing.lastRotatedAt,
+                            mcpAllowed: existing.mcpAllowed,
+                            totpAuthURL: item.totpAuthURL ?? existing.totpAuthURL
+                        ))
                         updated.append(item.name)
                         invalidateCache(name: item.name)
                     } else {
@@ -144,7 +164,7 @@ public final class VaultService: @unchecked Sendable {
                         continue
                     }
                 } else {
-                    try store.add(Secret(name: item.name, value: item.value, notes: item.notes))
+                    try store.add(Secret(name: item.name, value: item.value, notes: item.notes, totpAuthURL: item.totpAuthURL))
                     imported.append(item.name)
                     invalidateCache(name: item.name)
                 }
@@ -185,6 +205,22 @@ public final class VaultService: @unchecked Sendable {
     }
 
     public func list() throws -> [Secret] { try store.list() }
+
+    public func setTOTP(name: String, authURL: String?) async throws {
+        let existing = try await read(name: name, reason: "Update MFA code for \(name)")
+        let cleaned = authURL?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let updated = Secret(
+            name: existing.name, value: existing.value, updatedAt: Date(),
+            createdAt: existing.createdAt,
+            notes: existing.notes, expiresAt: existing.expiresAt,
+            rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
+            mcpAllowed: existing.mcpAllowed,
+            totpAuthURL: cleaned?.isEmpty == false ? cleaned : nil
+        )
+        try store.update(updated)
+        invalidateCache(name: name)
+        try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
+    }
 
     public func recordEvent(name: String, action: AuditEvent.Action, projectPath: String?) throws {
         let agent = detector.detect()

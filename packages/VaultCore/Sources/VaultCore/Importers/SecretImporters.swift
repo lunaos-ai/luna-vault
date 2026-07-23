@@ -232,10 +232,18 @@ public enum PasswordManagerCSVImporter {
             "url", "login_uri", "website", "uri"
         ])
         let notes = importNotes(profile: profile, title: title, username: username, url: url)
+        let totpAuthURL = normalizedTOTP(
+            firstValue(fields, [
+                "otpauth", "otp auth", "login_totp", "login totp", "totp", "otp", "one-time password"
+            ]),
+            title: title,
+            issuer: profile.label
+        )
         return VaultService.ImportItem(
             name: vaultName(from: title),
             value: password,
-            notes: notes
+            notes: totpAuthURL == nil ? notes : "\(notes) · MFA code included",
+            totpAuthURL: totpAuthURL
         )
     }
 
@@ -260,6 +268,13 @@ public enum PasswordManagerCSVImporter {
         if let username, !username.isEmpty { parts.append("username: \(username)") }
         if let url, !url.isEmpty { parts.append("url: \(url)") }
         return parts.joined(separator: " · ")
+    }
+
+    private static func normalizedTOTP(_ value: String?, title: String, issuer: String) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return nil
+        }
+        return try? TOTPGenerator.normalizedAuthURL(from: value, label: title, issuer: issuer)
     }
 
     private static func vaultName(from title: String) -> String {

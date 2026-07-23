@@ -10,6 +10,8 @@ public struct Secret: Equatable, Hashable, Sendable {
     public let rotateEveryDays: Int?
     public let lastRotatedAt: Date?
     public let mcpAllowed: Bool
+    public let hasTOTP: Bool
+    public let totpAuthURL: String?
 
     public init(
         name: String,
@@ -20,7 +22,9 @@ public struct Secret: Equatable, Hashable, Sendable {
         expiresAt: Date? = nil,
         rotateEveryDays: Int? = nil,
         lastRotatedAt: Date? = nil,
-        mcpAllowed: Bool = false
+        mcpAllowed: Bool = false,
+        hasTOTP: Bool? = nil,
+        totpAuthURL: String? = nil
     ) {
         self.name = name
         self.value = value
@@ -31,6 +35,8 @@ public struct Secret: Equatable, Hashable, Sendable {
         self.rotateEveryDays = rotateEveryDays
         self.lastRotatedAt = lastRotatedAt
         self.mcpAllowed = mcpAllowed
+        self.hasTOTP = hasTOTP ?? (totpAuthURL != nil)
+        self.totpAuthURL = totpAuthURL
     }
 
     public var maskedValue: String {
@@ -87,6 +93,7 @@ struct SecretMetadata: Codable {
     var rotateEveryDays: Int?
     var lastRotatedAt: Date?
     var mcpAllowed: Bool?
+    var totpAuthURL: String?
 
     static let empty = SecretMetadata()
 
@@ -98,7 +105,7 @@ struct SecretMetadata: Codable {
 
     func encode() -> String? {
         if notes == nil, createdAt == nil, expiresAt == nil, rotateEveryDays == nil,
-           lastRotatedAt == nil, mcpAllowed == nil { return nil }
+           lastRotatedAt == nil, mcpAllowed == nil, totpAuthURL == nil { return nil }
         guard let data = try? JSONEncoder.luna.encode(self),
               let s = String(data: data, encoding: .utf8) else { return nil }
         return s

@@ -12,6 +12,8 @@ struct AddSecretSheet: View {
     @State private var rotateEnabled = false
     @State private var rotateDays = 90
     @State private var mcpAllowed = false
+    @State private var hasMFA = false
+    @State private var totpSetup = ""
 
     var body: some View {
         Form {
@@ -49,6 +51,23 @@ struct AddSecretSheet: View {
             }
 
             Section {
+                Toggle("Attach MFA code", isOn: $hasMFA)
+                if hasMFA {
+                    TextField("Setup key or otpauth:// URL", text: $totpSetup)
+                        .font(.system(.body, design: .monospaced))
+                    if !totpSetup.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, normalizedTOTP == nil {
+                        Text("Enter a valid authenticator setup key or otpauth URL.")
+                            .font(.caption)
+                            .foregroundStyle(Tokens.Status.warning)
+                    }
+                }
+            } header: {
+                Text("MFA code")
+            } footer: {
+                Text("Attach the rotating 6-digit code used by services that require two-factor authentication.")
+            }
+
+            Section {
                 Toggle("Allow AI agents", isOn: $mcpAllowed)
             } header: {
                 Text("Access")
@@ -70,13 +89,23 @@ struct AddSecretSheet: View {
                         notes: notes.isEmpty ? nil : notes,
                         expiresAt: hasExpiry ? expiresAt : nil,
                         rotateEveryDays: rotateEnabled ? rotateDays : nil,
-                        mcpAllowed: mcpAllowed
+                        mcpAllowed: mcpAllowed,
+                        totpAuthURL: hasMFA ? normalizedTOTP : nil
                     )
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(name.isEmpty || value.isEmpty)
+                .disabled(name.isEmpty || value.isEmpty || !mfaInputValid)
             }
         }
+    }
+
+    private var normalizedTOTP: String? {
+        try? TOTPGenerator.normalizedAuthURL(from: totpSetup, label: name.isEmpty ? "VibeVault" : name)
+    }
+
+    private var mfaInputValid: Bool {
+        guard hasMFA else { return true }
+        return normalizedTOTP != nil
     }
 }

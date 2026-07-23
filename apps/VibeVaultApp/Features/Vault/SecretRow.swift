@@ -89,6 +89,11 @@ struct SecretRow: View {
                 .foregroundStyle(Tokens.Palette.accent)
                 .font(.caption2)
                 .accessibilityLabel("AI-allowed")
+        } else if secret.hasTOTP {
+            Image(systemName: "number.square")
+                .foregroundStyle(Tokens.Status.info)
+                .font(.caption2)
+                .accessibilityLabel("MFA attached")
         }
     }
 
@@ -102,6 +107,9 @@ struct SecretRow: View {
             }
             if secret.isRotationDue {
                 Text("· rotate due").foregroundStyle(Tokens.Status.danger)
+            }
+            if secret.hasTOTP {
+                Text("· MFA")
             }
         }
         .font(.caption)

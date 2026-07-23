@@ -9,14 +9,23 @@ struct ImportRowState: Identifiable {
     let value: String
     let sourceFile: String?
     let notes: String?
+    let totpAuthURL: String?
     var enabled = true
 
-    init(sourceName: String, value: String, sourceFile: String? = nil, notes: String? = nil, enabled: Bool = true) {
+    init(
+        sourceName: String,
+        value: String,
+        sourceFile: String? = nil,
+        notes: String? = nil,
+        totpAuthURL: String? = nil,
+        enabled: Bool = true
+    ) {
         self.sourceName = sourceName
         self.name = sourceName
         self.value = value
         self.sourceFile = sourceFile
         self.notes = notes
+        self.totpAuthURL = totpAuthURL
         self.enabled = enabled
     }
 
@@ -28,6 +37,14 @@ struct ImportRowState: Identifiable {
     }
 
     static func from(_ items: [VaultService.ImportItem], sourceFile: String? = nil) -> [ImportRowState] {
-        items.map { ImportRowState(sourceName: $0.name, value: $0.value, sourceFile: sourceFile, notes: $0.notes) }
+        items.map {
+            ImportRowState(
+                sourceName: $0.name,
+                value: $0.value,
+                sourceFile: sourceFile,
+                notes: $0.notes,
+                totpAuthURL: $0.totpAuthURL
+            )
+        }
     }
 }

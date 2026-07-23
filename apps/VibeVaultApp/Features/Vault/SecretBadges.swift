@@ -32,6 +32,9 @@ struct SecretBadgeStrip: View {
         if secret.mcpAllowed {
             out.append(Badge(text: "MCP", icon: "sparkles", tint: .purple))
         }
+        if secret.hasTOTP {
+            out.append(Badge(text: "MFA", icon: "number.square", tint: .blue))
+        }
         return out
     }
 

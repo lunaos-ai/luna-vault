@@ -32,6 +32,17 @@ struct ImportReviewTable: View {
                     .foregroundStyle(Tokens.Text.tertiary)
                     .lineLimit(1)
             }
+            TableColumn("MFA") { row in
+                if row.totpAuthURL != nil {
+                    Label("Code", systemImage: "number.square")
+                        .font(.caption)
+                        .foregroundStyle(Tokens.Status.info)
+                } else {
+                    Text("—")
+                        .foregroundStyle(Tokens.Text.tertiary)
+                }
+            }
+            .width(64)
             TableColumn("Value") { row in
                 Text(showValues ? row.value : SecretNaming.maskedValue(row.value))
                     .font(.system(.caption, design: .monospaced))
