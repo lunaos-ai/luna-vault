@@ -30,7 +30,7 @@ Required before a CLI-first Show HN:
 - [ ] `swift build --product VibeVaultApp` passes.
 - [ ] `https://vibevault.lunaos.ai/` is live.
 - [ ] `https://vibevault.lunaos.ai/download` returns the CLI-first install page.
-- [ ] Launch copy uses the source build fallback until Homebrew is verified.
+- [ ] Homebrew install is verified: `brew tap finsavvyai/tap && brew install vibevault`.
 - [ ] One manual Gemini key import has been performed and documented.
 - [ ] Browser extension public listing verifies if launch copy links to it.
 
@@ -55,6 +55,10 @@ Ready:
 - Landing page includes local random key generation copy.
 - `build/VibeVault.dmg` exists.
 - `build/VibeVault-Browser-Importer.zip` exists.
+- Homebrew tap is public at `https://github.com/finsavvyai/homebrew-tap`.
+- `brew tap finsavvyai/tap && brew install vibevault` has been verified.
+- Public source repo is live at `https://github.com/lunaos-ai/luna-vault`.
+- GitHub release `v0.1.0` is live with CLI, MCP, browser-host, DMG, and extension assets.
 - Store listing, privacy text, review notes, and screenshots exist under `extensions/browser-vibevault/store/`.
 - `swift test` passed with 144 tests after the generator feature.
 - `bash scripts/gtm-check.sh` reports 0 failures.
@@ -71,7 +75,6 @@ Blocked:
 - `NOTARYTOOL_*` credentials are not present in the current environment.
 - Apple Developer Program enrollment is currently blocked, so Developer ID
   signing and notarization cannot be completed in this environment.
-- Homebrew tap verification cannot run with the current GitHub auth/repo access.
 - HN, Reddit, X, Product Hunt, and community posts require the owner's accounts.
 
 ## Recommended Execution Order
@@ -84,24 +87,22 @@ Blocked:
 4. Make the scanner page the no-commitment acquisition path.
 5. Decide the open-source posture before Show HN.
 
-### Phase 1A - CLI-first fallback while Apple is blocked
+### Phase 1A - Homebrew-first CLI launch while Apple is blocked
 
 Use this mode if Apple Developer Program enrollment cannot be completed.
 
 1. Keep `/download` pointed at the CLI-first install page, not the raw DMG.
-2. Lead public copy with source build:
+2. Lead public copy with Homebrew:
 
    ```bash
-   git clone https://github.com/lunaos-ai/luna-vault
-   cd luna-vault
-   swift build -c release --product vibevault
-   swift build -c release --product vibevault-mcp
-   .build/release/vibevault scan
+   brew tap finsavvyai/tap
+   brew install vibevault
+   vibevault scan
    ```
 
-3. Promote `vibevault scan`, `vibevault guard install`, MCP setup, and source-visible core.
+3. Promote `vibevault scan`, `vibevault guard install`, MCP setup, browser import, and source-visible core.
 4. Do not promote the unnotarized DMG to first-time users.
-5. Keep Product Hunt waiting; use technical communities and Show HN only with the source-first caveat.
+5. Keep Product Hunt waiting; use technical communities and Show HN only with the Homebrew-first/no-notarized-DMG caveat.
 
 ### Phase 1B - Fix native app install trust
 
@@ -146,7 +147,7 @@ Use this mode if Apple Developer Program enrollment cannot be completed.
    vibevault --help
    ```
 
-3. If the tap is not ready, launch copy must lead with source build.
+3. If the tap regresses, launch copy must temporarily fall back to source build.
 
 ### Phase 3 - Browser import proof
 

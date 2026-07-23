@@ -73,13 +73,11 @@ What it does:
 
 Solo use is local-first: no account, no telemetry, and no hosted cloud vault.
 
-Install from source:
+Install:
 
-  git clone https://github.com/lunaos-ai/luna-vault
-  cd luna-vault
-  swift build -c release --product vibevault
-  swift build -c release --product vibevault-mcp
-  .build/release/vibevault scan
+  brew tap finsavvyai/tap
+  brew install vibevault
+  vibevault scan
 
 Security architecture:
 
@@ -92,12 +90,6 @@ Prepare a Cursor repo:
 I am especially interested in feedback on the boundary: should local AI agents
 receive scoped credential reads through a vault/runtime, or should teams keep
 leaning on always-on environment variables and password-manager copy-paste?
-```
-
-**When Homebrew is verified, replace the source install block with:**
-
-```text
-brew tap finsavvyai/tap && brew install vibevault
 ```
 
 ---
@@ -152,9 +144,9 @@ No hosted cloud vault.
 Install:
 https://vibevault.lunaos.ai/download
 
-Source-first while Homebrew is being verified:
-git clone https://github.com/lunaos-ai/luna-vault
-cd luna-vault && swift build -c release --product vibevault
+brew tap finsavvyai/tap
+brew install vibevault
+vibevault scan
 ```
 
 ```text

@@ -10,8 +10,8 @@ Chrome Web Store: https://chromewebstore.google.com/detail/vibe-vault-importer/n
 
 ## Current Launch Mode
 
-CLI/source-first. Lead with the source install path until Homebrew and the
-notarized DMG are verified. Chrome extension copy can now say the importer is
+Homebrew-first CLI launch. Lead with the verified Homebrew install path while
+the notarized DMG is blocked. Chrome extension copy can now say the importer is
 live in the Chrome Web Store.
 
 Do not promote the unnotarized DMG.
@@ -36,7 +36,7 @@ Use this language:
 - "local MCP credential access"
 - "agent reads are permissioned and audited"
 - "keeps raw API keys out of prompts, `.env`, shell history, and notes"
-- "source-first while notarized native distribution is pending"
+- "Homebrew-first while notarized native distribution is pending"
 - "Chrome Web Store importer is live for saving newly generated provider keys"
 
 Avoid this language:
@@ -63,7 +63,7 @@ Vibe Vault gives local AI coding agents a narrower path:
 - explicit local approval for named credentials
 - per-agent audit log
 - Chrome Web Store importer for newly generated provider keys
-- source-first CLI install while notarized app distribution is pending
+- Homebrew-first CLI install while notarized app distribution is pending
 
 Agent-focused page:
 https://vibevault.lunaos.ai/agents
@@ -146,7 +146,7 @@ Then the agent requests named credentials through the local vault boundary.
 ```
 
 ```text
-5/ Source-first install is live now while notarized app distribution is pending:
+5/ Homebrew install is live now while notarized app distribution is pending:
 
 https://vibevault.lunaos.ai/download
 
@@ -190,14 +190,12 @@ What it does:
 - supports optional encrypted sync bundles between Macs
 - includes a Chrome Web Store importer for newly generated provider keys
 
-The install path is source-first right now because I am not promoting an
+The install path is Homebrew-first right now because I am not promoting an
 unnotarized DMG for a security tool:
 
-  git clone https://github.com/lunaos-ai/luna-vault
-  cd luna-vault
-  swift build -c release --product vibevault
-  swift build -c release --product vibevault-mcp
-  .build/release/vibevault scan
+  brew tap finsavvyai/tap
+  brew install vibevault
+  vibevault scan
 
 I am looking for critique on the boundary. Should local coding agents receive
 scoped credential reads through a runtime, or is broad env injection still the

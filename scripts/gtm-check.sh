@@ -111,4 +111,4 @@ fi
 echo ""
 echo "Summary: $FAIL fail, $WARN warn"
 if [ "$FAIL" -gt 0 ]; then exit 1; fi
-echo "GTM artifacts ready. CLI-first launch can proceed; app launch still needs notarize → publish DMG → push brew formula. Chrome importer is package-ready/live when the public listing verifies."
+echo "GTM artifacts ready. Homebrew, source, website, and Chrome importer are live; native app launch still needs Developer ID notarization."

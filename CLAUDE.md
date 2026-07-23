@@ -71,7 +71,7 @@ Overall: **>=90% line, >=85% branch** per portfolio rules.
 - [ ] Smoke test from plan §"Verification" passes on both Apple Silicon and Intel.
 - [ ] Apple HIG review: menu bar icon, sidebar nav, content-first detail pane, dark mode, dynamic type, VoiceOver labels.
 - [ ] CHANGELOG.md updated.
-- [ ] Homebrew formula updated (finsavvyai/homebrew-tap).
+- [x] Homebrew formula updated (finsavvyai/homebrew-tap).
 - [ ] DMG ≤20 MB.
 
 ## Skills to use
