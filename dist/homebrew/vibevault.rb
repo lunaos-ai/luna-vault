@@ -1,7 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
-# Homebrew formula for vibe-vault CLI + MCP helper.
+# Homebrew formula for vibe-vault CLI + MCP/browser helpers.
 # Install (when published to the tap):
 #   brew tap finsavvyai/tap
 #   brew install vibevault
@@ -29,8 +29,10 @@ class Vibevault < Formula
   def install
     system "swift", "build", "-c", "release", "--product", "vibevault"
     system "swift", "build", "-c", "release", "--product", "vibevault-mcp"
+    system "swift", "build", "-c", "release", "--product", "vibevault-browser-host"
     bin.install ".build/release/vibevault"
     bin.install ".build/release/vibevault-mcp"
+    bin.install ".build/release/vibevault-browser-host"
   end
 
   def caveats
@@ -42,6 +44,7 @@ class Vibevault < Formula
         vibevault mcp install --client all
         vibevault skill install
         vibevault cursor prepare
+        vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfbeienkckbpc
     EOS
   end
 
