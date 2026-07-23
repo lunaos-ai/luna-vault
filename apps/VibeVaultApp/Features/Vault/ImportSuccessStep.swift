@@ -23,7 +23,11 @@ struct ImportSuccessStep: View {
         guard let w = wrangler else { return false }
         return w.isComplete || env.cloudflareScopeComplete
     }
-    private var canPush: Bool { showsCloudflare && env.hasCloudflareToken && !vaultNames.isEmpty }
+    private var canPush: Bool {
+        showsCloudflare && env.hasCloudflareToken
+            && projectURL.map { env.cloudflareScopeComplete(projectURL: $0) } == true
+            && !vaultNames.isEmpty
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.xl) {
@@ -114,7 +118,7 @@ struct ImportSuccessStep: View {
         defer { pushing = false }
         env.updateCloudflareScope(from: url)
         do {
-            let result = try await env.pushToCloudflare(vaultNames: vaultNames)
+            let result = try await env.pushToCloudflare(vaultNames: vaultNames, projectURL: url)
             pushStatus = "Pushed \(result.pushed.count) to Workers"
             env.refresh()
             if let scanned = env.lastScannedURL { env.scan(projectURL: scanned) }

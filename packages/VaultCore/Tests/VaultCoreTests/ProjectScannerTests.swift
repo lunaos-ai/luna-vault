@@ -55,6 +55,47 @@ final class ProjectScannerTests: XCTestCase {
         XCTAssertTrue(names.contains("ANALYTICS_TOKEN"))
     }
 
+    func test_wrangler_jsonc_parser_extracts_vars() {
+        let content = """
+        {
+          "name": "my-worker",
+          "vars": {
+            "API_BASE": "https://api.example.com",
+            "ANALYTICS_TOKEN": "tok",
+          },
+          "env": {
+            "production": {
+              "vars": { "PROD_SECRET": "value" }
+            }
+          }
+        }
+        """
+        let names = Set(WranglerParser(filename: "wrangler.jsonc").parse(content: content))
+        XCTAssertTrue(names.contains("API_BASE"))
+        XCTAssertTrue(names.contains("ANALYTICS_TOKEN"))
+        XCTAssertTrue(names.contains("PROD_SECRET"))
+    }
+
+    func test_scanner_reads_wrangler_jsonc() throws {
+        try """
+        {
+          "name": "my-worker",
+          "vars": {
+            "CF_API_TOKEN": "placeholder"
+          }
+        }
+        """.write(
+            to: tmpDir.appendingPathComponent("wrangler.jsonc"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let result = try ProjectScanner().scan(projectURL: tmpDir, knownSecrets: [])
+
+        XCTAssertTrue(result.required.contains("CF_API_TOKEN"))
+        XCTAssertEqual(result.sources["wrangler.jsonc"], ["CF_API_TOKEN"])
+    }
+
     func test_vercel_parser_extracts_env_and_at_refs() {
         let content = """
         {

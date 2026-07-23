@@ -33,7 +33,7 @@ struct CloudflareConnectionCard: View {
                 field("Script name", text: $scriptName)
             }
             if wranglerDetected {
-                Label("Filled from wrangler.toml", systemImage: "doc.text")
+                Label("Filled from Wrangler config", systemImage: "doc.text")
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.tertiary)
             }

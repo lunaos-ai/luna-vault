@@ -10,6 +10,7 @@ struct PullCommand: AsyncParsableCommand {
 
     @Option(name: .long, help: "Provider id (cloudflare, vercel, pushci).") var from: String
     @Option(name: .long, parsing: .upToNextOption, help: "Scope key=value pairs.") var scope: [String] = []
+    @Option(name: .long, help: "Project directory for provider scope auto-detection.") var project: String?
     @Flag(name: .long, help: "Import pulled secrets into local vault (requires values).") var importSecrets = false
 
     mutating func run() async throws {
@@ -19,12 +20,7 @@ struct PullCommand: AsyncParsableCommand {
             FileHandle.standardError.write(Data("unknown provider: \(from)\n".utf8))
             throw ExitCode(2)
         }
-        var scopeMap: [String: String] = [:]
-        for pair in scope {
-            let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
-            if parts.count == 2 { scopeMap[parts[0]] = parts[1] }
-        }
-        let target = ProviderTarget(provider: from, scope: scopeMap)
+        let target = try ProviderScopeResolver.target(provider: from, pairs: scope, projectPath: project)
         let secrets = try await provider.pull(target: target)
         if importSecrets {
             let service = try VaultService.live()

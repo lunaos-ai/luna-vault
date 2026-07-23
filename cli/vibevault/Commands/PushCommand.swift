@@ -11,6 +11,7 @@ struct PushCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Provider id (cloudflare, vercel, pushci).") var to: String
     @Option(name: .long, parsing: .upToNextOption, help: "Secret names to push (default: all).") var name: [String] = []
     @Option(name: .long, parsing: .upToNextOption, help: "Scope key=value pairs (e.g. account_id=abc).") var scope: [String] = []
+    @Option(name: .long, help: "Project directory for provider scope auto-detection.") var project: String?
     @Flag(name: .long, help: "Dry-run; print what would be pushed.") var dryRun = false
 
     mutating func run() async throws {
@@ -21,20 +22,22 @@ struct PushCommand: AsyncParsableCommand {
             FileHandle.standardError.write(Data("unknown provider: \(to)\n".utf8))
             throw ExitCode(2)
         }
-        let target = try buildTarget(provider: to)
+        let target = try ProviderScopeResolver.target(provider: to, pairs: scope, projectPath: project)
         let names = name.isEmpty ? try service.list().map(\.name) : name
+        if dryRun {
+            print("[dry-run] would push \(names.count) secrets to \(provider.displayName)")
+            for name in names { print("  - \(name)") }
+            return
+        }
         var secrets: [Secret] = []
         for n in names {
             let s = try await service.read(name: n, reason: "Push \(n) to \(provider.displayName)")
             secrets.append(s)
-            try service.recordEvent(name: n, action: .push, projectPath: service.currentProjectPath())
-        }
-        if dryRun {
-            print("[dry-run] would push \(secrets.count) secrets to \(provider.displayName)")
-            for s in secrets { print("  - \(s.name)") }
-            return
         }
         let result = try await provider.push(secrets: secrets, target: target)
+        for name in result.pushed {
+            try service.recordEvent(name: name, action: .push, projectPath: service.currentProjectPath())
+        }
         print("pushed \(result.pushed.count): \(result.pushed.joined(separator: ", "))")
         if !result.failed.isEmpty {
             for f in result.failed {
@@ -42,15 +45,5 @@ struct PushCommand: AsyncParsableCommand {
             }
             throw ExitCode(4)
         }
-    }
-
-    private func buildTarget(provider: String) throws -> ProviderTarget {
-        var scopeMap: [String: String] = [:]
-        for pair in scope {
-            let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
-            guard parts.count == 2 else { throw ValidationError("invalid scope pair: \(pair) (use key=value)") }
-            scopeMap[parts[0]] = parts[1]
-        }
-        return ProviderTarget(provider: provider, scope: scopeMap)
     }
 }

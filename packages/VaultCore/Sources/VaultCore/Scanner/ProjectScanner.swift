@@ -46,7 +46,9 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
 
     public static func defaultParsers() -> [SecretFileParser] {
         dotenvParsers() + [
-            WranglerParser(),
+            WranglerParser(filename: "wrangler.toml"),
+            WranglerParser(filename: "wrangler.jsonc"),
+            WranglerParser(filename: "wrangler.json"),
             VercelParser(),
             DotenvExampleParser(),
             PackageJsonParser(),
@@ -64,7 +66,7 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
                 guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
                 let names = parser.parse(content: content).filter { isLikelySecret($0) }
                 if names.isEmpty { continue }
-                let key = fileURL.path.replacingOccurrences(of: projectURL.path + "/", with: "")
+                let key = sourceKey(for: fileURL, relativeTo: projectURL)
                 sources[key, default: []].append(contentsOf: names)
                 required.formUnion(names)
             }
@@ -106,6 +108,28 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
             }
         }
         return results
+    }
+
+    private func sourceKey(for fileURL: URL, relativeTo projectURL: URL) -> String {
+        let resolvedRoot = projectURL.resolvingSymlinksInPath().standardizedFileURL.path
+        let resolvedFile = fileURL.resolvingSymlinksInPath().standardizedFileURL.path
+        if let relative = relativePath(file: resolvedFile, root: resolvedRoot) {
+            return relative
+        }
+
+        let standardRoot = projectURL.standardizedFileURL.path
+        let standardFile = fileURL.standardizedFileURL.path
+        if let relative = relativePath(file: standardFile, root: standardRoot) {
+            return relative
+        }
+
+        return fileURL.lastPathComponent
+    }
+
+    private func relativePath(file: String, root: String) -> String? {
+        let prefix = root.hasSuffix("/") ? root : root + "/"
+        guard file.hasPrefix(prefix) else { return nil }
+        return String(file.dropFirst(prefix.count))
     }
 
     private func isLikelySecret(_ name: String) -> Bool {

@@ -14,7 +14,7 @@ enum MCPProviderTools {
                     "script_name": ["type": "string"],
                     "project_id": ["type": "string"],
                     "team_id": ["type": "string"],
-                    "project_path": ["type": "string", "description": "PushCI project root (absolute path)"]
+                    "project_path": ["type": "string", "description": "Project root for Wrangler or PushCI scope detection (absolute path)"]
                 ],
                 "required": ["provider"]
             ]
@@ -109,8 +109,22 @@ enum MCPProviderTools {
         case "cloudflare":
             if let a = args["account_id"] as? String, !a.isEmpty { scope["account_id"] = a }
             if let s = args["script_name"] as? String, !s.isEmpty { scope["script_name"] = s }
+            if let path = args["project_path"] as? String, !path.isEmpty {
+                let cfg = WranglerConfig.load(from: URL(fileURLWithPath: path).standardizedFileURL)
+                if scope["account_id"] == nil, let accountId = cfg.accountId { scope["account_id"] = accountId }
+                if scope["script_name"] == nil, let scriptName = cfg.scriptName { scope["script_name"] = scriptName }
+            }
+            let env = ProcessInfo.processInfo.environment
+            if scope["account_id"] == nil {
+                scope["account_id"] = firstEnv(env, ["CLOUDFLARE_ACCOUNT_ID", "CF_ACCOUNT_ID"])
+            }
+            if scope["script_name"] == nil {
+                scope["script_name"] = firstEnv(env, ["CLOUDFLARE_SCRIPT_NAME", "CF_SCRIPT_NAME", "WRANGLER_SCRIPT_NAME"])
+            }
             guard scope["account_id"] != nil, scope["script_name"] != nil else {
-                throw ProviderError.missingScope("account_id + script_name")
+                throw ProviderError.missingScope(
+                    "account_id + script_name, project_path with Wrangler config, or Cloudflare env vars"
+                )
             }
         case "vercel":
             if let p = args["project_id"] as? String, !p.isEmpty { scope["project_id"] = p }
@@ -127,5 +141,13 @@ enum MCPProviderTools {
             throw ProviderError.unsupported(providerId)
         }
         return ProviderTarget(provider: providerId, scope: scope)
+    }
+
+    private static func firstEnv(_ env: [String: String], _ names: [String]) -> String? {
+        for name in names {
+            let value = env[name]?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if value?.isEmpty == false { return value }
+        }
+        return nil
     }
 }

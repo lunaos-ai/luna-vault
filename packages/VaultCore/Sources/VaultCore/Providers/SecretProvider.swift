@@ -83,7 +83,7 @@ public final class ProviderRegistry: @unchecked Sendable {
         ])
         registry.register(CloudflareProvider(tokenSource: {
             ProviderCredentialStore.cloudflareToken(prefs: prefs)
-                ?? ProcessInfo.processInfo.environment["CLOUDFLARE_API_TOKEN"]
+                ?? ProviderCredentialStore.cloudflareEnvironmentToken()
         }))
         return registry
     }

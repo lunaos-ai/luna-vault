@@ -8,6 +8,17 @@ public enum ProviderCredentialStore {
         token(forKey: cloudflareTokenKey, prefs: prefs)
     }
 
+    public static func cloudflareEnvironmentToken(
+        env: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String? {
+        firstToken(in: env, names: [
+            "CLOUDFLARE_API_TOKEN",
+            "CF_API_TOKEN",
+            "CF_WRITE_TOKEN",
+            "CF_TOKEN"
+        ])
+    }
+
     public static func setCloudflareToken(_ token: String?, prefs: PreferenceStoring) {
         setToken(token, forKey: cloudflareTokenKey, prefs: prefs)
     }
@@ -23,6 +34,15 @@ public enum ProviderCredentialStore {
     private static func token(forKey key: String, prefs: PreferenceStoring) -> String? {
         guard let data = prefs.data(forKey: key) else { return nil }
         return String(data: data, encoding: .utf8)?.nilIfEmpty
+    }
+
+    private static func firstToken(in env: [String: String], names: [String]) -> String? {
+        for name in names {
+            if let value = env[name]?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
+                return value
+            }
+        }
+        return nil
     }
 
     private static func setToken(_ token: String?, forKey key: String, prefs: PreferenceStoring) {

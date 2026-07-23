@@ -11,7 +11,7 @@ struct CloudflareSyncBar: View {
     @State private var status: String?
 
     private var wrangler: WranglerConfig { WranglerConfig.load(from: projectURL) }
-    private var canSync: Bool { env.hasCloudflareToken && env.cloudflareScopeComplete }
+    private var canSync: Bool { env.hasCloudflareToken && env.cloudflareScopeComplete(projectURL: projectURL) }
 
     var body: some View {
         if wrangler.isComplete || env.cloudflareScopeComplete {
@@ -87,7 +87,7 @@ struct CloudflareSyncBar: View {
         defer { pushing = false }
         do {
             let vaultNames = env.vaultNames(matchingWorker: r.extraLocally, projectURL: projectURL)
-            let result = try await env.pushToCloudflare(vaultNames: vaultNames)
+            let result = try await env.pushToCloudflare(vaultNames: vaultNames, projectURL: projectURL)
             status = "Pushed \(result.pushed.count) to Workers"
             env.refresh()
             await check()

@@ -8,7 +8,7 @@ extension AppEnvironment {
         let env = ProcessInfo.processInfo.environment
         cachedHasCloudflareToken =
             ProviderCredentialStore.cloudflareToken(prefs: prefs) != nil
-            || env["CLOUDFLARE_API_TOKEN"]?.isEmpty == false
+            || ProviderCredentialStore.cloudflareEnvironmentToken(env: env) != nil
         cachedHasVercelToken =
             ProviderCredentialStore.vercelToken(prefs: prefs) != nil
             || env["VERCEL_TOKEN"]?.isEmpty == false
