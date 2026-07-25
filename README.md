@@ -155,6 +155,7 @@ vibevault license status
 
 - Launch copy: `docs/launch/LAUNCH_PACK.md`
 - Threat model: `docs/security/THREAT_MODEL.md`
+- Capabilities and roadmap: `docs/CAPABILITIES_AND_ROADMAP.md`
 - GTM plan: `.luna/vibe-vault/gtm/plan.md`
 - Team licensing: `dist/lemonsqueezy/WEBHOOK.md`
 
