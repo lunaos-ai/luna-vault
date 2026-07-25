@@ -9,6 +9,14 @@ struct AppCloudSyncStatus: Equatable {
     let modifiedText: String
 }
 
+struct AppCloudSyncPreview: Equatable {
+    let path: String
+    let sourceHost: String
+    let exportedAtText: String
+    let secretCount: Int
+    let sizeText: String
+}
+
 extension AppEnvironment {
     func cloudSyncStatus() -> AppCloudSyncStatus {
         let url = CloudSync.defaultICloudURL()
@@ -25,11 +33,15 @@ extension AppEnvironment {
     }
 
     func pushCloudSync(passphrase: String) async -> Bool {
+        await pushCloudSync(to: CloudSync.defaultICloudURL(), passphrase: passphrase, destinationName: "iCloud")
+    }
+
+    func pushCloudSync(to url: URL, passphrase: String, destinationName: String) async -> Bool {
         do {
             let snapshot = try await cloudSyncSnapshot()
             let data = try CloudSync.encrypt(snapshot, passphrase: passphrase)
-            try CloudSync.write(data, to: CloudSync.defaultICloudURL())
-            showToast("Synced \(snapshot.secrets.count) secrets to iCloud")
+            try CloudSync.write(data, to: url)
+            showToast("Synced \(snapshot.secrets.count) secrets to \(destinationName)")
             return true
         } catch {
             lastError = "\(error)"
@@ -39,18 +51,34 @@ extension AppEnvironment {
     }
 
     func pullCloudSync(passphrase: String, overwrite: Bool) async -> Bool {
+        await pullCloudSync(from: CloudSync.defaultICloudURL(), passphrase: passphrase, overwrite: overwrite, sourceName: "iCloud")
+    }
+
+    func pullCloudSync(from url: URL, passphrase: String, overwrite: Bool, sourceName: String) async -> Bool {
         do {
-            let data = try Data(contentsOf: CloudSync.defaultICloudURL())
+            let data = try Data(contentsOf: url)
             let snapshot = try CloudSync.decrypt(data, passphrase: passphrase)
             let result = try importCloudSyncSnapshot(snapshot, overwrite: overwrite)
             refresh()
-            showToast("Imported \(result.imported + result.updated) secrets from iCloud")
+            showToast("Imported \(result.imported + result.updated) secrets from \(sourceName)")
             return true
         } catch {
             lastError = "\(error)"
             showToast("Cloud import failed", feedback: .caution)
             return false
         }
+    }
+
+    func previewCloudSyncBundle(at url: URL, passphrase: String) throws -> AppCloudSyncPreview {
+        let data = try Data(contentsOf: url)
+        let snapshot = try CloudSync.decrypt(data, passphrase: passphrase)
+        return AppCloudSyncPreview(
+            path: url.path,
+            sourceHost: snapshot.sourceHost,
+            exportedAtText: snapshot.exportedAt.formatted(date: .abbreviated, time: .shortened),
+            secretCount: snapshot.secrets.count,
+            sizeText: ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file)
+        )
     }
 
     private func cloudSyncSnapshot() async throws -> CloudSyncSnapshot {

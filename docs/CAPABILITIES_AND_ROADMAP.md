@@ -183,7 +183,8 @@ Implemented today:
 - `vibevault sync pull --from icloud`: decrypts and imports the iCloud bundle on another Mac.
 - `vibevault sync export --path <file>`: writes an encrypted backup bundle to any file path.
 - `vibevault sync import --path <file>`: imports an encrypted backup bundle from a file path.
-- App Settings -> Cloud Sync exposes status, passphrase entry, sync to iCloud, import from iCloud, refresh, and overwrite-on-import.
+- App Settings -> Cloud Sync exposes status, passphrase entry, sync to iCloud, import from iCloud, manual encrypted backup export/import, restore preview metadata, refresh, and overwrite-on-import.
+- Dedicated cloud sync and backup guide: `docs/CLOUD_SYNC_AND_BACKUP.md`.
 
 Security model:
 
@@ -264,11 +265,10 @@ Work still needed:
 
 - Scheduled automatic backups.
 - Backup history and retention policy.
-- Restore preview before import.
 - Conflict detection when both Macs changed the same secret.
 - Per-secret merge UI.
 - Last-sync status in menu bar.
-- Optional local backup folder in addition to iCloud.
+- Optional monitored backup folder in addition to manual file export.
 - Better recovery documentation for lost passphrase and lost bundle cases.
 
 ### Browser Import
@@ -362,7 +362,6 @@ Current docs are strong for launch, security, and CLI onboarding.
 
 Work still needed:
 
-- Dedicated cloud sync and backup user guide.
 - Provider-specific setup guides.
 - Browser extension troubleshooting guide.
 - Team license admin guide.
@@ -374,10 +373,9 @@ Work still needed:
 ### Near-Term
 
 - Publish this capability matrix as part of repo docs and keep it updated for every release.
-- Add a dedicated cloud sync/backup guide.
+- Keep the dedicated cloud sync/backup guide current as sync behavior changes.
 - Improve browser extension onboarding and supported-provider docs.
-- Add app-level backup export/import buttons, not only iCloud sync.
-- Add restore preview and backup metadata display.
+- Add richer recovery guidance for lost passphrase, lost bundle, and device replacement cases.
 - Expand provider detection beyond current Wrangler/Vercel coverage.
 - Keep Homebrew install and CLI-first onboarding frictionless while notarization is blocked.
 
