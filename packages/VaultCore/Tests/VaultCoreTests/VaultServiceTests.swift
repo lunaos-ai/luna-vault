@@ -79,6 +79,30 @@ final class VaultServiceTests: XCTestCase {
         XCTAssertEqual(secret.createdAt, createdAt)
         XCTAssertGreaterThanOrEqual(secret.updatedAt, createdAt)
     }
+
+    func test_add_and_update_accept_sync_timestamps() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let addedAt = Date(timeIntervalSince1970: 1_700_000_100)
+        let updatedAt = Date(timeIntervalSince1970: 1_700_000_200)
+
+        try service.add(
+            name: "SYNCED",
+            value: "old",
+            createdAt: createdAt,
+            updatedAt: addedAt
+        )
+        XCTAssertEqual(try store.read(name: "SYNCED").updatedAt, addedAt)
+
+        try service.update(
+            name: "SYNCED",
+            value: "new",
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+        let secret = try store.read(name: "SYNCED")
+        XCTAssertEqual(secret.createdAt, createdAt)
+        XCTAssertEqual(secret.updatedAt, updatedAt)
+    }
 }
 
 private final class InMemoryStore: KeychainStoring, @unchecked Sendable {

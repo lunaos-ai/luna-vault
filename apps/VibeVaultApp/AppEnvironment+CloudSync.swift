@@ -15,9 +15,31 @@ struct AppCloudSyncPreview: Equatable {
     let exportedAtText: String
     let secretCount: Int
     let sizeText: String
+    let newCount: Int
+    let backupNewerCount: Int
+    let localNewerCount: Int
+    let sameTimestampCount: Int
+}
+
+enum AppCloudSyncImportPolicy: String, CaseIterable, Identifiable {
+    case keepLocal
+    case backupNewer
+    case replaceAll
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .keepLocal: return "Keep local"
+        case .backupNewer: return "Use newer"
+        case .replaceAll: return "Replace all"
+        }
+    }
 }
 
 extension AppEnvironment {
+    static let automaticBackupPassphraseKey = "cloud-backup-passphrase"
+
     func cloudSyncStatus() -> AppCloudSyncStatus {
         let url = CloudSync.defaultICloudURL()
         let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
@@ -51,14 +73,33 @@ extension AppEnvironment {
     }
 
     func pullCloudSync(passphrase: String, overwrite: Bool) async -> Bool {
-        await pullCloudSync(from: CloudSync.defaultICloudURL(), passphrase: passphrase, overwrite: overwrite, sourceName: "iCloud")
+        await pullCloudSync(
+            from: CloudSync.defaultICloudURL(),
+            passphrase: passphrase,
+            policy: overwrite ? .replaceAll : .keepLocal,
+            sourceName: "iCloud"
+        )
     }
 
     func pullCloudSync(from url: URL, passphrase: String, overwrite: Bool, sourceName: String) async -> Bool {
+        await pullCloudSync(
+            from: url,
+            passphrase: passphrase,
+            policy: overwrite ? .replaceAll : .keepLocal,
+            sourceName: sourceName
+        )
+    }
+
+    func pullCloudSync(
+        from url: URL,
+        passphrase: String,
+        policy: AppCloudSyncImportPolicy,
+        sourceName: String
+    ) async -> Bool {
         do {
             let data = try Data(contentsOf: url)
             let snapshot = try CloudSync.decrypt(data, passphrase: passphrase)
-            let result = try importCloudSyncSnapshot(snapshot, overwrite: overwrite)
+            let result = try importCloudSyncSnapshot(snapshot, policy: policy)
             refresh()
             showToast("Imported \(result.imported + result.updated) secrets from \(sourceName)")
             return true
@@ -72,13 +113,121 @@ extension AppEnvironment {
     func previewCloudSyncBundle(at url: URL, passphrase: String) throws -> AppCloudSyncPreview {
         let data = try Data(contentsOf: url)
         let snapshot = try CloudSync.decrypt(data, passphrase: passphrase)
+        let comparison = CloudSyncInspector.compare(snapshot: snapshot, localSecrets: try service.list())
         return AppCloudSyncPreview(
             path: url.path,
             sourceHost: snapshot.sourceHost,
             exportedAtText: snapshot.exportedAt.formatted(date: .abbreviated, time: .shortened),
             secretCount: snapshot.secrets.count,
-            sizeText: ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file)
+            sizeText: ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file),
+            newCount: comparison.newNames.count,
+            backupNewerCount: comparison.backupNewerNames.count,
+            localNewerCount: comparison.localNewerNames.count,
+            sameTimestampCount: comparison.sameTimestampNames.count
         )
+    }
+
+    func managedCloudBackups() -> [CloudBackupFile] {
+        do {
+            return try CloudBackupArchive.list()
+        } catch {
+            lastError = "\(error)"
+            return []
+        }
+    }
+
+    func enableAutomaticCloudBackups(passphrase: String) -> Bool {
+        guard passphrase.count >= 12 else {
+            showToast("Use a passphrase with at least 12 characters", feedback: .caution)
+            return false
+        }
+        prefs.set(Data(passphrase.utf8), forKey: Self.automaticBackupPassphraseKey)
+        cachedHasAutomaticBackupCredential = true
+        automaticBackupsEnabled = true
+        showToast("Automatic backups enabled")
+        return true
+    }
+
+    func disableAutomaticCloudBackups() {
+        automaticBackupsEnabled = false
+        prefs.set(nil, forKey: Self.automaticBackupPassphraseKey)
+        cachedHasAutomaticBackupCredential = false
+        showToast("Automatic backups disabled", feedback: .tick)
+    }
+
+    func createManagedCloudBackup(passphrase: String, showFeedback: Bool = true) async -> Bool {
+        do {
+            let snapshot = try await cloudSyncSnapshot()
+            let data = try CloudSync.encrypt(snapshot, passphrase: passphrase)
+            let result = try CloudBackupArchive.write(
+                data,
+                retentionCount: backupRetentionCount
+            )
+            lastManagedBackupAt = result.backup.createdAt
+            if showFeedback {
+                showToast("Saved encrypted backup with \(snapshot.secrets.count) secrets")
+            }
+            return true
+        } catch {
+            lastError = "\(error)"
+            if showFeedback {
+                showToast("Backup failed", feedback: .caution)
+            }
+            return false
+        }
+    }
+
+    func runManagedCloudBackupNow(passphrase: String?) async -> Bool {
+        let resolved = passphrase ?? automaticCloudBackupPassphrase()
+        guard let resolved, !resolved.isEmpty else {
+            showToast("Enter a backup passphrase", feedback: .caution)
+            return false
+        }
+        return await createManagedCloudBackup(passphrase: resolved)
+    }
+
+    func updateBackupSchedulerState() {
+        if automaticBackupsEnabled, cachedHasAutomaticBackupCredential {
+            backupScheduler.start(intervalHours: backupIntervalHours)
+        } else {
+            backupScheduler.stop()
+        }
+    }
+
+    func pruneManagedCloudBackups() {
+        do {
+            let removed = try CloudBackupArchive.prune(keeping: backupRetentionCount)
+            showToast(
+                removed.isEmpty ? "Backup retention is up to date" : "Removed \(removed.count) old backups",
+                feedback: .tick
+            )
+        } catch {
+            lastError = "\(error)"
+            showToast("Could not apply backup retention", feedback: .caution)
+        }
+    }
+
+    func automaticBackupCredentialAvailable() -> Bool {
+        cachedHasAutomaticBackupCredential
+    }
+
+    func runScheduledCloudBackup() async -> Bool {
+        guard automaticBackupsEnabled, sessionUnlocked else { return false }
+        guard let passphrase = automaticCloudBackupPassphrase() else {
+            cachedHasAutomaticBackupCredential = false
+            automaticBackupsEnabled = false
+            return false
+        }
+        return await createManagedCloudBackup(passphrase: passphrase, showFeedback: false)
+    }
+
+    private func automaticCloudBackupPassphrase() -> String? {
+        guard let data = prefs.data(forKey: Self.automaticBackupPassphraseKey),
+              let value = String(data: data, encoding: .utf8),
+              !value.isEmpty else {
+            return nil
+        }
+        return value
     }
 
     private func cloudSyncSnapshot() async throws -> CloudSyncSnapshot {
@@ -93,14 +242,24 @@ extension AppEnvironment {
 
     private func importCloudSyncSnapshot(
         _ snapshot: CloudSyncSnapshot,
-        overwrite: Bool
+        policy: AppCloudSyncImportPolicy
     ) throws -> (imported: Int, updated: Int, skipped: Int) {
         var imported = 0
         var updated = 0
         var skipped = 0
+        let localByName = Dictionary(uniqueKeysWithValues: try service.list().map { ($0.name, $0) })
         for item in snapshot.secrets {
-            if try service.store.exists(name: item.name) {
-                guard overwrite else {
+            if let local = localByName[item.name] {
+                let shouldUpdate: Bool
+                switch policy {
+                case .keepLocal:
+                    shouldUpdate = false
+                case .backupNewer:
+                    shouldUpdate = item.updatedAt.timeIntervalSince(local.updatedAt) > 1
+                case .replaceAll:
+                    shouldUpdate = true
+                }
+                guard shouldUpdate else {
                     skipped += 1
                     continue
                 }
@@ -113,7 +272,8 @@ extension AppEnvironment {
                     lastRotatedAt: item.lastRotatedAt,
                     mcpAllowed: item.mcpAllowed,
                     totpAuthURL: item.totpAuthURL,
-                    createdAt: item.createdAt
+                    createdAt: item.createdAt,
+                    updatedAt: item.updatedAt
                 )
                 updated += 1
             } else {
@@ -126,7 +286,8 @@ extension AppEnvironment {
                     lastRotatedAt: item.lastRotatedAt,
                     mcpAllowed: item.mcpAllowed,
                     totpAuthURL: item.totpAuthURL,
-                    createdAt: item.createdAt
+                    createdAt: item.createdAt,
+                    updatedAt: item.updatedAt
                 )
                 imported += 1
             }

@@ -8,7 +8,12 @@ Vibe Vault supports encrypted, user-controlled sync bundles for moving a local v
 - Manual encrypted backup export to any `.vvsync` file.
 - Manual encrypted backup import from any `.vvsync` file.
 - Restore preview in the macOS app before importing a selected bundle.
-- CLI support for status, push, pull, export, and import.
+- Timestamped encrypted backup history under `VibeVault/Sync/Backups` in iCloud Drive.
+- Configurable retention from 1 to 100 managed backups.
+- Opt-in scheduled backups while the app is open and the vault session is unlocked.
+- Metadata-based restore comparison for new names, backup-newer names, local-newer names, and matching timestamps.
+- Import policies to keep local values, use the newer bundle value, or replace all matching names.
+- CLI support for status, push, pull, export, import, preview, backup, and history.
 - Snapshot coverage for secret values, notes, creation/update metadata, rotation metadata, AI-access flags, and attached MFA setup URLs.
 
 ## Security Model
@@ -18,7 +23,8 @@ Vibe Vault supports encrypted, user-controlled sync bundles for moving a local v
 - Key derivation uses PBKDF2-SHA256 followed by HKDF-SHA256.
 - Current KDF iteration count is 600,000.
 - The sync passphrase must be at least 12 characters.
-- The sync passphrase is never stored by Vibe Vault.
+- Manual sync passphrases are never stored by Vibe Vault.
+- Enabling scheduled backups stores that passphrase in macOS Keychain with `WhenUnlockedThisDeviceOnly` access. Disabling the schedule removes it.
 - Files are written atomically and permissions are set to `0600`.
 - Recovery requires both the encrypted bundle and the sync passphrase.
 
@@ -42,12 +48,21 @@ To create a manual backup:
 3. Save the `.vvsync` bundle to the chosen location.
 4. Store the passphrase separately from the backup file.
 
+To enable managed backup history:
+
+1. Enter and confirm a passphrase.
+2. Choose a frequency and retention count.
+3. Select **Enable schedule**.
+4. Unlock Vibe Vault for the session when the app starts.
+
+The app checks for an overdue backup at unlock and hourly afterward. The schedule runs only while Vibe Vault is open; it does not install a system LaunchAgent.
+
 To restore a manual backup:
 
 1. Enter the backup passphrase.
 2. Select **Choose backup...**.
 3. Review the preview metadata.
-4. Enable **Overwrite matching names on import** only when the backup should replace local values with the same names.
+4. Choose **Keep local**, **Use newer**, or **Replace all** for matching names.
 5. Select **Import selected**.
 
 ## CLI Flow
@@ -67,28 +82,56 @@ vibevault sync export --path ~/Backups/vault.vvsync
 
 # Import an encrypted backup bundle from a chosen file.
 vibevault sync import --path ~/Backups/vault.vvsync --overwrite
+
+# Compare a bundle with the local vault without importing.
+vibevault sync preview --path ~/Backups/vault.vvsync
+
+# Create a timestamped iCloud backup and retain the newest 30.
+vibevault sync backup --retain 30
+
+# List timestamped backup history.
+vibevault sync history
+
+# Import only bundle entries newer than matching local entries.
+vibevault sync import --path ~/Backups/vault.vvsync --newer-only
 ```
 
-For automation, pass the sync passphrase through an environment variable or stdin:
+For CLI automation, pass the sync passphrase through a protected environment variable or stdin:
 
 ```bash
 vibevault sync export --path ~/Backups/vault.vvsync --passphrase-env VIBEVAULT_SYNC_PASSPHRASE
 vibevault sync import --path ~/Backups/vault.vvsync --passphrase-stdin
 ```
 
+## Recovery Scenarios
+
+### Lost sync passphrase
+
+Vibe Vault cannot decrypt an existing bundle without its passphrase. There is no server-side recovery key or escrow. If one Mac still has the working local vault, create a new encrypted backup with a new passphrase. If no readable local vault remains, rotate the affected credentials at each provider and rebuild the vault.
+
+### Lost or deleted bundle
+
+If a source Mac still has the local vault, create a new backup immediately. Otherwise, restore the newest retained `.vvsync` file from iCloud Drive recovery, another backup destination, or device backup, then preview it before importing.
+
+### Replacing a Mac
+
+Install Vibe Vault on the new Mac, make the encrypted bundle available through iCloud Drive or external storage, enter the original passphrase, preview the contents, and import with **Use newer** as the default policy. Keep the old Mac unchanged until the secret count and critical provider credentials have been verified.
+
+### Recovery testing
+
+Periodically export a fresh bundle, preview it with `vibevault sync preview`, and verify that the expected secret count and source timestamp are present. A preview validates decryption and bundle integrity without changing the local vault.
+
 ## Current Limits
 
-- Backups are manual; scheduled automatic backups are not implemented yet.
-- There is no backup history or retention policy UI yet.
-- There is no multi-device merge UI yet.
-- If two Macs update the same secret, the current import behavior is skip or overwrite.
+- Scheduled app backups do not run after the Vibe Vault process exits.
+- The scheduler requires the local vault to be unlocked for the app session.
+- There is no per-secret multi-device merge UI yet.
+- Conflict handling uses update timestamps; it does not preserve two divergent values as separate versions.
 - There is no hosted LunaOS web vault, account sync service, or server-side key recovery.
 
 ## Future Work
 
-- Scheduled encrypted backups.
-- Backup history and retention policy.
-- Last-sync status in the menu bar.
-- Conflict detection and per-secret merge UI.
-- Optional local backup folder monitoring.
+- Optional LaunchAgent-based scheduling for backups while the app is not running.
+- Per-secret merge UI and divergent-version preservation.
+- Optional monitored backup folder outside the managed iCloud directory.
 - Team and enterprise policy controls for backup destinations and retention.

@@ -25,6 +25,8 @@ struct MenuBarScene: View {
             Divider()
             secretList
             Divider()
+            backupStatus
+            Divider()
             footerButtons
         }
         .padding(Tokens.Space.md)
@@ -33,6 +35,27 @@ struct MenuBarScene: View {
             env.refresh()
             searchFocused = true
         }
+    }
+
+    private var backupStatus: some View {
+        HStack(spacing: Tokens.Space.sm) {
+            Image(systemName: env.lastManagedBackupAt == nil ? "externaldrive.badge.questionmark" : "externaldrive.badge.checkmark")
+                .foregroundStyle(env.lastManagedBackupAt == nil ? Tokens.Text.tertiary : Tokens.Status.success)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Encrypted backup")
+                    .font(.caption)
+                Text(backupStatusCaption)
+                    .font(.caption2)
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+            Spacer()
+            if env.automaticBackupsEnabled {
+                Text("Scheduled")
+                    .font(.caption2)
+                    .foregroundStyle(Tokens.Palette.accent)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var header: some View {
@@ -113,6 +136,11 @@ struct MenuBarScene: View {
         copying = name
         defer { copying = nil }
         await env.copySecret(name: name)
+    }
+
+    private var backupStatusCaption: String {
+        guard let date = env.lastManagedBackupAt else { return "No managed backup yet" }
+        return date.formatted(date: .abbreviated, time: .shortened)
     }
 }
 

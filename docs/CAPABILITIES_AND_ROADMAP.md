@@ -183,7 +183,14 @@ Implemented today:
 - `vibevault sync pull --from icloud`: decrypts and imports the iCloud bundle on another Mac.
 - `vibevault sync export --path <file>`: writes an encrypted backup bundle to any file path.
 - `vibevault sync import --path <file>`: imports an encrypted backup bundle from a file path.
-- App Settings -> Cloud Sync exposes status, passphrase entry, sync to iCloud, import from iCloud, manual encrypted backup export/import, restore preview metadata, refresh, and overwrite-on-import.
+- `vibevault sync preview`: decrypts and compares a bundle without importing it.
+- `vibevault sync backup`: creates timestamped encrypted history and applies a retention count.
+- `vibevault sync history`: lists managed encrypted backups.
+- App Settings -> Cloud Sync exposes status, passphrase entry, sync to iCloud, import from iCloud, manual encrypted backup export/import, restore comparison, managed history, retention controls, and scheduled backups.
+- Restore comparison classifies new names, backup-newer names, local-newer names, and matching timestamps.
+- Import policies can keep local values, use newer bundle values, or replace all matching values.
+- Scheduled backups run when the app is open and the vault has been unlocked for the session.
+- The menu-bar surface shows the latest managed backup time and whether scheduling is enabled.
 - Dedicated cloud sync and backup guide: `docs/CLOUD_SYNC_AND_BACKUP.md`.
 
 Security model:
@@ -194,7 +201,8 @@ Security model:
 - Key derivation uses PBKDF2-SHA256 followed by HKDF-SHA256.
 - Current KDF iteration count is 600,000, with downgrade checks on decrypt.
 - Sync passphrase must be at least 12 characters.
-- Passphrase is not stored by the app.
+- Manual sync passphrases are not stored by the app.
+- Enabling scheduled backups explicitly stores that backup passphrase in this Mac's Keychain with `WhenUnlockedThisDeviceOnly` access.
 - File writes are atomic and set permissions to `0600`.
 - Snapshot includes values and metadata, but only inside the encrypted envelope.
 
@@ -202,8 +210,8 @@ Important status:
 
 - This is cloud sync through an encrypted user-controlled bundle, not a hosted LunaOS account sync service.
 - There is no Vibe Vault cloud account, web vault, server-side key escrow, or hosted secret database for Solo.
-- There is no automatic scheduled backup yet.
-- There is no conflict resolution or multi-device merge UI yet.
+- Scheduled backups do not run after the app exits.
+- There is no per-secret merge UI or divergent-version history yet.
 - Recovery requires the encrypted bundle and the sync passphrase.
 
 ### Browser Extension
@@ -259,17 +267,14 @@ Current launch posture from existing readiness docs:
 
 ### Cloud Sync And Backup
 
-Current state is useful for manual Mac-to-Mac sync and encrypted backups. It is not yet a seamless cross-device account sync.
+Current state supports manual Mac-to-Mac sync, timestamped encrypted history, retention, restore comparison, and in-app scheduling. It is not yet a seamless cross-device account sync.
 
 Work still needed:
 
-- Scheduled automatic backups.
-- Backup history and retention policy.
-- Conflict detection when both Macs changed the same secret.
+- System scheduling while the app is not running.
+- Divergent-version preservation when both Macs changed the same secret.
 - Per-secret merge UI.
-- Last-sync status in menu bar.
 - Optional monitored backup folder in addition to manual file export.
-- Better recovery documentation for lost passphrase and lost bundle cases.
 
 ### Browser Import
 
@@ -375,14 +380,14 @@ Work still needed:
 - Publish this capability matrix as part of repo docs and keep it updated for every release.
 - Keep the dedicated cloud sync/backup guide current as sync behavior changes.
 - Improve browser extension onboarding and supported-provider docs.
-- Add richer recovery guidance for lost passphrase, lost bundle, and device replacement cases.
+- Keep recovery guidance current as backup behavior changes.
 - Expand provider detection beyond current Wrangler/Vercel coverage.
 - Keep Homebrew install and CLI-first onboarding frictionless while notarization is blocked.
 
 ### Mid-Term
 
-- Scheduled encrypted backups.
-- Multi-device conflict resolution.
+- Background encrypted backups after the app exits.
+- Per-secret multi-device conflict resolution.
 - Repository-scoped policies.
 - Time-limited agent access.
 - Blocked-read auditing.

@@ -46,6 +46,7 @@ extension AppEnvironment {
             applyBiometricWindow()
             biometricStatus = "Unlocked until quit"
             showToast("Session unlocked", feedback: .success)
+            await backupScheduler.runIfDue()
         } catch {
             biometricStatus = "Unlock failed"
             lastError = "\(error)"

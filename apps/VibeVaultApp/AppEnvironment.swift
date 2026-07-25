@@ -47,6 +47,7 @@ final class AppEnvironment: ObservableObject {
     /// Cached Keychain flags — never re-query Keychain from SwiftUI body.
     @Published var cachedHasCloudflareToken = false
     @Published var cachedHasVercelToken = false
+    @Published var cachedHasAutomaticBackupCredential = false
     @Published var cachedTeamLicense: TeamLicense?
 
     @Published var notificationsEnabled: Bool {
@@ -64,6 +65,32 @@ final class AppEnvironment: ObservableObject {
         }
     }
     @Published var lastNotifierRun: String = "Never"
+    @Published var automaticBackupsEnabled: Bool {
+        didSet {
+            settings.automaticBackupsEnabled = automaticBackupsEnabled
+            persistSettings()
+            updateBackupSchedulerState()
+        }
+    }
+    @Published var backupIntervalHours: Int {
+        didSet {
+            settings.backupIntervalHours = backupIntervalHours
+            persistSettings()
+            updateBackupSchedulerState()
+        }
+    }
+    @Published var backupRetentionCount: Int {
+        didSet {
+            settings.backupRetentionCount = backupRetentionCount
+            persistSettings()
+        }
+    }
+    @Published var lastManagedBackupAt: Date? {
+        didSet {
+            settings.lastManagedBackupAt = lastManagedBackupAt
+            persistSettings()
+        }
+    }
 
     static let settingsKey = "app-settings"
     var settings: AppSettings
@@ -71,6 +98,13 @@ final class AppEnvironment: ObservableObject {
 
     lazy var scheduler: ExpiryScheduler = ExpiryScheduler(
         secretsProvider: { [weak self] in self?.secrets ?? [] }
+    )
+    lazy var backupScheduler: CloudBackupScheduler = CloudBackupScheduler(
+        lastBackupProvider: { [weak self] in self?.lastManagedBackupAt },
+        backupAction: { [weak self] in
+            guard let self else { return false }
+            return await self.runScheduledCloudBackup()
+        }
     )
 
     let service: VaultService
@@ -87,10 +121,17 @@ final class AppEnvironment: ObservableObject {
         self.notificationsEnabled = loaded.notificationsEnabled
         self.uiSoundsEnabled = loaded.uiSoundsEnabled
         self.warnWithinDays = loaded.warnWithinDays
+        self.automaticBackupsEnabled = loaded.automaticBackupsEnabled
+        self.backupIntervalHours = loaded.backupIntervalHours
+        self.backupRetentionCount = loaded.backupRetentionCount
+        self.lastManagedBackupAt = loaded.lastManagedBackupAt
+        self.cachedHasAutomaticBackupCredential =
+            prefs.data(forKey: Self.automaticBackupPassphraseKey) != nil
         service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
         Task { @MainActor [weak self] in
             self?.reloadProviderCaches()
             self?.updateSchedulerState()
+            self?.updateBackupSchedulerState()
         }
     }
 

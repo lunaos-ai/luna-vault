@@ -7,11 +7,12 @@ struct CloudSyncSettingsSection: View {
     @EnvironmentObject var env: AppEnvironment
     @State private var passphrase = ""
     @State private var confirmation = ""
-    @State private var overwrite = false
+    @State private var importPolicy: AppCloudSyncImportPolicy = .keepLocal
     @State private var isWorking = false
     @State private var status: AppCloudSyncStatus?
     @State private var preview: AppCloudSyncPreview?
     @State private var selectedBackupURL: URL?
+    @State private var backupHistory: [CloudBackupFile] = []
 
     private var canPush: Bool {
         passphrase.count >= 12 && passphrase == confirmation && !isWorking
@@ -29,6 +30,10 @@ struct CloudSyncSettingsSection: View {
         canPreview && selectedBackupURL != nil && preview != nil
     }
 
+    private var canRunManagedBackup: Bool {
+        !isWorking && (canPush || env.automaticBackupCredentialAvailable())
+    }
+
     var body: some View {
         Section {
             if let status {
@@ -41,7 +46,12 @@ struct CloudSyncSettingsSection: View {
             SecureField("Sync passphrase", text: $passphrase)
             SecureField("Confirm passphrase", text: $confirmation)
 
-            Toggle("Overwrite matching names on import", isOn: $overwrite)
+            Picker("Existing names on import", selection: $importPolicy) {
+                ForEach(AppCloudSyncImportPolicy.allCases) { policy in
+                    Text(policy.label).tag(policy)
+                }
+            }
+            .pickerStyle(.segmented)
 
             HStack {
                 Button {
@@ -96,6 +106,89 @@ struct CloudSyncSettingsSection: View {
                 .disabled(!canImportSelected)
             }
 
+            Divider()
+
+            LabeledContent(
+                "Automatic backups",
+                value: automaticBackupStatus
+            )
+            Picker("Frequency", selection: $env.backupIntervalHours) {
+                Text("Every hour").tag(1)
+                Text("Every 6 hours").tag(6)
+                Text("Every 12 hours").tag(12)
+                Text("Daily").tag(24)
+                Text("Weekly").tag(168)
+            }
+            .disabled(!env.automaticBackupsEnabled)
+
+            Stepper(
+                "Keep \(env.backupRetentionCount) backup\(env.backupRetentionCount == 1 ? "" : "s")",
+                value: $env.backupRetentionCount,
+                in: 1...100
+            )
+
+            LabeledContent(
+                "Last managed backup",
+                value: env.lastManagedBackupAt?.formatted(date: .abbreviated, time: .shortened) ?? "Never"
+            )
+
+            HStack {
+                if env.automaticBackupsEnabled {
+                    Button(role: .destructive) {
+                        env.disableAutomaticCloudBackups()
+                        refreshStatus()
+                    } label: {
+                        Label("Disable schedule", systemImage: "calendar.badge.minus")
+                    }
+                } else {
+                    Button {
+                        enableAutomaticBackups()
+                    } label: {
+                        Label("Enable schedule", systemImage: "calendar.badge.plus")
+                    }
+                    .disabled(!canPush)
+                }
+
+                Button {
+                    Task { await createManagedBackup() }
+                } label: {
+                    Label("Back up now", systemImage: "clock.arrow.circlepath")
+                }
+                .disabled(!canRunManagedBackup)
+
+                Button {
+                    env.pruneManagedCloudBackups()
+                    refreshStatus()
+                } label: {
+                    Label("Apply retention", systemImage: "trash.slash")
+                }
+                .disabled(isWorking || backupHistory.isEmpty)
+            }
+
+            if !backupHistory.isEmpty {
+                DisclosureGroup("Backup history (\(backupHistory.count))") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(backupHistory.prefix(10)) { backup in
+                            Button {
+                                previewBackup(at: backup.url)
+                            } label: {
+                                HStack {
+                                    Image(systemName: "lock.doc")
+                                    Text(backup.createdAt.formatted(date: .abbreviated, time: .shortened))
+                                    Spacer()
+                                    Text(ByteCountFormatter.string(fromByteCount: backup.size, countStyle: .file))
+                                        .foregroundStyle(Tokens.Text.secondary)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!canPreview)
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+            }
+
             if let preview {
                 VStack(alignment: .leading, spacing: 8) {
                     LabeledContent("Selected bundle", value: preview.path)
@@ -103,6 +196,10 @@ struct CloudSyncSettingsSection: View {
                     LabeledContent("Exported", value: preview.exportedAtText)
                     LabeledContent("Secrets", value: "\(preview.secretCount)")
                     LabeledContent("Size", value: preview.sizeText)
+                    LabeledContent("New locally", value: "\(preview.newCount)")
+                    LabeledContent("Backup is newer", value: "\(preview.backupNewerCount)")
+                    LabeledContent("Local is newer", value: "\(preview.localNewerCount)")
+                    LabeledContent("Same timestamp", value: "\(preview.sameTimestampCount)")
                 }
                 .font(.caption)
                 .textSelection(.enabled)
@@ -117,7 +214,7 @@ struct CloudSyncSettingsSection: View {
         } header: {
             Text("Cloud Sync")
         } footer: {
-            Text("Encrypted iCloud Drive bundle and manual .vvsync backups. The passphrase is not saved.")
+            Text("Manual passphrases are not saved. Enabling scheduled backups stores the passphrase in this Mac's Keychain and runs while the app is open and the vault is unlocked.")
         }
         .onAppear { refreshStatus() }
         .onChange(of: passphrase) { _, _ in
@@ -128,6 +225,12 @@ struct CloudSyncSettingsSection: View {
 
     private func refreshStatus() {
         status = env.cloudSyncStatus()
+        backupHistory = env.managedCloudBackups()
+    }
+
+    private var automaticBackupStatus: String {
+        guard env.automaticBackupsEnabled else { return "Off" }
+        return env.automaticBackupCredentialAvailable() ? "Enabled" : "Needs passphrase"
     }
 
     private func push() async {
@@ -149,7 +252,12 @@ struct CloudSyncSettingsSection: View {
             isWorking = false
             refreshStatus()
         }
-        _ = await env.pullCloudSync(passphrase: passphrase, overwrite: overwrite)
+        _ = await env.pullCloudSync(
+            from: CloudSync.defaultICloudURL(),
+            passphrase: passphrase,
+            policy: importPolicy,
+            sourceName: "iCloud"
+        )
     }
 
     private func previewICloud() {
@@ -224,8 +332,26 @@ struct CloudSyncSettingsSection: View {
         _ = await env.pullCloudSync(
             from: selectedBackupURL,
             passphrase: passphrase,
-            overwrite: overwrite,
+            policy: importPolicy,
             sourceName: "backup"
         )
+    }
+
+    private func enableAutomaticBackups() {
+        guard canPush else { return }
+        if env.enableAutomaticCloudBackups(passphrase: passphrase) {
+            confirmation = ""
+            refreshStatus()
+        }
+    }
+
+    private func createManagedBackup() async {
+        guard canRunManagedBackup else { return }
+        let typedPassphrase = canPush ? passphrase : nil
+        isWorking = true
+        _ = await env.runManagedCloudBackupNow(passphrase: typedPassphrase)
+        isWorking = false
+        confirmation = ""
+        refreshStatus()
     }
 }

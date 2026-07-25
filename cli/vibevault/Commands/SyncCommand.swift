@@ -11,7 +11,10 @@ struct SyncCommand: AsyncParsableCommand {
             SyncPushCommand.self,
             SyncPullCommand.self,
             SyncExportCommand.self,
-            SyncImportCommand.self
+            SyncImportCommand.self,
+            SyncPreviewCommand.self,
+            SyncBackupCommand.self,
+            SyncHistoryCommand.self
         ]
     )
 }
@@ -91,13 +94,20 @@ struct SyncPullCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Update local secrets when names already exist.")
     var overwrite = false
 
+    @Flag(name: .long, help: "Update matching local secrets only when the bundle is newer.")
+    var newerOnly = false
+
     mutating func run() async throws {
         guard from == "icloud" else { throw ValidationError("unsupported sync source: \(from)") }
+        guard !(overwrite && newerOnly) else {
+            throw ValidationError("--overwrite and --newer-only cannot be used together")
+        }
         let url = syncURL(path: path)
         try await SyncImporter.importSnapshot(
             from: url,
             passphrase: SyncPassphrase.resolve(envName: passphraseEnv, stdin: passphraseStdin),
-            overwrite: overwrite
+            overwrite: overwrite,
+            newerOnly: newerOnly
         )
     }
 }
@@ -145,11 +155,112 @@ struct SyncImportCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Update local secrets when names already exist.")
     var overwrite = false
 
+    @Flag(name: .long, help: "Update matching local secrets only when the bundle is newer.")
+    var newerOnly = false
+
     mutating func run() async throws {
+        guard !(overwrite && newerOnly) else {
+            throw ValidationError("--overwrite and --newer-only cannot be used together")
+        }
         try await SyncImporter.importSnapshot(
             from: URL(fileURLWithPath: path).standardizedFileURL,
             passphrase: SyncPassphrase.resolve(envName: passphraseEnv, stdin: passphraseStdin),
-            overwrite: overwrite
+            overwrite: overwrite,
+            newerOnly: newerOnly
         )
+    }
+}
+
+struct SyncPreviewCommand: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "preview",
+        abstract: "Decrypt and compare a sync bundle without importing it."
+    )
+
+    @Option(name: .long, help: "Bundle path. Defaults to the iCloud sync bundle.")
+    var path: String?
+
+    @Option(name: .long, help: "Read passphrase from this environment variable.")
+    var passphraseEnv: String?
+
+    @Flag(name: .long, help: "Read passphrase from stdin.")
+    var passphraseStdin = false
+
+    mutating func run() async throws {
+        let url = syncURL(path: path)
+        let snapshot = try CloudSync.decrypt(
+            Data(contentsOf: url),
+            passphrase: SyncPassphrase.resolve(envName: passphraseEnv, stdin: passphraseStdin)
+        )
+        let local = try VaultService.live().list()
+        let comparison = CloudSyncInspector.compare(snapshot: snapshot, localSecrets: local)
+        print("path: \(url.path)")
+        print("source: \(snapshot.sourceHost)")
+        print("exported: \(ISO8601DateFormatter().string(from: snapshot.exportedAt))")
+        print("secrets: \(snapshot.secrets.count)")
+        print("new: \(comparison.newNames.count)")
+        print("backup newer: \(comparison.backupNewerNames.count)")
+        print("local newer: \(comparison.localNewerNames.count)")
+        print("same timestamp: \(comparison.sameTimestampNames.count)")
+    }
+}
+
+struct SyncBackupCommand: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "backup",
+        abstract: "Create a timestamped encrypted iCloud backup and apply retention."
+    )
+
+    @Option(name: .long, help: "Backup directory. Defaults to VibeVault/Sync/Backups in iCloud Drive.")
+    var directory: String?
+
+    @Option(name: .long, help: "Number of managed backups to retain.")
+    var retain = 30
+
+    @Option(name: .long, help: "Read passphrase from this environment variable.")
+    var passphraseEnv: String?
+
+    @Flag(name: .long, help: "Read passphrase from stdin.")
+    var passphraseStdin = false
+
+    mutating func run() async throws {
+        guard retain > 0 else { throw ValidationError("--retain must be at least 1") }
+        let snapshot = try await SyncSnapshotBuilder.snapshot()
+        let passphrase = try SyncPassphrase.resolve(
+            envName: passphraseEnv,
+            stdin: passphraseStdin,
+            confirm: true
+        )
+        let data = try CloudSync.encrypt(snapshot, passphrase: passphrase)
+        let target = directory.map {
+            URL(fileURLWithPath: $0, isDirectory: true).standardizedFileURL
+        } ?? CloudBackupArchive.defaultICloudDirectory()
+        let result = try CloudBackupArchive.write(data, to: target, retentionCount: retain)
+        print("backed up \(snapshot.secrets.count) secrets to \(result.backup.url.path)")
+        print("retention removed: \(result.removed.count)")
+    }
+}
+
+struct SyncHistoryCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "history",
+        abstract: "List timestamped encrypted backups."
+    )
+
+    @Option(name: .long, help: "Backup directory. Defaults to VibeVault/Sync/Backups in iCloud Drive.")
+    var directory: String?
+
+    mutating func run() throws {
+        let target = directory.map {
+            URL(fileURLWithPath: $0, isDirectory: true).standardizedFileURL
+        } ?? CloudBackupArchive.defaultICloudDirectory()
+        let backups = try CloudBackupArchive.list(in: target)
+        print("backup directory: \(target.path)")
+        print("backups: \(backups.count)")
+        for backup in backups {
+            let date = ISO8601DateFormatter().string(from: backup.createdAt)
+            let size = ByteCountFormatter.string(fromByteCount: backup.size, countStyle: .file)
+            print("\(date)  \(size)  \(backup.url.lastPathComponent)")
+        }
     }
 }

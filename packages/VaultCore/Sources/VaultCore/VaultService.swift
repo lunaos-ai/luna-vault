@@ -59,10 +59,11 @@ public final class VaultService: @unchecked Sendable {
         expiresAt: Date? = nil, rotateEveryDays: Int? = nil, lastRotatedAt: Date? = nil,
         mcpAllowed: Bool = false,
         totpAuthURL: String? = nil,
-        createdAt: Date? = nil
+        createdAt: Date? = nil,
+        updatedAt: Date = Date()
     ) throws {
         let secret = Secret(
-            name: name, value: value, createdAt: createdAt, notes: notes,
+            name: name, value: value, updatedAt: updatedAt, createdAt: createdAt, notes: notes,
             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, lastRotatedAt: lastRotatedAt,
             mcpAllowed: mcpAllowed,
             totpAuthURL: totpAuthURL
@@ -77,11 +78,12 @@ public final class VaultService: @unchecked Sendable {
         expiresAt: Date? = nil, rotateEveryDays: Int? = nil, lastRotatedAt: Date? = nil,
         mcpAllowed: Bool = false,
         totpAuthURL: String? = nil,
-        createdAt: Date? = nil
+        createdAt: Date? = nil,
+        updatedAt: Date = Date()
     ) throws {
         let existingCreatedAt = createdAt ?? (try? store.read(name: name).createdAt)
         let secret = Secret(
-            name: name, value: value, createdAt: existingCreatedAt, notes: notes,
+            name: name, value: value, updatedAt: updatedAt, createdAt: existingCreatedAt, notes: notes,
             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, lastRotatedAt: lastRotatedAt,
             mcpAllowed: mcpAllowed,
             totpAuthURL: totpAuthURL

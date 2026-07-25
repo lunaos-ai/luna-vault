@@ -24,14 +24,27 @@ enum SyncSnapshotBuilder {
 }
 
 enum SyncImporter {
-    static func importSnapshot(from url: URL, passphrase: String, overwrite: Bool) async throws {
+    static func importSnapshot(
+        from url: URL,
+        passphrase: String,
+        overwrite: Bool,
+        newerOnly: Bool = false
+    ) async throws {
         let snapshot = try CloudSync.decrypt(Data(contentsOf: url), passphrase: passphrase)
         let service = try VaultService.live()
+        let localByName = Dictionary(uniqueKeysWithValues: try service.list().map { ($0.name, $0) })
         var result = SyncImportResult()
 
         for item in snapshot.secrets {
             do {
-                try upsert(item, into: service, overwrite: overwrite, result: &result)
+                try upsert(
+                    item,
+                    into: service,
+                    local: localByName[item.name],
+                    overwrite: overwrite,
+                    newerOnly: newerOnly,
+                    result: &result
+                )
                 try service.recordEvent(name: item.name, action: .importEvent, projectPath: service.currentProjectPath())
             } catch {
                 result.failed.append((item.name, "\(error)"))
@@ -49,11 +62,15 @@ enum SyncImporter {
     private static func upsert(
         _ item: CloudSyncSecret,
         into service: VaultService,
+        local: Secret?,
         overwrite: Bool,
+        newerOnly: Bool,
         result: inout SyncImportResult
     ) throws {
-        if try service.store.exists(name: item.name) {
-            guard overwrite else {
+        if let local {
+            let shouldUpdate = overwrite
+                || (newerOnly && item.updatedAt.timeIntervalSince(local.updatedAt) > 1)
+            guard shouldUpdate else {
                 result.skipped.append(item.name)
                 return
             }
@@ -71,7 +88,7 @@ enum SyncImporter {
             expiresAt: item.expiresAt, rotateEveryDays: item.rotateEveryDays,
             lastRotatedAt: item.lastRotatedAt,
             mcpAllowed: item.mcpAllowed, totpAuthURL: item.totpAuthURL,
-            createdAt: item.createdAt
+            createdAt: item.createdAt, updatedAt: item.updatedAt
         )
     }
 
@@ -81,7 +98,7 @@ enum SyncImporter {
             expiresAt: item.expiresAt, rotateEveryDays: item.rotateEveryDays,
             lastRotatedAt: item.lastRotatedAt,
             mcpAllowed: item.mcpAllowed, totpAuthURL: item.totpAuthURL,
-            createdAt: item.createdAt
+            createdAt: item.createdAt, updatedAt: item.updatedAt
         )
     }
 }

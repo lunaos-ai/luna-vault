@@ -13,6 +13,10 @@ struct AppSettings: Codable, Equatable {
     var vercelTeamId: String = ""
     var pushciProjectPath: String = ""
     var projectPrefixes: [String: String] = [:]
+    var automaticBackupsEnabled: Bool = false
+    var backupIntervalHours: Int = 24
+    var backupRetentionCount: Int = 30
+    var lastManagedBackupAt: Date?
 
     static func migrateLegacy(into prefs: PreferenceStoring, settingsKey: String) -> AppSettings {
         var s = AppSettings()
