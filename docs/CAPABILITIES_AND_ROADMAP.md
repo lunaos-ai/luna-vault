@@ -29,7 +29,7 @@ The current product is strongest for solo developers and small teams using Curso
 - Add-secret sheet with secure value entry and generated-value helper.
 - Vault list with search, sorting/grouping-oriented UI work, badges, bulk selection, recent activity, and detail view.
 - Import screen for clipboard, files, password manager CSV exports, 1Password CLI, screenshots/images, shell environment, and system Keychain discovery.
-- Settings surface for session trust, Cloud Sync, and Team license.
+- Settings surface for session trust and Team license, plus a dedicated Cloud Sync screen.
 - Toast and feedback states for common operations.
 - Reduce Motion aware UI patterns in supported motion surfaces.
 
@@ -186,7 +186,8 @@ Implemented today:
 - `vibevault sync preview`: decrypts and compares a bundle without importing it.
 - `vibevault sync backup`: creates timestamped encrypted history and applies a retention count.
 - `vibevault sync history`: lists managed encrypted backups.
-- App Settings -> Cloud Sync exposes status, passphrase entry, sync to iCloud, import from iCloud, manual encrypted backup export/import, restore comparison, managed history, retention controls, and scheduled backups.
+- A dedicated Cloud Sync sidebar screen exposes Apple Account/iCloud Drive status, System Settings sign-in, the encrypted sync route, passphrase entry, sync/import actions, manual backup export/import, restore comparison, managed history, retention controls, and scheduled backups.
+- The app verifies that the real iCloud Drive root exists and is writable before claiming an iCloud sync or managed backup succeeded.
 - Restore comparison classifies new names, backup-newer names, local-newer names, and matching timestamps.
 - Import policies can keep local values, use newer bundle values, or replace all matching values.
 - Scheduled backups run when the app is open and the vault has been unlocked for the session.

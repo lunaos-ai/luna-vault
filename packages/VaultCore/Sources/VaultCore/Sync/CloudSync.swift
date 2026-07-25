@@ -12,9 +12,26 @@ public enum CloudSync {
     // Lower bound blocks downgrade to a fast KDF; upper bound blocks DoS via a hostile envelope.
     private static let kdfIterationRange = 600_000...10_000_000
 
-    public static func defaultICloudURL() -> URL {
+    public static func iCloudDriveRootURL() -> URL {
         FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs/Documents")
+            .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
+    }
+
+    public static func isICloudDriveAvailable(
+        at rootURL: URL = iCloudDriveRootURL(),
+        fileManager: FileManager = .default
+    ) -> Bool {
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: rootURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            return false
+        }
+        return fileManager.isWritableFile(atPath: rootURL.path)
+    }
+
+    public static func defaultICloudURL() -> URL {
+        iCloudDriveRootURL()
+            .appendingPathComponent("Documents")
             .appendingPathComponent("VibeVault/Sync", isDirectory: true)
             .appendingPathComponent(fileName)
     }

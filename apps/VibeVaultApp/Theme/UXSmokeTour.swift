@@ -12,6 +12,7 @@ enum UXSmokeTour {
             (.vault, "Vault · list & search"),
             (.importSecrets, "Import · clipboard & dotenv"),
             (.projects, "Projects · scan & prepare"),
+            (.cloudSync, "Cloud Sync · Apple Account & backups"),
             (.providers, "Providers · Cloudflare / Vercel / PushCI"),
             (.aiAgents, "AI Agents · MCP & Cursor health"),
             (.audit, "Audit · agent chips"),

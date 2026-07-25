@@ -5,6 +5,7 @@ struct VaultOverviewView: View {
     @EnvironmentObject var env: AppEnvironment
     var onScan: () -> Void
     var onImport: () -> Void
+    var onCloudSync: () -> Void
     var onCloudflare: () -> Void
     var onAIAgents: () -> Void
     var onAudit: () -> Void
@@ -44,6 +45,7 @@ struct VaultOverviewView: View {
                     label: env.sessionUnlocked ? "Session unlocked" : "Locked",
                     icon: env.sessionUnlocked ? "lock.open.fill" : "lock.fill"
                 )
+                statusChip(iCloudReady, label: "iCloud", icon: "icloud.fill")
                 statusChip(env.hasCloudflareToken, label: "Cloudflare", icon: "cloud.fill")
                 statusChip(mcpReady, label: "MCP", icon: "sparkles")
             }
@@ -60,6 +62,10 @@ struct VaultOverviewView: View {
 
     private var mcpReady: Bool {
         MCPClientID.allCases.contains { MCPClientInstaller.status(of: $0).installed }
+    }
+
+    private var iCloudReady: Bool {
+        env.cloudSyncStatus().iCloudAvailable
     }
 
     private var attentionBanner: some View {
@@ -103,6 +109,11 @@ struct VaultOverviewView: View {
                 QuickActionCard(
                     icon: "square.and.arrow.down", title: "Import",
                     subtitle: "Clipboard, dotenv, shell", tint: Tokens.Palette.mint, action: onImport
+                )
+                QuickActionCard(
+                    icon: "icloud.fill", title: "Cloud Sync",
+                    subtitle: iCloudReady ? "Sync between Macs" : "Connect Apple Account",
+                    tint: Tokens.Status.info, action: onCloudSync
                 )
                 QuickActionCard(
                     icon: "cloud.fill", title: "Cloudflare",

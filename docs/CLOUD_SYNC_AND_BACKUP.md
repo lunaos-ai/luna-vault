@@ -30,7 +30,14 @@ Vibe Vault supports encrypted, user-controlled sync bundles for moving a local v
 
 ## macOS App Flow
 
-Open **Settings -> Cloud Sync**.
+Select **Cloud Sync** in the main sidebar.
+
+Vibe Vault uses the Apple Account configured in macOS. It does not implement a separate Apple login or receive Apple credentials:
+
+1. If iCloud Drive is unavailable, select **Sign in to Apple Account**.
+2. Sign in or enable iCloud Drive in System Settings.
+3. Return to Vibe Vault and select **Refresh**.
+4. Confirm the route shows **This Mac -> Encrypted -> iCloud Drive**.
 
 To sync through iCloud Drive:
 
@@ -40,6 +47,8 @@ To sync through iCloud Drive:
 4. On the destination Mac, enter the same passphrase.
 5. Select **Preview iCloud** to verify source Mac, export date, secret count, and size.
 6. Select **Import from iCloud**.
+
+The **Sync to iCloud** action is enabled after iCloud Drive is available and the sync passphrase has been entered and confirmed.
 
 To create a manual backup:
 

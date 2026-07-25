@@ -30,6 +30,7 @@ struct SyncStatusCommand: AsyncParsableCommand {
         let localCount = try service.list().count
         let cloudURL = CloudSync.defaultICloudURL()
         print("local secrets: \(localCount)")
+        print("icloud drive: \(CloudSync.isICloudDriveAvailable() ? "available" : "unavailable")")
         print("icloud path: \(cloudURL.path)")
         guard FileManager.default.fileExists(atPath: cloudURL.path) else {
             print("icloud bundle: missing")
@@ -64,6 +65,9 @@ struct SyncPushCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         guard to == "icloud" else { throw ValidationError("unsupported sync destination: \(to)") }
+        guard path != nil || CloudSync.isICloudDriveAvailable() else {
+            throw ValidationError("iCloud Drive is unavailable; sign in or enable it in System Settings")
+        }
         let url = syncURL(path: path)
         let passphrase = try SyncPassphrase.resolve(envName: passphraseEnv, stdin: passphraseStdin, confirm: true)
         let snapshot = try await SyncSnapshotBuilder.snapshot()
@@ -225,6 +229,9 @@ struct SyncBackupCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         guard retain > 0 else { throw ValidationError("--retain must be at least 1") }
+        guard directory != nil || CloudSync.isICloudDriveAvailable() else {
+            throw ValidationError("iCloud Drive is unavailable; sign in or enable it in System Settings")
+        }
         let snapshot = try await SyncSnapshotBuilder.snapshot()
         let passphrase = try SyncPassphrase.resolve(
             envName: passphraseEnv,

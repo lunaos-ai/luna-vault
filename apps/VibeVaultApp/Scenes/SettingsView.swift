@@ -48,7 +48,6 @@ struct SettingsView: View {
             }
 
             TeamLicenseSection()
-            CloudSyncSettingsSection()
             CloudflareSettingsSection()
             VercelSettingsSection()
             PushciSettingsSection()

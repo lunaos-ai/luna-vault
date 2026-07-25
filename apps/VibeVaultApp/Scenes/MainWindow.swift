@@ -101,6 +101,7 @@ struct MainWindow: View {
             VaultOverviewView(
                 onScan: { selection = .projects },
                 onImport: { selection = .importSecrets },
+                onCloudSync: { selection = .cloudSync },
                 onCloudflare: { selection = .providers },
                 onAIAgents: { selection = .aiAgents },
                 onAudit: { selection = .audit },
@@ -116,6 +117,7 @@ struct MainWindow: View {
             )
         case .importSecrets: ImportView()
         case .projects: ProjectScannerView()
+        case .cloudSync: CloudSyncView()
         case .audit: AuditLogView()
         case .providers: ProvidersHubView()
         case .aiAgents: AIAgentsView()

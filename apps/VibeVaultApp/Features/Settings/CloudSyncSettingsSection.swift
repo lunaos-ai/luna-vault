@@ -5,6 +5,7 @@ import VaultCore
 
 struct CloudSyncSettingsSection: View {
     @EnvironmentObject var env: AppEnvironment
+    var onStatusChange: () -> Void = {}
     @State private var passphrase = ""
     @State private var confirmation = ""
     @State private var importPolicy: AppCloudSyncImportPolicy = .keepLocal
@@ -14,8 +15,12 @@ struct CloudSyncSettingsSection: View {
     @State private var selectedBackupURL: URL?
     @State private var backupHistory: [CloudBackupFile] = []
 
-    private var canPush: Bool {
+    private var canEncrypt: Bool {
         passphrase.count >= 12 && passphrase == confirmation && !isWorking
+    }
+
+    private var canSyncToICloud: Bool {
+        canEncrypt && (status?.iCloudAvailable ?? false)
     }
 
     private var canPull: Bool {
@@ -31,7 +36,9 @@ struct CloudSyncSettingsSection: View {
     }
 
     private var canRunManagedBackup: Bool {
-        !isWorking && (canPush || env.automaticBackupCredentialAvailable())
+        !isWorking
+            && (status?.iCloudAvailable ?? false)
+            && (canEncrypt || env.automaticBackupCredentialAvailable())
     }
 
     var body: some View {
@@ -59,7 +66,8 @@ struct CloudSyncSettingsSection: View {
                 } label: {
                     Label("Sync to iCloud", systemImage: "icloud.and.arrow.up")
                 }
-                .disabled(!canPush)
+                .buttonStyle(.borderedProminent)
+                .disabled(!canSyncToICloud)
 
                 Button {
                     Task { await pull() }
@@ -89,7 +97,7 @@ struct CloudSyncSettingsSection: View {
                 } label: {
                     Label("Export backup...", systemImage: "externaldrive.badge.plus")
                 }
-                .disabled(!canPush)
+                .disabled(!canEncrypt)
 
                 Button {
                     chooseImportURL()
@@ -146,7 +154,7 @@ struct CloudSyncSettingsSection: View {
                     } label: {
                         Label("Enable schedule", systemImage: "calendar.badge.plus")
                     }
-                    .disabled(!canPush)
+                    .disabled(!canSyncToICloud)
                 }
 
                 Button {
@@ -212,7 +220,7 @@ struct CloudSyncSettingsSection: View {
                     .textSelection(.enabled)
             }
         } header: {
-            Text("Cloud Sync")
+            Text("Encrypted sync and backups")
         } footer: {
             Text("Manual passphrases are not saved. Enabling scheduled backups stores the passphrase in this Mac's Keychain and runs while the app is open and the vault is unlocked.")
         }
@@ -226,6 +234,7 @@ struct CloudSyncSettingsSection: View {
     private func refreshStatus() {
         status = env.cloudSyncStatus()
         backupHistory = env.managedCloudBackups()
+        onStatusChange()
     }
 
     private var automaticBackupStatus: String {
@@ -234,7 +243,7 @@ struct CloudSyncSettingsSection: View {
     }
 
     private func push() async {
-        guard canPush else { return }
+        guard canSyncToICloud else { return }
         isWorking = true
         defer {
             isWorking = false
@@ -266,7 +275,7 @@ struct CloudSyncSettingsSection: View {
     }
 
     private func chooseExportURL() {
-        guard canPush else { return }
+        guard canEncrypt else { return }
         let panel = NSSavePanel()
         panel.nameFieldStringValue = CloudSync.fileName
         panel.title = "Export encrypted Vibe Vault backup"
@@ -311,7 +320,7 @@ struct CloudSyncSettingsSection: View {
     }
 
     private func exportBackup(to url: URL) async {
-        guard canPush else { return }
+        guard canEncrypt else { return }
         isWorking = true
         let exported = await env.pushCloudSync(to: url, passphrase: passphrase, destinationName: "backup")
         isWorking = false
@@ -338,7 +347,7 @@ struct CloudSyncSettingsSection: View {
     }
 
     private func enableAutomaticBackups() {
-        guard canPush else { return }
+        guard canSyncToICloud else { return }
         if env.enableAutomaticCloudBackups(passphrase: passphrase) {
             confirmation = ""
             refreshStatus()
@@ -347,7 +356,7 @@ struct CloudSyncSettingsSection: View {
 
     private func createManagedBackup() async {
         guard canRunManagedBackup else { return }
-        let typedPassphrase = canPush ? passphrase : nil
+        let typedPassphrase = canEncrypt ? passphrase : nil
         isWorking = true
         _ = await env.runManagedCloudBackupNow(passphrase: typedPassphrase)
         isWorking = false
