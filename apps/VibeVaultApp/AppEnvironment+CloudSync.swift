@@ -17,6 +17,7 @@ struct AppCloudSyncPreview: Equatable {
     let sourceHost: String
     let exportedAtText: String
     let secretCount: Int
+    let revisionCount: Int
     let sizeText: String
     let newCount: Int
     let backupNewerCount: Int
@@ -40,8 +41,14 @@ enum AppCloudSyncImportPolicy: String, CaseIterable, Identifiable {
     }
 }
 
+private enum AppCloudSyncCredential {
+    case passphrase(String)
+    case recoveryKey(String)
+}
+
 extension AppEnvironment {
     static let automaticBackupPassphraseKey = "cloud-backup-passphrase"
+    static let backupRecoveryKeyKey = CloudRecoveryKey.preferenceKey
 
     func cloudSyncStatus() -> AppCloudSyncStatus {
         let url = CloudSync.defaultICloudURL()
@@ -102,7 +109,11 @@ extension AppEnvironment {
     func pushCloudSync(to url: URL, passphrase: String, destinationName: String) async -> Bool {
         do {
             let snapshot = try await cloudSyncSnapshot()
-            let data = try CloudSync.encrypt(snapshot, passphrase: passphrase)
+            let data = try CloudSync.encrypt(
+                snapshot,
+                passphrase: passphrase,
+                recoveryKey: backupRecoveryKey()
+            )
             try CloudSync.write(data, to: url)
             showToast("Synced \(snapshot.secrets.count) secrets to \(destinationName)")
             return true
@@ -137,9 +148,37 @@ extension AppEnvironment {
         policy: AppCloudSyncImportPolicy,
         sourceName: String
     ) async -> Bool {
+        await pullCloudSync(
+            from: url,
+            credential: .passphrase(passphrase),
+            policy: policy,
+            sourceName: sourceName
+        )
+    }
+
+    func pullCloudSync(
+        from url: URL,
+        recoveryKey: String,
+        policy: AppCloudSyncImportPolicy,
+        sourceName: String
+    ) async -> Bool {
+        await pullCloudSync(
+            from: url,
+            credential: .recoveryKey(recoveryKey),
+            policy: policy,
+            sourceName: sourceName
+        )
+    }
+
+    private func pullCloudSync(
+        from url: URL,
+        credential: AppCloudSyncCredential,
+        policy: AppCloudSyncImportPolicy,
+        sourceName: String
+    ) async -> Bool {
         do {
             let data = try Data(contentsOf: url)
-            let snapshot = try CloudSync.decrypt(data, passphrase: passphrase)
+            let snapshot = try decryptCloudSync(data, credential: credential)
             let result = try importCloudSyncSnapshot(snapshot, policy: policy)
             refresh()
             showToast("Imported \(result.imported + result.updated) secrets from \(sourceName)")
@@ -152,14 +191,26 @@ extension AppEnvironment {
     }
 
     func previewCloudSyncBundle(at url: URL, passphrase: String) throws -> AppCloudSyncPreview {
+        try previewCloudSyncBundle(at: url, credential: .passphrase(passphrase))
+    }
+
+    func previewCloudSyncBundle(at url: URL, recoveryKey: String) throws -> AppCloudSyncPreview {
+        try previewCloudSyncBundle(at: url, credential: .recoveryKey(recoveryKey))
+    }
+
+    private func previewCloudSyncBundle(
+        at url: URL,
+        credential: AppCloudSyncCredential
+    ) throws -> AppCloudSyncPreview {
         let data = try Data(contentsOf: url)
-        let snapshot = try CloudSync.decrypt(data, passphrase: passphrase)
+        let snapshot = try decryptCloudSync(data, credential: credential)
         let comparison = CloudSyncInspector.compare(snapshot: snapshot, localSecrets: try service.list())
         return AppCloudSyncPreview(
             path: url.path,
             sourceHost: snapshot.sourceHost,
             exportedAtText: snapshot.exportedAt.formatted(date: .abbreviated, time: .shortened),
             secretCount: snapshot.secrets.count,
+            revisionCount: snapshot.revisions.count,
             sizeText: ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file),
             newCount: comparison.newNames.count,
             backupNewerCount: comparison.backupNewerNames.count,
@@ -189,6 +240,35 @@ extension AppEnvironment {
         return true
     }
 
+    func generateBackupRecoveryKey() throws -> String {
+        try CloudRecoveryKey.generate()
+    }
+
+    func saveBackupRecoveryKey(_ recoveryKey: String) throws {
+        let canonical = try CloudRecoveryKey.canonicalize(recoveryKey)
+        let encoded = Data(canonical.utf8)
+        prefs.set(encoded, forKey: Self.backupRecoveryKeyKey)
+        guard prefs.data(forKey: Self.backupRecoveryKeyKey) == encoded else {
+            throw SecretError.vaultIO("could not store recovery key in macOS Keychain")
+        }
+        cachedHasBackupRecoveryKey = true
+        showToast("Recovery protection enabled")
+    }
+
+    func revealBackupRecoveryKey() async throws -> String {
+        try await service.biometric.authenticate(reason: "Show the Vibe Vault recovery key")
+        guard let key = backupRecoveryKey() else {
+            throw CloudSyncError.recoveryUnavailable
+        }
+        return key
+    }
+
+    func removeBackupRecoveryKey() {
+        prefs.set(nil, forKey: Self.backupRecoveryKeyKey)
+        cachedHasBackupRecoveryKey = false
+        showToast("Recovery protection removed from future backups", feedback: .tick)
+    }
+
     func disableAutomaticCloudBackups() {
         automaticBackupsEnabled = false
         prefs.set(nil, forKey: Self.automaticBackupPassphraseKey)
@@ -205,7 +285,11 @@ extension AppEnvironment {
         }
         do {
             let snapshot = try await cloudSyncSnapshot()
-            let data = try CloudSync.encrypt(snapshot, passphrase: passphrase)
+            let data = try CloudSync.encrypt(
+                snapshot,
+                passphrase: passphrase,
+                recoveryKey: backupRecoveryKey()
+            )
             let result = try CloudBackupArchive.write(
                 data,
                 retentionCount: backupRetentionCount
@@ -277,6 +361,27 @@ extension AppEnvironment {
         return value
     }
 
+    private func backupRecoveryKey() -> String? {
+        guard let data = prefs.data(forKey: Self.backupRecoveryKeyKey),
+              let value = String(data: data, encoding: .utf8),
+              !value.isEmpty else {
+            return nil
+        }
+        return value
+    }
+
+    private func decryptCloudSync(
+        _ data: Data,
+        credential: AppCloudSyncCredential
+    ) throws -> CloudSyncSnapshot {
+        switch credential {
+        case .passphrase(let passphrase):
+            return try CloudSync.decrypt(data, passphrase: passphrase)
+        case .recoveryKey(let recoveryKey):
+            return try CloudSync.decrypt(data, recoveryKey: recoveryKey)
+        }
+    }
+
     private func cloudSyncSnapshot() async throws -> CloudSyncSnapshot {
         let names = try service.list().map(\.name).sorted()
         var items: [CloudSyncSecret] = []
@@ -284,7 +389,10 @@ extension AppEnvironment {
             let secret = try await service.read(name: name, reason: "Export \(name) for encrypted cloud sync")
             items.append(CloudSyncSecret(secret: secret))
         }
-        return CloudSyncSnapshot(secrets: items)
+        return CloudSyncSnapshot(
+            secrets: items,
+            revisions: try service.revisionsForEncryptedBackup()
+        )
     }
 
     private func importCloudSyncSnapshot(
@@ -320,7 +428,8 @@ extension AppEnvironment {
                     mcpAllowed: item.mcpAllowed,
                     totpAuthURL: item.totpAuthURL,
                     createdAt: item.createdAt,
-                    updatedAt: item.updatedAt
+                    updatedAt: item.updatedAt,
+                    revisionAction: .synced
                 )
                 updated += 1
             } else {
@@ -334,11 +443,13 @@ extension AppEnvironment {
                     mcpAllowed: item.mcpAllowed,
                     totpAuthURL: item.totpAuthURL,
                     createdAt: item.createdAt,
-                    updatedAt: item.updatedAt
+                    updatedAt: item.updatedAt,
+                    revisionAction: .synced
                 )
                 imported += 1
             }
         }
+        try service.mergeRevisionsFromEncryptedBackup(snapshot.revisions)
         return (imported: imported, updated: updated, skipped: skipped)
     }
 }

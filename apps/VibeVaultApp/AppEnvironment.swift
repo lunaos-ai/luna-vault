@@ -48,6 +48,7 @@ final class AppEnvironment: ObservableObject {
     @Published var cachedHasCloudflareToken = false
     @Published var cachedHasVercelToken = false
     @Published var cachedHasAutomaticBackupCredential = false
+    @Published var cachedHasBackupRecoveryKey = false
     @Published var cachedTeamLicense: TeamLicense?
 
     @Published var notificationsEnabled: Bool {
@@ -127,6 +128,8 @@ final class AppEnvironment: ObservableObject {
         self.lastManagedBackupAt = loaded.lastManagedBackupAt
         self.cachedHasAutomaticBackupCredential =
             prefs.data(forKey: Self.automaticBackupPassphraseKey) != nil
+        self.cachedHasBackupRecoveryKey =
+            prefs.data(forKey: Self.backupRecoveryKeyKey) != nil
         service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
         Task { @MainActor [weak self] in
             self?.reloadProviderCaches()

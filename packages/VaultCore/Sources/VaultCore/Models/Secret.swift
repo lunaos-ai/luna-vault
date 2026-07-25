@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Secret: Equatable, Hashable, Sendable {
+public struct Secret: Codable, Equatable, Hashable, Sendable {
     public let name: String
     public let value: String
     public let createdAt: Date

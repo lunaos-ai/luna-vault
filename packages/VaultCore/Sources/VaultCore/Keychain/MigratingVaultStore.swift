@@ -1,7 +1,7 @@
 import Foundation
 
 /// File vault first; legacy Keychain is copied in once, then never read again for that name.
-public final class MigratingVaultStore: KeychainStoring, @unchecked Sendable {
+public final class MigratingVaultStore: VersionedSecretStoring, @unchecked Sendable {
     private let primary: EncryptedVaultStore
     private let legacy: KeychainStore
     private let queue = DispatchQueue(label: "dev.vibevault.migrate")
@@ -16,9 +16,21 @@ public final class MigratingVaultStore: KeychainStoring, @unchecked Sendable {
 
     public func add(_ secret: Secret) throws { try primary.add(secret) }
 
+    public func add(_ secret: Secret, revisionAction: SecretRevisionAction) throws {
+        try primary.add(secret, revisionAction: revisionAction)
+    }
+
     public func update(_ secret: Secret) throws {
         try upsertPrimary(secret)
         // Never block on Keychain delete — it re-prompts and is optional cleanup.
+    }
+
+    public func update(_ secret: Secret, revisionAction: SecretRevisionAction) throws {
+        if try primary.exists(name: secret.name) {
+            try primary.update(secret, revisionAction: revisionAction)
+        } else {
+            try primary.add(secret, revisionAction: revisionAction)
+        }
     }
 
     public func read(name: String) throws -> Secret {
@@ -34,8 +46,15 @@ public final class MigratingVaultStore: KeychainStoring, @unchecked Sendable {
     }
 
     public func delete(name: String) throws {
+        try delete(name: name, revisionAction: .deleted)
+    }
+
+    public func delete(name: String, revisionAction: SecretRevisionAction) throws {
         var deleted = false
-        do { try primary.delete(name: name); deleted = true } catch SecretError.notFound {}
+        do {
+            try primary.delete(name: name, revisionAction: revisionAction)
+            deleted = true
+        } catch SecretError.notFound {}
         do { try legacy.delete(name: name); deleted = true } catch SecretError.notFound {}
         if !deleted { throw SecretError.notFound(name: name) }
     }
@@ -46,6 +65,22 @@ public final class MigratingVaultStore: KeychainStoring, @unchecked Sendable {
 
     public func exists(name: String) throws -> Bool {
         try primary.exists(name: name)
+    }
+
+    public func revisions(for name: String) throws -> [SecretRevision] {
+        try primary.revisions(for: name)
+    }
+
+    public func allRevisions() throws -> [SecretRevision] {
+        try primary.allRevisions()
+    }
+
+    public func mergeRevisions(_ revisions: [SecretRevision]) throws {
+        try primary.mergeRevisions(revisions)
+    }
+
+    public func restoreRevision(id: UUID, restoredAt: Date = Date()) throws -> Secret {
+        try primary.restoreRevision(id: id, restoredAt: restoredAt)
     }
 
     /// How many Keychain items are not yet in the file vault.

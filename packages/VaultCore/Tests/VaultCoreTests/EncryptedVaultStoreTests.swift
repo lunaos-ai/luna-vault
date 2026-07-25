@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import VaultCore
 
@@ -40,6 +41,52 @@ final class EncryptedVaultStoreTests: XCTestCase {
         XCTAssertThrowsError(try store.read(name: "X"))
     }
 
+    func test_revision_history_records_changes_and_restores_one_version() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let updatedAt = createdAt.addingTimeInterval(60)
+        try store.add(Secret(name: "X", value: "v1", updatedAt: createdAt))
+        try store.update(
+            Secret(name: "X", value: "v2", updatedAt: updatedAt),
+            revisionAction: .rotated
+        )
+        try store.delete(name: "X", revisionAction: .deleted)
+
+        let history = try store.revisions(for: "X")
+        XCTAssertEqual(history.map(\.action), [.deleted, .rotated, .created])
+        XCTAssertTrue(history[0].isDeleted)
+        XCTAssertEqual(history[2].secret.value, "v1")
+
+        let restored = try store.restoreRevision(id: history[2].id, restoredAt: updatedAt.addingTimeInterval(60))
+        XCTAssertEqual(restored.value, "v1")
+        XCTAssertEqual(try store.read(name: "X").value, "v1")
+        XCTAssertEqual(try store.revisions(for: "X").first?.action, .restored)
+    }
+
+    func test_revision_history_is_bounded_per_secret() throws {
+        try store.add(Secret(name: "BOUNDED", value: "v0"))
+        for index in 1...55 {
+            try store.update(Secret(name: "BOUNDED", value: "v\(index)"))
+        }
+
+        let history = try store.revisions(for: "BOUNDED")
+        XCTAssertEqual(history.count, EncryptedVaultStore.revisionRetentionPerSecret)
+        XCTAssertEqual(history.first?.secret.value, "v55")
+    }
+
+    func test_revision_merge_deduplicates_ids() throws {
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let revision = SecretRevision(
+            secret: Secret(name: "MERGED", value: "remote", updatedAt: timestamp),
+            capturedAt: timestamp,
+            action: .synced,
+            sourceHost: "mac-b"
+        )
+        try store.mergeRevisions([revision, revision])
+        try store.mergeRevisions([revision])
+
+        XCTAssertEqual(try store.revisions(for: "MERGED"), [revision])
+    }
+
     func test_persists_across_instances() throws {
         try store.add(Secret(name: "PERSIST", value: "keep"))
         let again = EncryptedVaultStore(directory: dir)
@@ -67,7 +114,7 @@ final class EncryptedVaultStoreTests: XCTestCase {
     }
 
     func test_migrates_legacy_master_key_file() throws {
-        var bytes = [UInt8](repeating: 7, count: 32)
+        let bytes = [UInt8](repeating: 7, count: 32)
         let legacy = dir.appendingPathComponent("master.key")
         try Data(bytes).write(to: legacy, options: .atomic)
         KeychainMasterKey.deleteForTests(account: keyAccount)
@@ -75,5 +122,50 @@ final class EncryptedVaultStoreTests: XCTestCase {
         try migrated.add(Secret(name: "AFTER", value: "ok"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: legacy.path))
         XCTAssertEqual(try migrated.read(name: "AFTER").value, "ok")
+    }
+
+    func test_migrates_legacy_vault_with_encrypted_rollback_copy() throws {
+        let keyBytes = Data(repeating: 9, count: 32)
+        let legacyKeyURL = dir.appendingPathComponent("master.key")
+        try keyBytes.write(to: legacyKeyURL, options: .atomic)
+        KeychainMasterKey.deleteForTests(account: keyAccount)
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let legacyPlaintext = try encoder.encode([
+            LegacyRecord(
+                name: "LEGACY_KEY",
+                value: "legacy-value",
+                updatedAt: Date(timeIntervalSince1970: 1_700_000_000),
+                mcpAllowed: false
+            )
+        ])
+        let originalBlob = try VaultFileCrypto.seal(
+            legacyPlaintext,
+            key: SymmetricKey(data: keyBytes)
+        )
+        try originalBlob.write(to: dir.appendingPathComponent("secrets.vault"), options: .atomic)
+
+        let migrated = EncryptedVaultStore(directory: dir)
+        XCTAssertEqual(try migrated.read(name: "LEGACY_KEY").value, "legacy-value")
+        XCTAssertEqual(try migrated.revisions(for: "LEGACY_KEY").first?.action, .baseline)
+
+        let backupURL = dir.appendingPathComponent(EncryptedVaultStore.legacyMigrationBackupFilename)
+        XCTAssertEqual(try Data(contentsOf: backupURL), originalBlob)
+        let permissions = try FileManager.default.attributesOfItem(atPath: backupURL.path)[.posixPermissions] as? NSNumber
+        XCTAssertEqual(permissions?.intValue, 0o600)
+    }
+
+    private struct LegacyRecord: Codable {
+        var name: String
+        var value: String
+        var createdAt: Date?
+        var updatedAt: Date
+        var notes: String?
+        var expiresAt: Date?
+        var rotateEveryDays: Int?
+        var lastRotatedAt: Date?
+        var mcpAllowed: Bool
+        var totpAuthURL: String?
     }
 }

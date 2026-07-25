@@ -60,7 +60,8 @@ public final class VaultService: @unchecked Sendable {
         mcpAllowed: Bool = false,
         totpAuthURL: String? = nil,
         createdAt: Date? = nil,
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        revisionAction: SecretRevisionAction = .created
     ) throws {
         let secret = Secret(
             name: name, value: value, updatedAt: updatedAt, createdAt: createdAt, notes: notes,
@@ -68,7 +69,7 @@ public final class VaultService: @unchecked Sendable {
             mcpAllowed: mcpAllowed,
             totpAuthURL: totpAuthURL
         )
-        try store.add(secret)
+        try addToStore(secret, action: revisionAction)
         invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
@@ -79,7 +80,8 @@ public final class VaultService: @unchecked Sendable {
         mcpAllowed: Bool = false,
         totpAuthURL: String? = nil,
         createdAt: Date? = nil,
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        revisionAction: SecretRevisionAction = .updated
     ) throws {
         let existingCreatedAt = createdAt ?? (try? store.read(name: name).createdAt)
         let secret = Secret(
@@ -88,7 +90,7 @@ public final class VaultService: @unchecked Sendable {
             mcpAllowed: mcpAllowed,
             totpAuthURL: totpAuthURL
         )
-        try store.update(secret)
+        try updateStore(secret, action: revisionAction)
         invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
@@ -102,7 +104,7 @@ public final class VaultService: @unchecked Sendable {
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
             mcpAllowed: allowed, totpAuthURL: existing.totpAuthURL
         )
-        try store.update(updated)
+        try updateStore(updated, action: .accessChanged)
         invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
     }
@@ -116,7 +118,7 @@ public final class VaultService: @unchecked Sendable {
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: Date(),
             mcpAllowed: existing.mcpAllowed, totpAuthURL: existing.totpAuthURL
         )
-        try store.update(updated)
+        try updateStore(updated, action: .rotated)
         invalidateCache(name: name)
         try recordEvent(name: name, action: .rotate, projectPath: currentProjectPath())
     }
@@ -148,7 +150,7 @@ public final class VaultService: @unchecked Sendable {
                 if try store.exists(name: item.name) {
                     if overwrite {
                         let existing = try store.read(name: item.name)
-                        try store.update(Secret(
+                        try updateStore(Secret(
                             name: item.name,
                             value: item.value,
                             createdAt: existing.createdAt,
@@ -158,7 +160,7 @@ public final class VaultService: @unchecked Sendable {
                             lastRotatedAt: existing.lastRotatedAt,
                             mcpAllowed: existing.mcpAllowed,
                             totpAuthURL: item.totpAuthURL ?? existing.totpAuthURL
-                        ))
+                        ), action: .imported)
                         updated.append(item.name)
                         invalidateCache(name: item.name)
                     } else {
@@ -166,7 +168,10 @@ public final class VaultService: @unchecked Sendable {
                         continue
                     }
                 } else {
-                    try store.add(Secret(name: item.name, value: item.value, notes: item.notes, totpAuthURL: item.totpAuthURL))
+                    try addToStore(
+                        Secret(name: item.name, value: item.value, notes: item.notes, totpAuthURL: item.totpAuthURL),
+                        action: .imported
+                    )
                     imported.append(item.name)
                     invalidateCache(name: item.name)
                 }
@@ -179,7 +184,11 @@ public final class VaultService: @unchecked Sendable {
     }
 
     public func delete(name: String) throws {
-        try store.delete(name: name)
+        if let versioned = store as? VersionedSecretStoring {
+            try versioned.delete(name: name, revisionAction: .deleted)
+        } else {
+            try store.delete(name: name)
+        }
         invalidateCache(name: name)
         try recordEvent(name: name, action: .delete, projectPath: currentProjectPath())
     }
@@ -219,9 +228,60 @@ public final class VaultService: @unchecked Sendable {
             mcpAllowed: existing.mcpAllowed,
             totpAuthURL: cleaned?.isEmpty == false ? cleaned : nil
         )
-        try store.update(updated)
+        try updateStore(updated, action: .mfaChanged)
         invalidateCache(name: name)
         try recordEvent(name: name, action: .write, projectPath: currentProjectPath())
+    }
+
+    public func revisionSummaries(for name: String) throws -> [SecretRevisionSummary] {
+        guard let versioned = store as? VersionedSecretStoring else { return [] }
+        return try versioned.revisions(for: name).map(SecretRevisionSummary.init)
+    }
+
+    public func deletedSecretRevisionSummaries() throws -> [SecretRevisionSummary] {
+        guard let versioned = store as? VersionedSecretStoring else { return [] }
+        let latestByName = Dictionary(
+            grouping: try versioned.allRevisions(),
+            by: { $0.secret.name }
+        ).compactMapValues { revisions in
+            revisions.max(by: { $0.capturedAt < $1.capturedAt })
+        }
+        return latestByName.values
+            .filter { $0.isDeleted && (try? store.exists(name: $0.secret.name)) != true }
+            .map(SecretRevisionSummary.init)
+            .sorted { $0.capturedAt > $1.capturedAt }
+    }
+
+    public func readRevision(id: UUID, name: String, reason: String = "Read secret revision") async throws -> SecretRevision {
+        try await biometric.authenticate(reason: reason)
+        guard let versioned = store as? VersionedSecretStoring,
+              let revision = try versioned.revisions(for: name).first(where: { $0.id == id }) else {
+            throw SecretError.vaultIO("revision not found: \(id.uuidString)")
+        }
+        try recordEvent(name: name, action: .read, projectPath: currentProjectPath())
+        return revision
+    }
+
+    @discardableResult
+    public func restoreRevision(id: UUID, name: String) async throws -> Secret {
+        try await biometric.authenticate(reason: "Restore an earlier version of \(name)")
+        guard let versioned = store as? VersionedSecretStoring else {
+            throw SecretError.vaultIO("version history is unavailable for this vault")
+        }
+        let restored = try versioned.restoreRevision(id: id, restoredAt: Date())
+        invalidateCache(name: restored.name)
+        try recordEvent(name: restored.name, action: .write, projectPath: currentProjectPath())
+        return restored
+    }
+
+    public func revisionsForEncryptedBackup() throws -> [SecretRevision] {
+        guard let versioned = store as? VersionedSecretStoring else { return [] }
+        return try versioned.allRevisions()
+    }
+
+    public func mergeRevisionsFromEncryptedBackup(_ revisions: [SecretRevision]) throws {
+        guard let versioned = store as? VersionedSecretStoring else { return }
+        try versioned.mergeRevisions(revisions)
     }
 
     public func recordEvent(name: String, action: AuditEvent.Action, projectPath: String?) throws {
@@ -235,5 +295,21 @@ public final class VaultService: @unchecked Sendable {
     public func currentProjectPath() -> String? {
         let pwd = FileManager.default.currentDirectoryPath
         return pwd.isEmpty ? nil : pwd
+    }
+
+    private func addToStore(_ secret: Secret, action: SecretRevisionAction) throws {
+        if let versioned = store as? VersionedSecretStoring {
+            try versioned.add(secret, revisionAction: action)
+        } else {
+            try store.add(secret)
+        }
+    }
+
+    private func updateStore(_ secret: Secret, action: SecretRevisionAction) throws {
+        if let versioned = store as? VersionedSecretStoring {
+            try versioned.update(secret, revisionAction: action)
+        } else {
+            try store.update(secret)
+        }
     }
 }

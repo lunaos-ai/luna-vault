@@ -200,7 +200,7 @@ vibevault sync pull --from icloud --overwrite
 
 The sync bundle is written to `~/Library/Mobile Documents/com~apple~CloudDocs/Documents/VibeVault/Sync/vault.vvsync` and is encrypted with a sync passphrase. For automation, use `--passphrase-env VIBEVAULT_SYNC_PASSPHRASE` or `--passphrase-stdin`.
 
-The macOS app exposes a dedicated **Cloud Sync** sidebar screen with Apple Account/iCloud Drive status, a System Settings sign-in action, secure passphrase fields, iCloud sync/import, manual encrypted backup export/import, timestamped backup history, retention, scheduled backups while the unlocked app is running, and restore comparison metadata. The CLI also provides `sync preview`, `sync backup`, and `sync history`. See `docs/CLOUD_SYNC_AND_BACKUP.md` for the full workflow.
+The macOS app exposes a dedicated **Cloud Sync** sidebar screen with Apple Account/iCloud Drive status, a System Settings sign-in action, secure passphrase fields, optional printable recovery keys, iCloud sync/import, manual encrypted backup export/import, timestamped backup history, retention, scheduled backups while the unlocked app is running, and restore comparison metadata. The encrypted local vault retains up to 50 revisions per secret, with single-secret restore and Recently Deleted recovery. The CLI also provides `sync preview`, `sync backup`, `sync history`, and `sync recovery-key`. See `docs/CLOUD_SYNC_AND_BACKUP.md` for the full workflow.
 
 ### Browser extension
 

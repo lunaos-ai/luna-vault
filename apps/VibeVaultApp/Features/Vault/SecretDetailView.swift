@@ -15,6 +15,8 @@ struct SecretDetailView: View {
             VStack(alignment: .leading, spacing: Tokens.Space.xl) {
                 hero
                 detailSurface
+                SecretVersionHistoryView(secret: currentSecret)
+                    .environmentObject(env)
                 actions
             }
             .padding(.horizontal, Tokens.Space.xxl)
@@ -156,17 +158,22 @@ struct SecretDetailView: View {
     private var actions: some View {
         HStack(spacing: Tokens.Space.sm) {
             Button { showRotateSheet = true } label: {
-                Label("Rotate value…", systemImage: "arrow.triangle.2.circlepath")
+                Image(systemName: "arrow.triangle.2.circlepath")
             }
             .buttonStyle(.borderedProminent)
+            .help("Rotate value")
+            .accessibilityLabel("Rotate value")
             Button { Task { await markRotated() } } label: {
-                Label("Mark rotated now", systemImage: "checkmark.circle")
+                Image(systemName: "checkmark.circle")
             }
             .help("Records rotation without changing the value.")
+            .accessibilityLabel("Mark rotated now")
             Spacer()
             Button(role: .destructive) { deleteConfirm = true } label: {
-                Label("Delete", systemImage: "trash")
+                Image(systemName: "trash")
             }
+            .help("Delete secret")
+            .accessibilityLabel("Delete secret")
         }
     }
 

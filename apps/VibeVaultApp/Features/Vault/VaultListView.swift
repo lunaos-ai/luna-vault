@@ -11,6 +11,8 @@ struct VaultListView: View {
     @State private var filter: VaultListFilter = .all
     @State private var sort: VaultListSort = .name
     @State private var grouping: VaultListGrouping = .none
+    @State private var showRecentlyDeleted = false
+    @State private var recentlyDeletedCount = 0
     @FocusState private var searchFocused: Bool
     var highlightName: String? = nil
     var onHighlightHandled: (() -> Void)? = nil
@@ -35,9 +37,18 @@ struct VaultListView: View {
         .sheet(isPresented: $showAdd) {
             AddSecretSheet().environmentObject(env)
         }
+        .sheet(isPresented: $showRecentlyDeleted) {
+            RecentlyDeletedSecretsSheet().environmentObject(env)
+        }
         .onChange(of: highlightName) { _, name in applyHighlight(name) }
-        .onAppear { applyHighlight(highlightName) }
-        .onChange(of: env.secrets.count) { _, _ in applyHighlight(highlightName) }
+        .onAppear {
+            applyHighlight(highlightName)
+            refreshRecentlyDeletedCount()
+        }
+        .onChange(of: env.secrets.count) { _, _ in
+            applyHighlight(highlightName)
+            refreshRecentlyDeletedCount()
+        }
         .onChange(of: env.focusVaultSearch) { _, focus in
             guard focus else { return }
             search = ""; filter = .all; searchFocused = true; env.focusVaultSearch = false
@@ -174,6 +185,14 @@ struct VaultListView: View {
             .keyboardShortcut("n", modifiers: .command)
             .help("Add secret (⌘N)")
             .disabled(isSelecting)
+
+            Button {
+                showRecentlyDeleted = true
+            } label: {
+                Label("Recently Deleted", systemImage: recentlyDeletedCount > 0 ? "trash.fill" : "trash")
+            }
+            .help(recentlyDeletedCount > 0 ? "Recently deleted (\(recentlyDeletedCount))" : "Recently deleted")
+            .disabled(isSelecting)
         }
     }
 
@@ -202,5 +221,9 @@ struct VaultListView: View {
         search = ""
         filter = .all
         onHighlightHandled?()
+    }
+
+    private func refreshRecentlyDeletedCount() {
+        recentlyDeletedCount = (try? env.service.deletedSecretRevisionSummaries().count) ?? 0
     }
 }

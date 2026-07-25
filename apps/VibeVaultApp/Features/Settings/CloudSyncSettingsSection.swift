@@ -13,7 +13,13 @@ struct CloudSyncSettingsSection: View {
     @State private var status: AppCloudSyncStatus?
     @State private var preview: AppCloudSyncPreview?
     @State private var selectedBackupURL: URL?
+    @State private var selectedUnlockMethod: BackupUnlockMethod?
     @State private var backupHistory: [CloudBackupFile] = []
+    @State private var recoveryRestoreKey = ""
+    @State private var recoverySheetKey = ""
+    @State private var recoverySheetInstallsKey = false
+    @State private var showRecoverySheet = false
+    @State private var confirmRemoveRecoveryKey = false
 
     private var canEncrypt: Bool {
         passphrase.count >= 12 && passphrase == confirmation && !isWorking
@@ -32,7 +38,18 @@ struct CloudSyncSettingsSection: View {
     }
 
     private var canImportSelected: Bool {
-        canPreview && selectedBackupURL != nil && preview != nil
+        canPreview && selectedBackupURL != nil && preview != nil && selectedUnlockMethod == .passphrase
+    }
+
+    private var canUseRecoveryKey: Bool {
+        (try? CloudRecoveryKey.canonicalize(recoveryRestoreKey)) != nil && !isWorking
+    }
+
+    private var canImportSelectedWithRecovery: Bool {
+        canUseRecoveryKey
+            && selectedBackupURL != nil
+            && preview != nil
+            && selectedUnlockMethod == .recoveryKey
     }
 
     private var canRunManagedBackup: Bool {
@@ -114,7 +131,74 @@ struct CloudSyncSettingsSection: View {
                 .disabled(!canImportSelected)
             }
 
-            Divider()
+            LabeledContent(
+                "Recovery protection",
+                value: env.cachedHasBackupRecoveryKey ? "Enabled for new backups" : "Not configured"
+            )
+
+            HStack {
+                if env.cachedHasBackupRecoveryKey {
+                    Button {
+                        Task { await showInstalledRecoveryKey() }
+                    } label: {
+                        Label("Show or export key", systemImage: "key.viewfinder")
+                    }
+
+                    Button {
+                        createRecoveryKey()
+                    } label: {
+                        Label("Replace key", systemImage: "arrow.triangle.2.circlepath")
+                    }
+
+                    Button(role: .destructive) {
+                        confirmRemoveRecoveryKey = true
+                    } label: {
+                        Label("Remove", systemImage: "trash")
+                    }
+                } else {
+                    Button {
+                        createRecoveryKey()
+                    } label: {
+                        Label("Create recovery key", systemImage: "key.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+
+            DisclosureGroup("Restore with recovery key") {
+                SecureField("VV-RK1 recovery key", text: $recoveryRestoreKey)
+                    .font(.system(.body, design: .monospaced))
+
+                HStack {
+                    Button {
+                        previewRecoveryBackup(at: CloudSync.defaultICloudURL())
+                    } label: {
+                        Label("Preview iCloud", systemImage: "doc.text.magnifyingglass")
+                    }
+                    .disabled(!canUseRecoveryKey || status?.bundleExists != true)
+
+                    Button {
+                        chooseRecoveryImportURL()
+                    } label: {
+                        Label("Choose backup...", systemImage: "folder")
+                    }
+                    .disabled(!canUseRecoveryKey)
+
+                    Button {
+                        Task { await importSelectedRecoveryBackup() }
+                    } label: {
+                        Label("Import selected", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(!canImportSelectedWithRecovery)
+                }
+
+                Button {
+                    saveEnteredRecoveryKey()
+                } label: {
+                    Label("Use this key for future backups", systemImage: "key.icloud")
+                }
+                .disabled(!canUseRecoveryKey)
+            }
 
             LabeledContent(
                 "Automatic backups",
@@ -203,6 +287,7 @@ struct CloudSyncSettingsSection: View {
                     LabeledContent("Source Mac", value: preview.sourceHost)
                     LabeledContent("Exported", value: preview.exportedAtText)
                     LabeledContent("Secrets", value: "\(preview.secretCount)")
+                    LabeledContent("Saved versions", value: "\(preview.revisionCount)")
                     LabeledContent("Size", value: preview.sizeText)
                     LabeledContent("New locally", value: "\(preview.newCount)")
                     LabeledContent("Backup is newer", value: "\(preview.backupNewerCount)")
@@ -222,12 +307,45 @@ struct CloudSyncSettingsSection: View {
         } header: {
             Text("Encrypted sync and backups")
         } footer: {
-            Text("Manual passphrases are not saved. Enabling scheduled backups stores the passphrase in this Mac's Keychain and runs while the app is open and the vault is unlocked.")
+            Text("Manual passphrases are not saved. Scheduled-backup credentials and an enabled recovery key stay in this Mac's Keychain. Backups run while the app is open and the vault is unlocked.")
         }
         .onAppear { refreshStatus() }
         .onChange(of: passphrase) { _, _ in
             preview = nil
             selectedBackupURL = nil
+            selectedUnlockMethod = nil
+        }
+        .onChange(of: recoveryRestoreKey) { _, _ in
+            preview = nil
+            selectedBackupURL = nil
+            selectedUnlockMethod = nil
+        }
+        .sheet(isPresented: $showRecoverySheet) {
+            RecoveryKeySheet(
+                recoveryKey: recoverySheetKey,
+                installsKey: recoverySheetInstallsKey,
+                onInstall: {
+                    do {
+                        try env.saveBackupRecoveryKey(recoverySheetKey)
+                        showRecoverySheet = false
+                    } catch {
+                        env.lastError = "\(error)"
+                    }
+                }
+            )
+        }
+        .onChange(of: showRecoverySheet) { _, isPresented in
+            if !isPresented { recoverySheetKey = "" }
+        }
+        .confirmationDialog(
+            "Remove recovery protection from future backups?",
+            isPresented: $confirmRemoveRecoveryKey,
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) { env.removeBackupRecoveryKey() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Existing protected backups still require this recovery key. New backups will use only the sync passphrase.")
         }
     }
 
@@ -309,13 +427,94 @@ struct CloudSyncSettingsSection: View {
         guard canPreview else { return }
         do {
             selectedBackupURL = url
+            selectedUnlockMethod = .passphrase
             preview = try env.previewCloudSyncBundle(at: url, passphrase: passphrase)
             env.showToast("Backup preview ready", feedback: .tick)
         } catch {
             selectedBackupURL = nil
+            selectedUnlockMethod = nil
             preview = nil
             env.lastError = "\(error)"
             env.showToast("Backup preview failed", feedback: .caution)
+        }
+    }
+
+    private func previewRecoveryBackup(at url: URL) {
+        guard canUseRecoveryKey else { return }
+        do {
+            selectedBackupURL = url
+            selectedUnlockMethod = .recoveryKey
+            preview = try env.previewCloudSyncBundle(at: url, recoveryKey: recoveryRestoreKey)
+            env.showToast("Recovery preview ready", feedback: .tick)
+        } catch {
+            selectedBackupURL = nil
+            selectedUnlockMethod = nil
+            preview = nil
+            env.lastError = "\(error)"
+            env.showToast("Recovery preview failed", feedback: .caution)
+        }
+    }
+
+    private func chooseRecoveryImportURL() {
+        guard canUseRecoveryKey else { return }
+        let panel = NSOpenPanel()
+        panel.title = "Choose encrypted Vibe Vault backup"
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        if let type = UTType(filenameExtension: "vvsync") {
+            panel.allowedContentTypes = [type]
+        }
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            previewRecoveryBackup(at: url)
+        }
+    }
+
+    private func importSelectedRecoveryBackup() async {
+        guard canImportSelectedWithRecovery, let selectedBackupURL else { return }
+        isWorking = true
+        defer {
+            isWorking = false
+            refreshStatus()
+        }
+        let imported = await env.pullCloudSync(
+            from: selectedBackupURL,
+            recoveryKey: recoveryRestoreKey,
+            policy: importPolicy,
+            sourceName: "recovery backup"
+        )
+        if imported { recoveryRestoreKey = "" }
+    }
+
+    private func createRecoveryKey() {
+        do {
+            recoverySheetKey = try env.generateBackupRecoveryKey()
+            recoverySheetInstallsKey = true
+            showRecoverySheet = true
+        } catch {
+            env.lastError = "\(error)"
+            env.showToast("Could not create recovery key", feedback: .caution)
+        }
+    }
+
+    private func saveEnteredRecoveryKey() {
+        do {
+            try env.saveBackupRecoveryKey(recoveryRestoreKey)
+        } catch {
+            env.lastError = "\(error)"
+            env.showToast("Could not save recovery key", feedback: .caution)
+        }
+    }
+
+    private func showInstalledRecoveryKey() async {
+        do {
+            recoverySheetKey = try await env.revealBackupRecoveryKey()
+            recoverySheetInstallsKey = false
+            showRecoverySheet = true
+        } catch {
+            env.lastError = "\(error)"
+            env.showToast("Could not unlock recovery key", feedback: .caution)
         }
     }
 
@@ -362,5 +561,100 @@ struct CloudSyncSettingsSection: View {
         isWorking = false
         confirmation = ""
         refreshStatus()
+    }
+}
+
+private enum BackupUnlockMethod {
+    case passphrase
+    case recoveryKey
+}
+
+private struct RecoveryKeySheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let recoveryKey: String
+    let installsKey: Bool
+    let onInstall: () -> Void
+    @State private var hasSavedKey = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            Label("Vibe Vault Recovery Key", systemImage: "key.fill")
+                .font(.title2.weight(.semibold))
+
+            Text(installsKey
+                ? "This key can unlock future encrypted backups if the sync passphrase is lost. Vibe Vault cannot recover it for you."
+                : "This key unlocks backups protected after it was enabled.")
+                .foregroundStyle(Tokens.Text.secondary)
+
+            Text(recoveryKey)
+                .font(.system(.body, design: .monospaced).weight(.semibold))
+                .textSelection(.enabled)
+                .padding(Tokens.Space.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .deepInset()
+
+            HStack {
+                Button {
+                    copyRecoveryKey()
+                    hasSavedKey = true
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+
+                Button {
+                    exportRecoveryKit()
+                } label: {
+                    Label("Export recovery kit...", systemImage: "square.and.arrow.down")
+                }
+
+                Spacer()
+
+                Button("Done") { dismiss() }
+                if installsKey {
+                    Button("I saved this key") { onInstall() }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(!hasSavedKey)
+                }
+            }
+        }
+        .padding(Tokens.Space.xl)
+        .frame(width: 620)
+    }
+
+    private func exportRecoveryKit() {
+        let panel = NSSavePanel()
+        panel.title = "Export Vibe Vault recovery kit"
+        panel.nameFieldStringValue = "VibeVault-Recovery-Kit.txt"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let body = """
+        VIBE VAULT RECOVERY KIT
+
+        Recovery key:
+        \(recoveryKey)
+
+        Use this key in Vibe Vault > Cloud Sync > Restore with recovery key.
+        Store this file separately from your encrypted .vvsync backups.
+        Anyone with this key and a protected backup can read that backup.
+        """
+        do {
+            try Data(body.utf8).write(to: url, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            hasSavedKey = true
+        } catch {
+            NSAlert(error: error).runModal()
+        }
+    }
+
+    private func copyRecoveryKey() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(recoveryKey, forType: .string)
+        let changeCount = pasteboard.changeCount
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            guard pasteboard.changeCount == changeCount,
+                  pasteboard.string(forType: .string) == recoveryKey else { return }
+            pasteboard.clearContents()
+        }
     }
 }

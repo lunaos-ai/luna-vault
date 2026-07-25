@@ -19,18 +19,21 @@ enum SyncSnapshotBuilder {
             let secret = try await service.read(name: name, reason: "Export \(name) for encrypted cloud sync")
             secrets.append(CloudSyncSecret(secret: secret))
         }
-        return CloudSyncSnapshot(secrets: secrets)
+        return CloudSyncSnapshot(
+            secrets: secrets,
+            revisions: try service.revisionsForEncryptedBackup()
+        )
     }
 }
 
 enum SyncImporter {
     static func importSnapshot(
         from url: URL,
-        passphrase: String,
+        credential: SyncDecryptCredential,
         overwrite: Bool,
         newerOnly: Bool = false
     ) async throws {
-        let snapshot = try CloudSync.decrypt(Data(contentsOf: url), passphrase: passphrase)
+        let snapshot = try credential.decrypt(Data(contentsOf: url))
         let service = try VaultService.live()
         let localByName = Dictionary(uniqueKeysWithValues: try service.list().map { ($0.name, $0) })
         var result = SyncImportResult()
@@ -50,6 +53,7 @@ enum SyncImporter {
                 result.failed.append((item.name, "\(error)"))
             }
         }
+        try service.mergeRevisionsFromEncryptedBackup(snapshot.revisions)
 
         print("imported \(result.imported.count), updated \(result.updated.count), skipped \(result.skipped.count), failed \(result.failed.count)")
         print("source: \(snapshot.sourceHost) at \(ISO8601DateFormatter().string(from: snapshot.exportedAt))")
@@ -88,7 +92,8 @@ enum SyncImporter {
             expiresAt: item.expiresAt, rotateEveryDays: item.rotateEveryDays,
             lastRotatedAt: item.lastRotatedAt,
             mcpAllowed: item.mcpAllowed, totpAuthURL: item.totpAuthURL,
-            createdAt: item.createdAt, updatedAt: item.updatedAt
+            createdAt: item.createdAt, updatedAt: item.updatedAt,
+            revisionAction: .synced
         )
     }
 
@@ -98,8 +103,70 @@ enum SyncImporter {
             expiresAt: item.expiresAt, rotateEveryDays: item.rotateEveryDays,
             lastRotatedAt: item.lastRotatedAt,
             mcpAllowed: item.mcpAllowed, totpAuthURL: item.totpAuthURL,
-            createdAt: item.createdAt, updatedAt: item.updatedAt
+            createdAt: item.createdAt, updatedAt: item.updatedAt,
+            revisionAction: .synced
         )
+    }
+}
+
+enum SyncDecryptCredential {
+    case passphrase(String)
+    case recoveryKey(String)
+
+    func decrypt(_ data: Data) throws -> CloudSyncSnapshot {
+        switch self {
+        case .passphrase(let passphrase):
+            return try CloudSync.decrypt(data, passphrase: passphrase)
+        case .recoveryKey(let recoveryKey):
+            return try CloudSync.decrypt(data, recoveryKey: recoveryKey)
+        }
+    }
+
+    static func resolve(
+        passphraseEnv: String?,
+        passphraseStdin: Bool,
+        recoveryKeyEnv: String?,
+        recoveryKeyStdin: Bool
+    ) throws -> SyncDecryptCredential {
+        let usesPassphraseOption = passphraseEnv != nil || passphraseStdin
+        let usesRecoveryOption = recoveryKeyEnv != nil || recoveryKeyStdin
+        guard !(usesPassphraseOption && usesRecoveryOption) else {
+            throw ValidationError("choose either passphrase options or recovery-key options")
+        }
+        if let recoveryKeyEnv {
+            guard let value = ProcessInfo.processInfo.environment[recoveryKeyEnv], !value.isEmpty else {
+                throw ValidationError("recovery-key environment variable is empty")
+            }
+            return .recoveryKey(try CloudRecoveryKey.canonicalize(value))
+        }
+        if recoveryKeyStdin {
+            let value = isatty(STDIN_FILENO) == 1
+                ? try SyncPassphrase.readHiddenLine(prompt: "Recovery key: ")
+                : readLine()
+            guard let value, !value.isEmpty else {
+                throw ValidationError("no recovery key provided on stdin")
+            }
+            return .recoveryKey(try CloudRecoveryKey.canonicalize(value))
+        }
+        return .passphrase(try SyncPassphrase.resolve(envName: passphraseEnv, stdin: passphraseStdin))
+    }
+}
+
+enum SyncRecoveryKey {
+    static func encryptionKey(envName: String?) throws -> String? {
+        if let envName {
+            guard let value = ProcessInfo.processInfo.environment[envName], !value.isEmpty else {
+                throw ValidationError("recovery-key environment variable is empty")
+            }
+            return try CloudRecoveryKey.canonicalize(value)
+        }
+        let prefs = KeychainPrefs()
+        guard let data = prefs.data(forKey: CloudRecoveryKey.preferenceKey),
+              let value = String(data: data, encoding: .utf8),
+              !value.isEmpty else {
+            return nil
+        }
+        return try CloudRecoveryKey.canonicalize(value)
     }
 }
 
@@ -128,7 +195,7 @@ enum SyncPassphrase {
         return first
     }
 
-    private static func readHiddenLine(prompt: String) throws -> String {
+    static func readHiddenLine(prompt: String) throws -> String {
         guard isatty(STDIN_FILENO) == 1 else {
             throw ValidationError("use --passphrase-stdin or --passphrase-env in non-interactive shells")
         }

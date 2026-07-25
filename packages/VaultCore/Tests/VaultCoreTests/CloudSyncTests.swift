@@ -1,3 +1,5 @@
+import CommonCrypto
+import CryptoKit
 import XCTest
 @testable import VaultCore
 
@@ -55,6 +57,87 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertThrowsError(try CloudSync.decrypt(encrypted, passphrase: "wrong horse battery staple")) { error in
             XCTAssertEqual(error as? CloudSyncError, .authenticationFailed)
         }
+    }
+
+    func test_recovery_key_decrypts_bundle_independently() throws {
+        let recoveryKey = try CloudRecoveryKey.generate()
+        let capturedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let snapshot = CloudSyncSnapshot(
+            exportedAt: capturedAt,
+            secrets: [CloudSyncSecret(name: "TOKEN", value: "recover-me", updatedAt: capturedAt)],
+            revisions: [
+                SecretRevision(
+                    secret: Secret(name: "TOKEN", value: "older-value", updatedAt: capturedAt),
+                    capturedAt: capturedAt,
+                    action: .rotated,
+                    sourceHost: "mac-a"
+                )
+            ]
+        )
+        let encrypted = try CloudSync.encrypt(
+            snapshot,
+            passphrase: "correct horse battery staple",
+            recoveryKey: recoveryKey
+        )
+
+        XCTAssertEqual(try CloudSync.decrypt(encrypted, recoveryKey: recoveryKey), snapshot)
+        XCTAssertEqual(
+            try CloudSync.decrypt(encrypted, passphrase: "correct horse battery staple"),
+            snapshot
+        )
+    }
+
+    func test_recovery_key_rejects_wrong_key() throws {
+        let encrypted = try CloudSync.encrypt(
+            CloudSyncSnapshot(secrets: []),
+            passphrase: "correct horse battery staple",
+            recoveryKey: CloudRecoveryKey.generate()
+        )
+
+        XCTAssertThrowsError(
+            try CloudSync.decrypt(encrypted, recoveryKey: CloudRecoveryKey.generate())
+        ) { error in
+            XCTAssertEqual(error as? CloudSyncError, .authenticationFailed)
+        }
+    }
+
+    func test_bundle_without_recovery_wrapper_reports_unavailable() throws {
+        let encrypted = try CloudSync.encrypt(
+            CloudSyncSnapshot(secrets: []),
+            passphrase: "correct horse battery staple"
+        )
+
+        XCTAssertThrowsError(
+            try CloudSync.decrypt(encrypted, recoveryKey: CloudRecoveryKey.generate())
+        ) { error in
+            XCTAssertEqual(error as? CloudSyncError, .recoveryUnavailable)
+        }
+    }
+
+    func test_recovery_key_has_stable_printable_format() throws {
+        let generated = try CloudRecoveryKey.generate()
+        XCTAssertTrue(generated.hasPrefix("VV-RK1-"))
+        XCTAssertEqual(try CloudRecoveryKey.canonicalize(generated.lowercased()), generated)
+        XCTAssertThrowsError(try CloudRecoveryKey.canonicalize("not-a-recovery-key"))
+    }
+
+    func test_decrypt_remains_compatible_with_v1_bundle() throws {
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let snapshot = CloudSyncSnapshot(
+            version: 1,
+            exportedAt: timestamp,
+            sourceHost: "legacy-mac",
+            secrets: [CloudSyncSecret(name: "OLD", value: "still-readable", updatedAt: timestamp)]
+        )
+        let data = try makeLegacyV1Bundle(
+            snapshot: snapshot,
+            passphrase: "correct horse battery staple"
+        )
+
+        XCTAssertEqual(
+            try CloudSync.decrypt(data, passphrase: "correct horse battery staple"),
+            snapshot
+        )
     }
 
     func test_encrypt_rejects_weak_passphrase() {
@@ -146,4 +229,46 @@ final class CloudSyncTests: XCTestCase {
 
         XCTAssertFalse(CloudSync.isICloudDriveAvailable(at: root))
     }
+}
+
+private func makeLegacyV1Bundle(snapshot: CloudSyncSnapshot, passphrase: String) throws -> Data {
+    let salt = Data(repeating: 7, count: 32)
+    var stretched = Data(count: 32)
+    let status = stretched.withUnsafeMutableBytes { stretchedBytes in
+        salt.withUnsafeBytes { saltBytes in
+            CCKeyDerivationPBKDF(
+                CCPBKDFAlgorithm(kCCPBKDF2),
+                passphrase,
+                passphrase.utf8.count,
+                saltBytes.bindMemory(to: UInt8.self).baseAddress,
+                salt.count,
+                CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
+                600_000,
+                stretchedBytes.bindMemory(to: UInt8.self).baseAddress,
+                32
+            )
+        }
+    }
+    XCTAssertEqual(status, Int32(kCCSuccess))
+    let key = HKDF<SHA256>.deriveKey(
+        inputKeyMaterial: SymmetricKey(data: stretched),
+        salt: salt,
+        info: Data("vibevault-cloud-sync-v1".utf8),
+        outputByteCount: 32
+    )
+    let plain = try JSONEncoder.iso8601.encode(snapshot)
+    let sealed = try AES.GCM.seal(plain, using: key)
+    let envelope = CloudSyncEnvelope(
+        version: 1,
+        createdAt: snapshot.exportedAt,
+        sourceHost: snapshot.sourceHost,
+        kdf: "pbkdf2-sha256+hkdf-sha256",
+        kdfIterations: 600_000,
+        cipher: "aes-256-gcm",
+        salt: salt.base64EncodedString(),
+        nonce: sealed.nonce.withUnsafeBytes { Data($0).base64EncodedString() },
+        tag: sealed.tag.base64EncodedString(),
+        ciphertext: sealed.ciphertext.base64EncodedString()
+    )
+    return try JSONEncoder.iso8601.encode(envelope)
 }

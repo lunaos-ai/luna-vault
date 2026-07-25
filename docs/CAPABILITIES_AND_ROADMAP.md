@@ -1,6 +1,6 @@
 # Vibe Vault Capabilities And Roadmap
 
-Last updated: 2026-07-25
+Last updated: 2026-07-26
 
 This document is the repository-level source of truth for what Vibe Vault can do today, what is partially implemented, and what remains future work. It is intentionally written as a product and engineering map, not launch copy.
 
@@ -19,8 +19,11 @@ The current product is strongest for solo developers and small teams using Curso
 - Secret model supports name, value, notes, creation time, update time, expiry, rotation interval, last rotated timestamp, MCP access flag, and attached MFA/TOTP setup URL.
 - Local vault migration path from legacy Keychain-only items to the encrypted file vault.
 - Secret list hides values by default and exposes masked previews only.
-- Secret detail view supports copy, rotate, mark rotated, delete, metadata display, and AI-agent access toggle.
+- Secret detail view supports copy, rotate, mark rotated, delete, metadata display, AI-agent access toggle, version preview, and single-secret restore.
 - Local app and CLI share the same vault store.
+- The encrypted vault document retains up to 50 atomic revisions per secret, including changes, rotations, imports, MFA changes, AI-access changes, restores, and deletion tombstones.
+- Existing encrypted vault files migrate transparently to the versioned document format on first access.
+- Vault toolbar exposes Recently Deleted recovery from encrypted deletion revisions.
 
 ### macOS App
 
@@ -186,24 +189,29 @@ Implemented today:
 - `vibevault sync preview`: decrypts and compares a bundle without importing it.
 - `vibevault sync backup`: creates timestamped encrypted history and applies a retention count.
 - `vibevault sync history`: lists managed encrypted backups.
-- A dedicated Cloud Sync sidebar screen exposes Apple Account/iCloud Drive status, System Settings sign-in, the encrypted sync route, passphrase entry, sync/import actions, manual backup export/import, restore comparison, managed history, retention controls, and scheduled backups.
+- `vibevault sync recovery-key --install`: generates a printable 256-bit recovery key and stores it in this Mac's Keychain for future backups.
+- A dedicated Cloud Sync sidebar screen exposes Apple Account/iCloud Drive status, System Settings sign-in, the encrypted sync route, passphrase entry, recovery-key creation/export/import, sync/import actions, manual backup export/import, restore comparison, managed history, retention controls, and scheduled backups.
 - The app verifies that the real iCloud Drive root exists and is writable before claiming an iCloud sync or managed backup succeeded.
 - Restore comparison classifies new names, backup-newer names, local-newer names, and matching timestamps.
 - Import policies can keep local values, use newer bundle values, or replace all matching values.
 - Scheduled backups run when the app is open and the vault has been unlocked for the session.
 - The menu-bar surface shows the latest managed backup time and whether scheduling is enabled.
+- Cloud snapshots carry bounded encrypted per-secret revision history and merge revision IDs during import.
 - Dedicated cloud sync and backup guide: `docs/CLOUD_SYNC_AND_BACKUP.md`.
 
 Security model:
 
 - Sync bundle file name: `vault.vvsync`.
 - Default path: `~/Library/Mobile Documents/com~apple~CloudDocs/Documents/VibeVault/Sync/vault.vvsync`.
-- Bundle uses AES-256-GCM.
+- Bundle format v2 encrypts each snapshot with a new random AES-256-GCM data key.
+- The data key is wrapped independently by the passphrase and an optional 256-bit recovery key.
 - Key derivation uses PBKDF2-SHA256 followed by HKDF-SHA256.
 - Current KDF iteration count is 600,000, with downgrade checks on decrypt.
 - Sync passphrase must be at least 12 characters.
 - Manual sync passphrases are not stored by the app.
 - Enabling scheduled backups explicitly stores that backup passphrase in this Mac's Keychain with `WhenUnlockedThisDeviceOnly` access.
+- A configured recovery key is stored in this Mac's Keychain with `WhenUnlockedThisDeviceOnly` access and is included automatically in future app and CLI backup protection.
+- Existing v1 passphrase-only bundles remain readable.
 - File writes are atomic and set permissions to `0600`.
 - Snapshot includes values and metadata, but only inside the encrypted envelope.
 
@@ -212,8 +220,8 @@ Important status:
 - This is cloud sync through an encrypted user-controlled bundle, not a hosted LunaOS account sync service.
 - There is no Vibe Vault cloud account, web vault, server-side key escrow, or hosted secret database for Solo.
 - Scheduled backups do not run after the app exits.
-- There is no per-secret merge UI or divergent-version history yet.
-- Recovery requires the encrypted bundle and the sync passphrase.
+- Per-secret local and imported revision history exists, but there is no side-by-side merge UI for divergent edits yet.
+- Recovery requires the encrypted bundle and either its passphrase or a recovery key that protected that bundle.
 
 ### Browser Extension
 
@@ -268,13 +276,12 @@ Current launch posture from existing readiness docs:
 
 ### Cloud Sync And Backup
 
-Current state supports manual Mac-to-Mac sync, timestamped encrypted history, retention, restore comparison, and in-app scheduling. It is not yet a seamless cross-device account sync.
+Current state supports manual Mac-to-Mac sync, timestamped encrypted backup history, bounded per-secret versions, recovery keys, restore comparison, and in-app scheduling. It is not yet a seamless cross-device account sync.
 
 Work still needed:
 
 - System scheduling while the app is not running.
-- Divergent-version preservation when both Macs changed the same secret.
-- Per-secret merge UI.
+- Side-by-side merge UI when both Macs changed the same secret.
 - Optional monitored backup folder in addition to manual file export.
 
 ### Browser Import
@@ -423,6 +430,9 @@ Work still needed:
 - Cloud sync environment: `apps/VibeVaultApp/AppEnvironment+CloudSync.swift`.
 - Cloud sync crypto: `packages/VaultCore/Sources/VaultCore/Sync/CloudSync.swift`.
 - Cloud sync models: `packages/VaultCore/Sources/VaultCore/Sync/CloudSyncModels.swift`.
+- Recovery-key format: `packages/VaultCore/Sources/VaultCore/Sync/CloudRecoveryKey.swift`.
+- Version-history model: `packages/VaultCore/Sources/VaultCore/Models/SecretRevision.swift`.
+- Version-history app surface: `apps/VibeVaultApp/Features/Vault/SecretVersionHistoryView.swift`.
 - CLI commands: `cli/vibevault/Commands`.
 - MCP server: `cli/vibevault-mcp`.
 - Scanner: `packages/VaultCore/Sources/VaultCore/Scanner`.

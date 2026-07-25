@@ -15,18 +15,28 @@ Vibe Vault supports encrypted, user-controlled sync bundles for moving a local v
 - Import policies to keep local values, use the newer bundle value, or replace all matching names.
 - CLI support for status, push, pull, export, import, preview, backup, and history.
 - Snapshot coverage for secret values, notes, creation/update metadata, rotation metadata, AI-access flags, and attached MFA setup URLs.
+- Encrypted per-secret version history, retained up to 50 revisions per secret.
+- Automatic encrypted rollback copy before the first legacy-vault schema migration (`secrets.vault.pre-versioning-v1`).
+- Single-secret preview and restore from the secret detail screen.
+- Recently Deleted recovery for names whose latest local revision is a deletion.
+- Optional printable recovery key for restoring a protected bundle when its passphrase is unavailable.
 
 ## Security Model
 
 - Bundles are encrypted locally before writing to iCloud Drive or a backup file.
-- Encryption uses AES-256-GCM.
+- Bundle format v2 encrypts each snapshot with a new random 256-bit data key using AES-256-GCM.
+- The data key is wrapped independently by the sync passphrase and, when configured, the recovery key.
 - Key derivation uses PBKDF2-SHA256 followed by HKDF-SHA256.
 - Current KDF iteration count is 600,000.
+- Recovery keys contain 256 random bits and use HKDF-SHA256 before wrapping the data key.
 - The sync passphrase must be at least 12 characters.
 - Manual sync passphrases are never stored by Vibe Vault.
 - Enabling scheduled backups stores that passphrase in macOS Keychain with `WhenUnlockedThisDeviceOnly` access. Disabling the schedule removes it.
+- A configured recovery key is stored only in this Mac's Keychain with `WhenUnlockedThisDeviceOnly` access so scheduled and CLI backups can include recovery protection.
+- Recovery keys are not uploaded separately, synced through a Vibe Vault account, or escrowed by LunaOS.
 - Files are written atomically and permissions are set to `0600`.
-- Recovery requires both the encrypted bundle and the sync passphrase.
+- Vibe Vault can still decrypt existing v1 passphrase-only bundles.
+- Recovery requires the encrypted bundle and either its passphrase or a recovery key that protected that bundle.
 
 ## macOS App Flow
 
@@ -57,6 +67,16 @@ To create a manual backup:
 3. Save the `.vvsync` bundle to the chosen location.
 4. Store the passphrase separately from the backup file.
 
+To configure recovery protection:
+
+1. Select **Create recovery key**.
+2. Copy the key or export the recovery kit.
+3. Select **I saved this key** to store it in this Mac's Keychain.
+4. Create a new backup or select **Sync to iCloud**. Existing bundles are not changed retroactively.
+5. On another Mac, enter the same key under **Restore with recovery key** and select **Use for future backups** if that Mac should protect its new bundles with the same key.
+
+Replacing a recovery key affects new backups only. Keep an old recovery key until every backup protected by it has expired from retention or been replaced.
+
 To enable managed backup history:
 
 1. Enter and confirm a passphrase.
@@ -73,6 +93,16 @@ To restore a manual backup:
 3. Review the preview metadata.
 4. Choose **Keep local**, **Use newer**, or **Replace all** for matching names.
 5. Select **Import selected**.
+
+To restore one secret version:
+
+1. Open the secret in **Vault**.
+2. Expand **Version history**.
+3. Select a saved version and authenticate.
+4. Preview its value and metadata.
+5. Select **Restore this version**. The current value remains in history as another revision.
+
+To restore a deleted secret, select the trash button in the Vault toolbar, open the deleted revision, and restore it. Local history retains at most 50 revisions per secret.
 
 ## CLI Flow
 
@@ -101,6 +131,9 @@ vibevault sync backup --retain 30
 # List timestamped backup history.
 vibevault sync history
 
+# Generate and install a recovery key for future app and CLI backups.
+vibevault sync recovery-key --install
+
 # Import only bundle entries newer than matching local entries.
 vibevault sync import --path ~/Backups/vault.vvsync --newer-only
 ```
@@ -110,13 +143,29 @@ For CLI automation, pass the sync passphrase through a protected environment var
 ```bash
 vibevault sync export --path ~/Backups/vault.vvsync --passphrase-env VIBEVAULT_SYNC_PASSPHRASE
 vibevault sync import --path ~/Backups/vault.vvsync --passphrase-stdin
+
+# Recover without the passphrase.
+vibevault sync preview --path ~/Backups/vault.vvsync --recovery-key-env VIBEVAULT_RECOVERY_KEY
+vibevault sync import --path ~/Backups/vault.vvsync --recovery-key-stdin --newer-only
 ```
+
+Push, export, and backup commands automatically use the recovery key configured in this Mac's Vibe Vault Keychain. `--recovery-key-env` can supply an explicit key instead.
 
 ## Recovery Scenarios
 
 ### Lost sync passphrase
 
-Vibe Vault cannot decrypt an existing bundle without its passphrase. There is no server-side recovery key or escrow. If one Mac still has the working local vault, create a new encrypted backup with a new passphrase. If no readable local vault remains, rotate the affected credentials at each provider and rebuild the vault.
+If the bundle was created after recovery protection was configured, expand **Restore with recovery key**, enter the saved recovery key, preview the bundle, and import it. CLI users can pass `--recovery-key-env` or `--recovery-key-stdin`.
+
+If the bundle has no recovery wrapper, one Mac must still have a readable local vault so a new backup can be created with a new passphrase. There is no server-side escrow.
+
+### Lost recovery key
+
+The original passphrase can still decrypt the bundle. Generate a replacement recovery key and create fresh backups. Replacing the key does not re-encrypt existing backup history.
+
+### Lost passphrase and recovery key
+
+If one Mac still has the working local vault, create a fresh backup with new credentials immediately. If no readable local vault remains, Vibe Vault cannot decrypt the backups; rotate the affected credentials at each provider and rebuild the vault.
 
 ### Lost or deleted bundle
 
@@ -124,7 +173,7 @@ If a source Mac still has the local vault, create a new backup immediately. Othe
 
 ### Replacing a Mac
 
-Install Vibe Vault on the new Mac, make the encrypted bundle available through iCloud Drive or external storage, enter the original passphrase, preview the contents, and import with **Use newer** as the default policy. Keep the old Mac unchanged until the secret count and critical provider credentials have been verified.
+Install Vibe Vault on the new Mac, make the encrypted bundle available through iCloud Drive or external storage, enter the original passphrase or recovery key, preview the contents and saved-version count, and import with **Use newer** as the default policy. Keep the old Mac unchanged until the secret count and critical provider credentials have been verified.
 
 ### Recovery testing
 
@@ -135,12 +184,14 @@ Periodically export a fresh bundle, preview it with `vibevault sync preview`, an
 - Scheduled app backups do not run after the Vibe Vault process exits.
 - The scheduler requires the local vault to be unlocked for the app session.
 - There is no per-secret multi-device merge UI yet.
-- Conflict handling uses update timestamps; it does not preserve two divergent values as separate versions.
+- Revision history is bounded to 50 encrypted revisions per secret and is not an unlimited archive.
+- History preserves changes that reach a vault or imported bundle, but there is no dedicated side-by-side merge UI for simultaneous edits to the same secret.
+- Pushing from two Macs without importing the other Mac's latest bundle first can still overwrite the shared `vault.vvsync` head. Managed backup history and each Mac's local revisions remain the recovery sources.
 - There is no hosted LunaOS web vault, account sync service, or server-side key recovery.
 
 ## Future Work
 
 - Optional LaunchAgent-based scheduling for backups while the app is not running.
-- Per-secret merge UI and divergent-version preservation.
+- Per-secret side-by-side merge UI for divergent versions.
 - Optional monitored backup folder outside the managed iCloud directory.
 - Team and enterprise policy controls for backup destinations and retention.
