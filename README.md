@@ -202,6 +202,18 @@ The sync bundle is written to `~/Library/Mobile Documents/com~apple~CloudDocs/Do
 
 The macOS app exposes a dedicated **Cloud Sync** sidebar screen with Apple Account/iCloud Drive status, a System Settings sign-in action, secure passphrase fields, optional printable recovery keys, iCloud sync/import, manual encrypted backup export/import, timestamped backup history, retention, scheduled backups while the unlocked app is running, and restore comparison metadata. The encrypted local vault retains up to 50 revisions per secret, with single-secret restore and Recently Deleted recovery. The CLI also provides `sync preview`, `sync backup`, `sync history`, and `sync recovery-key`. See `docs/CLOUD_SYNC_AND_BACKUP.md` for the full workflow.
 
+### Shared unlock session
+
+Unlock once for a selected 5-minute to 8-hour window from Settings or the sidebar. The authenticated lease is shared by new VibeVault app and CLI processes on the same Mac, so `read`, `run`, backup, and restore calls do not repeatedly request Touch ID or the device password during that window. `Lock` revokes the lease immediately, expiry clears it automatically, and AI-agent per-secret allowlists remain enforced.
+
+```bash
+vibevault session unlock --minutes 30
+vibevault session status
+vibevault session lock
+```
+
+The lease contains no secret data, is stored with mode `0600`, and is authenticated with the Keychain-backed vault key. macOS can still request one-time Keychain authorization when a newly signed app or helper replaces the previous build.
+
 ### Browser extension
 
 ```bash

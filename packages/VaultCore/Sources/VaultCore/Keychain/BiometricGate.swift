@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import LocalAuthentication
 
 public protocol BiometricGating: Sendable {
@@ -12,10 +13,18 @@ public protocol BiometricGating: Sendable {
 public final class BiometricGate: BiometricGating, @unchecked Sendable {
     private var sessionWindow: TimeInterval
     private var lastSuccess: Date?
+    private let sharedSessionURL: URL?
+    private let sharedSessionAuthenticationKey: SymmetricKey?
     private let queue = DispatchQueue(label: "dev.vibevault.biometric")
 
-    public init(sessionWindow: TimeInterval = 300) {
+    public init(
+        sessionWindow: TimeInterval = 300,
+        sharedSessionURL: URL? = SharedUnlockSession.defaultURL(),
+        sharedSessionAuthenticationKey: SymmetricKey? = nil
+    ) {
         self.sessionWindow = sessionWindow
+        self.sharedSessionURL = sharedSessionURL
+        self.sharedSessionAuthenticationKey = sharedSessionAuthenticationKey
     }
 
     public func setSessionWindow(_ seconds: TimeInterval) {
@@ -50,7 +59,14 @@ public final class BiometricGate: BiometricGating, @unchecked Sendable {
     }
 
     private func isSessionValid() -> Bool {
-        queue.sync {
+        if let sharedSessionURL,
+           SharedUnlockSession.isUnlocked(
+            url: sharedSessionURL,
+            authenticationKey: sharedSessionAuthenticationKey
+           ) {
+            return true
+        }
+        return queue.sync {
             guard let last = lastSuccess else { return false }
             return Date().timeIntervalSince(last) < sessionWindow
         }

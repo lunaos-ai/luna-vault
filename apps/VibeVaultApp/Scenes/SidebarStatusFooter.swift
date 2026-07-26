@@ -50,14 +50,14 @@ struct SidebarStatusFooter: View {
                 Button {
                     Task { await env.unlockForSession() }
                 } label: {
-                    Label("Unlock for this session", systemImage: "lock.open.fill")
+                    Label("Unlock VibeVault", systemImage: "lock.open.fill")
                         .font(.system(size: 11, weight: .semibold))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Tokens.Palette.accent)
                 .controlSize(.small)
-                .help("One Touch ID — then reveal and copy without re-prompting until quit.")
+                .help("One approval opens app and CLI access for the selected time.")
                 .accessibilityLabel("Unlock for this session")
             }
         }
@@ -68,7 +68,9 @@ struct SidebarStatusFooter: View {
     }
 
     private var sessionCaption: String {
-        if env.sessionUnlocked && env.trustSession { return "Unlocked until quit" }
+        if env.sessionUnlocked, let expiresAt = env.unlockSessionExpiresAt {
+            return "Unlocked until \(expiresAt.formatted(date: .omitted, time: .shortened))"
+        }
         if env.sessionUnlocked { return "Unlocked (timed)" }
         return "Touch ID required"
     }

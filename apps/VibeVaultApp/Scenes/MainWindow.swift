@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import VaultCore
 
@@ -23,12 +24,16 @@ struct MainWindow: View {
         .task {
             env.refresh()
             env.refreshAudit()
+            env.refreshSharedUnlockSessionStatus()
             showOnboarding = env.needsOnboarding
             if ProcessInfo.processInfo.environment["VIBEVAULT_UX_SMOKE"] == "1" {
                 showOnboarding = false
                 try? await Task.sleep(nanoseconds: 600_000_000)
                 await UXSmokeTour.run(setSelection: { selection = $0 }, env: env)
             }
+        }
+        .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
+            env.refreshSharedUnlockSessionStatus()
         }
         .onChange(of: selection) { _, _ in
             Feedback.play(.select, soundsEnabled: env.uiSoundsEnabled)

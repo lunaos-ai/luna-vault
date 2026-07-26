@@ -17,12 +17,13 @@ final class AppEnvironment: ObservableObject {
             applyBiometricWindow()
         }
     }
-    /// Opt-in: after Touch ID unlock, keep vault trusted until quit or Lock.
+    /// True while a shared, time-bounded unlock lease is active.
     @Published var trustSession: Bool = false {
         didSet { applyBiometricWindow() }
     }
-    /// True after a successful Unlock-for-session (cleared by Lock).
+    /// Shared by the app, CLI, native host, and other VibeVault processes.
     @Published var sessionUnlocked: Bool = false
+    @Published var unlockSessionExpiresAt: Date?
     @Published var biometricStatus: String = "Locked"
     @Published var rotatePromptName: String?
     @Published var importStatus: String?
@@ -115,8 +116,12 @@ final class AppEnvironment: ObservableObject {
         self.service = service
         self.registry = registry
         self.prefs = prefs
-        let loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey)
+        var loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey)
             ?? AppSettings.migrateLegacy(into: prefs, settingsKey: Self.settingsKey)
+        let durationOptions = [5.0, 15.0, 30.0, 60.0, 120.0, 240.0, 480.0]
+        loaded.sessionMinutes = durationOptions.min {
+            abs($0 - loaded.sessionMinutes) < abs($1 - loaded.sessionMinutes)
+        } ?? 15
         self.settings = loaded
         self.biometricSessionMinutes = loaded.sessionMinutes
         self.notificationsEnabled = loaded.notificationsEnabled
@@ -131,6 +136,12 @@ final class AppEnvironment: ObservableObject {
         self.cachedHasBackupRecoveryKey =
             prefs.data(forKey: Self.backupRecoveryKeyKey) != nil
         service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
+        if let status = SharedUnlockSession.status() {
+            self.trustSession = true
+            self.sessionUnlocked = true
+            self.unlockSessionExpiresAt = status.expiresAt
+            self.biometricStatus = "Unlocked until \(status.expiresAt.formatted(date: .omitted, time: .shortened))"
+        }
         Task { @MainActor [weak self] in
             self?.reloadProviderCaches()
             self?.updateSchedulerState()

@@ -5,6 +5,8 @@ import SwiftUI
 struct CLICommandsReference: View {
     private static let rows: [(cmd: String, blurb: String)] = [
         ("vibevault list", "List secrets in the vault"),
+        ("vibevault session unlock --minutes 30", "Unlock app and CLI reads for 30 minutes"),
+        ("vibevault session lock", "Immediately revoke the shared session"),
         ("vibevault scan", "Detect required env vars in a project"),
         ("vibevault agents prepare", "Install Codex, Claude, Gemini, Cursor policy"),
         ("vibevault cursor prepare", "Rules, skill, MCP, and .env guard"),

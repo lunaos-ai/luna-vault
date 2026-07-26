@@ -7,10 +7,7 @@ extension AppEnvironment {
     }
 
     func applyBiometricWindow() {
-        let seconds: TimeInterval = trustSession
-            ? .greatestFiniteMagnitude
-            : biometricSessionMinutes * 60
-        service.biometric.setSessionWindow(seconds)
+        service.biometric.setSessionWindow(biometricSessionMinutes * 60)
     }
 
     func updateSchedulerState() {
@@ -36,16 +33,22 @@ extension AppEnvironment {
         service.pendingLegacyKeychainCount()
     }
 
-    /// One Touch ID (or device password), then reveal/copy without re-prompt until quit.
+    /// One Touch ID (or device password), then all local VibeVault clients share
+    /// the selected authentication window.
     func unlockForSession() async {
         biometricStatus = "Waiting for Touch ID…"
         do {
-            try await service.biometric.authenticate(reason: "Unlock Vibe Vault for this session")
+            let minutes = min(max(Int(biometricSessionMinutes.rounded()), 5), 480)
+            try await service.biometric.authenticate(
+                reason: "Unlock all VibeVault clients for \(minutes) minutes"
+            )
+            let status = try SharedUnlockSession.unlock(for: TimeInterval(minutes * 60))
             trustSession = true
             sessionUnlocked = true
+            unlockSessionExpiresAt = status.expiresAt
             applyBiometricWindow()
-            biometricStatus = "Unlocked until quit"
-            showToast("Session unlocked", feedback: .success)
+            biometricStatus = unlockStatusText(status.expiresAt)
+            showToast("VibeVault unlocked for \(minutes) minutes", feedback: .success)
             await backupScheduler.runIfDue()
         } catch {
             biometricStatus = "Unlock failed"
@@ -56,13 +59,31 @@ extension AppEnvironment {
 
     /// Clears biometric session trust and cached secret values.
     func lockSession() {
+        SharedUnlockSession.lock()
         trustSession = false
         sessionUnlocked = false
+        unlockSessionExpiresAt = nil
         service.biometric.resetSession()
         service.clearReadCache()
         applyBiometricWindow()
         biometricStatus = "Locked"
         showToast("Session locked", feedback: .tick)
+    }
+
+    func refreshSharedUnlockSessionStatus() {
+        if let status = SharedUnlockSession.status() {
+            trustSession = true
+            sessionUnlocked = true
+            unlockSessionExpiresAt = status.expiresAt
+            biometricStatus = unlockStatusText(status.expiresAt)
+        } else if trustSession || sessionUnlocked || unlockSessionExpiresAt != nil {
+            trustSession = false
+            sessionUnlocked = false
+            unlockSessionExpiresAt = nil
+            service.biometric.resetSession()
+            service.clearReadCache()
+            biometricStatus = "Locked"
+        }
     }
 
     func resetBiometricSession() {
@@ -81,15 +102,21 @@ extension AppEnvironment {
     func testBiometric() async {
         biometricStatus = "Waiting for Touch ID…"
         do {
-            try await service.biometric.authenticate(reason: "Verify Touch ID configuration")
-            if trustSession && sessionUnlocked {
-                biometricStatus = "Unlocked until quit"
+            let verificationGate = BiometricGate(sharedSessionURL: nil)
+            try await verificationGate.authenticate(reason: "Verify Touch ID configuration")
+            if let expiresAt = unlockSessionExpiresAt, trustSession && sessionUnlocked {
+                biometricStatus = unlockStatusText(expiresAt)
             } else {
                 biometricStatus = "Unlocked. Re-prompts in \(Int(biometricSessionMinutes)) min."
             }
         } catch {
             biometricStatus = "Failed: \(error)"
         }
+    }
+
+    private func unlockStatusText(_ expiresAt: Date) -> String {
+        let remainingMinutes = max(1, Int(ceil(expiresAt.timeIntervalSinceNow / 60)))
+        return "Unlocked for \(remainingMinutes)m, until \(expiresAt.formatted(date: .omitted, time: .shortened))"
     }
 
     func refresh() {

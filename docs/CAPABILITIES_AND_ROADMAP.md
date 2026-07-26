@@ -32,7 +32,7 @@ The current product is strongest for solo developers and small teams using Curso
 - Add-secret sheet with secure value entry and generated-value helper.
 - Vault list with search, sorting/grouping-oriented UI work, badges, bulk selection, recent activity, and detail view.
 - Import screen for clipboard, files, password manager CSV exports, 1Password CLI, screenshots/images, shell environment, and system Keychain discovery.
-- Settings surface for session trust and Team license, plus a dedicated Cloud Sync screen.
+- Settings surface for a selectable 5-minute to 8-hour shared app/CLI unlock lease and Team license, plus a dedicated Cloud Sync screen.
 - Toast and feedback states for common operations.
 - Reduce Motion aware UI patterns in supported motion surfaces.
 

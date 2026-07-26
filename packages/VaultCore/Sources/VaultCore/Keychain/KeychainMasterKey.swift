@@ -6,20 +6,30 @@ import Security
 enum KeychainMasterKey {
     static let service = "dev.vibevault"
     static let defaultAccount = "vault.master"
+    private static let cacheQueue = DispatchQueue(label: "dev.vibevault.master-key-cache")
+    private static var cache: [String: SymmetricKey] = [:]
 
     static func loadOrCreate(
         migratingFrom legacyFile: URL?,
         account: String = defaultAccount
     ) throws -> SymmetricKey {
-        if let existing = try read(account: account) { return existing }
-        if let legacyFile, let migrated = try migrateFile(legacyFile, account: account) {
-            return migrated
+        if let cached = cacheQueue.sync(execute: { cache[account] }) {
+            return cached
         }
-        return try create(account: account)
+        let key: SymmetricKey
+        if let existing = try read(account: account) {
+            key = existing
+        } else if let legacyFile, let migrated = try migrateFile(legacyFile, account: account) {
+            key = migrated
+        } else {
+            key = try create(account: account)
+        }
+        cacheQueue.sync { cache[account] = key }
+        return key
     }
 
     private static func read(account: String) throws -> SymmetricKey? {
-        var query: [String: Any] = [
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
@@ -74,6 +84,7 @@ enum KeychainMasterKey {
 
     /// Test helper: remove Keychain item for a vault account.
     static func deleteForTests(account: String) {
+        _ = cacheQueue.sync { cache.removeValue(forKey: account) }
         let del: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

@@ -1,31 +1,32 @@
+import CryptoKit
 import XCTest
 @testable import VaultCore
 
 final class BiometricGateTests: XCTestCase {
     func test_default_session_is_300_seconds() {
-        let gate = BiometricGate()
+        let gate = BiometricGate(sharedSessionURL: nil)
         XCTAssertEqual(gate.sessionWindowSeconds(), 300)
     }
 
     func test_init_with_custom_window() {
-        let gate = BiometricGate(sessionWindow: 60)
+        let gate = BiometricGate(sessionWindow: 60, sharedSessionURL: nil)
         XCTAssertEqual(gate.sessionWindowSeconds(), 60)
     }
 
     func test_setSessionWindow_updates_value() {
-        let gate = BiometricGate(sessionWindow: 60)
+        let gate = BiometricGate(sessionWindow: 60, sharedSessionURL: nil)
         gate.setSessionWindow(900)
         XCTAssertEqual(gate.sessionWindowSeconds(), 900)
     }
 
     func test_setSessionWindow_clamps_negative_to_zero() {
-        let gate = BiometricGate()
+        let gate = BiometricGate(sharedSessionURL: nil)
         gate.setSessionWindow(-10)
         XCTAssertEqual(gate.sessionWindowSeconds(), 0)
     }
 
     func test_resetSession_does_not_throw() {
-        let gate = BiometricGate()
+        let gate = BiometricGate(sharedSessionURL: nil)
         gate.resetSession()
     }
 
@@ -41,9 +42,27 @@ final class BiometricGateTests: XCTestCase {
     }
 
     func test_hasValidSession_false_before_auth() {
-        let gate = BiometricGate()
+        let gate = BiometricGate(sharedSessionURL: nil)
         XCTAssertFalse(gate.hasValidSession())
         gate.resetSession()
         XCTAssertFalse(gate.hasValidSession())
+    }
+
+    func test_shared_session_is_visible_to_new_gate_instances() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vv-shared-gate-\(UUID().uuidString).json")
+        let key = SymmetricKey(size: .bits256)
+        defer { SharedUnlockSession.lock(url: url) }
+
+        _ = try SharedUnlockSession.unlock(for: 900, url: url, authenticationKey: key)
+
+        XCTAssertTrue(BiometricGate(
+            sharedSessionURL: url,
+            sharedSessionAuthenticationKey: key
+        ).hasValidSession())
+        XCTAssertTrue(BiometricGate(
+            sharedSessionURL: url,
+            sharedSessionAuthenticationKey: key
+        ).hasValidSession())
     }
 }
