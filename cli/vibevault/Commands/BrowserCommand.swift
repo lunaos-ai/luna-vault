@@ -168,10 +168,11 @@ enum BrowserHostInstaller {
         let dir = exe.deletingLastPathComponent()
         let cwd = FileManager.default.currentDirectoryPath
         return [
+            dir.appendingPathComponent("vibevault-browser-host").path,
+            Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/vibevault-browser-host").path,
+            Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/vibevault-browser-host").path,
             "/opt/homebrew/bin/vibevault-browser-host",
             "/usr/local/bin/vibevault-browser-host",
-            dir.appendingPathComponent("vibevault-browser-host").path,
-            Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/vibevault-browser-host").path,
             (cwd as NSString).appendingPathComponent(".build/release/vibevault-browser-host"),
             (cwd as NSString).appendingPathComponent(".build/debug/vibevault-browser-host")
         ]

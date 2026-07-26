@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Wrap the SwiftPM-built VibeVaultApp + vibevault-mcp into a .app bundle so
+# Wrap the SwiftPM-built VibeVaultApp and helper tools into a .app bundle so
 # MenuBarExtra, Info.plist, entitlements, and AI-client integration work
 # correctly.
 # Output: build/VibeVault.app
@@ -15,18 +15,20 @@ case "$CONFIG" in
     *) echo "usage: $0 [debug|release]"; exit 64 ;;
 esac
 
-echo "==> Building VibeVaultApp + vibevault-mcp ($CONFIG)..."
+echo "==> Building VibeVaultApp + helpers ($CONFIG)..."
 swift build $SWIFT_BUILD_FLAGS --product VibeVaultApp
 swift build $SWIFT_BUILD_FLAGS --product vibevault-mcp
 swift build $SWIFT_BUILD_FLAGS --product vibevault
+swift build $SWIFT_BUILD_FLAGS --product vibevault-browser-host
 
 ARCH=$(uname -m)
 BIN_DIR=".build/${ARCH}-apple-macosx/${CONFIG}"
 APP_BIN="$BIN_DIR/VibeVaultApp"
 MCP_BIN="$BIN_DIR/vibevault-mcp"
 CLI_BIN="$BIN_DIR/vibevault"
+BROWSER_HOST_BIN="$BIN_DIR/vibevault-browser-host"
 
-for f in "$APP_BIN" "$MCP_BIN" "$CLI_BIN"; do
+for f in "$APP_BIN" "$MCP_BIN" "$CLI_BIN" "$BROWSER_HOST_BIN"; do
     if [ ! -x "$f" ]; then
         echo "error: binary not found at $f"; exit 1
     fi
@@ -41,6 +43,7 @@ cp "$APP_BIN" "$APP_DIR/Contents/MacOS/VibeVault"
 cp "$MCP_BIN" "$APP_DIR/Contents/MacOS/vibevault-mcp"
 mkdir -p "$APP_DIR/Contents/Helpers"
 cp "$CLI_BIN" "$APP_DIR/Contents/Helpers/vibevault"
+cp "$BROWSER_HOST_BIN" "$APP_DIR/Contents/Helpers/vibevault-browser-host"
 cp apps/VibeVaultApp/Info.plist "$APP_DIR/Contents/Info.plist"
 
 # App icon — generate if missing, then copy into Resources.
@@ -74,6 +77,7 @@ sign() {
 }
 
 sign "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault"
+sign "$ENT_CLI" "$APP_DIR/Contents/Helpers/vibevault-browser-host"
 sign "$ENT_MCP" "$APP_DIR/Contents/MacOS/vibevault-mcp"
 sign "$ENT_APP" "$APP_DIR/Contents/MacOS/VibeVault"
 sign "$ENT_APP" "$APP_DIR"
@@ -86,3 +90,4 @@ echo "    Bundled binaries:"
 echo "      VibeVault       (app)"
 echo "      vibevault-mcp   (MCP server for Claude Code, Cursor, etc.)"
 echo "      vibevault       (CLI)"
+echo "      browser-host    (Chrome native messaging host)"
