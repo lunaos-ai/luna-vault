@@ -28,10 +28,11 @@ struct VaultListView: View {
     }
 
     var body: some View {
-        NavigationSplitView(columnVisibility: .constant(.all)) {
+        HSplitView {
             sidebar
-        } detail: {
+                .frame(minWidth: 320, idealWidth: 380, maxWidth: 460)
             detail
+                .frame(minWidth: 400, maxWidth: .infinity, maxHeight: .infinity)
         }
         .toolbar { toolbar }
         .sheet(isPresented: $showAdd) {
@@ -100,7 +101,6 @@ struct VaultListView: View {
         }
         .background(.regularMaterial)
         .navigationTitle("Vault")
-        .navigationSplitViewColumnWidth(min: 320, ideal: 380, max: 460)
     }
 
     @ViewBuilder

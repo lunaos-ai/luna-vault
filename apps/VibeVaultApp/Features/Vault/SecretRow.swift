@@ -45,9 +45,6 @@ struct SecretRow: View {
         .onHover { hovering in
             Motion.animate(reduceMotion) { isHovering = hovering }
         }
-        .onTapGesture(count: 2) {
-            env.copySecretName(secret.name)
-        }
         .contextMenu {
             Button("Copy key name") { env.copySecretName(secret.name) }
             Button("Copy value") {
@@ -59,7 +56,8 @@ struct SecretRow: View {
             Divider()
             Button("Clear clipboard") { env.clearClipboard() }
         }
-        // Do not attach pressableScale here — DragGesture steals List selection on macOS.
+        // Gestures on the row steal List selection on macOS. Copy actions stay
+        // available through the trailing button and context menu.
     }
 
     private var avatar: some View {
