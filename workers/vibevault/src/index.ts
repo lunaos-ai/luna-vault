@@ -80,8 +80,6 @@ const CLEAN_STATIC_ROUTES: Record<string, string> = {
   "/scan": "/scan/index.html",
   "/security": "/security/index.html",
   "/agents": "/agents/index.html",
-  "/download": "/install/index.html",
-  "/install": "/install/index.html",
 };
 
 const COMPARISON_ORDER = [
@@ -371,6 +369,10 @@ async function routeRequest(request: Request, env: Env, ctx: ExecutionContext): 
   }
 
   if (request.method === "GET" || request.method === "HEAD") {
+    if (path === "/download") {
+      return Response.redirect(new URL("/install/", url).toString(), 302);
+    }
+
     if (path === "/alternatives") {
       return html(alternativesHTML(), 200, {
         "cache-control": "public, max-age=3600",
