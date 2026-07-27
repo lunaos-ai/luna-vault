@@ -17,9 +17,11 @@ Official references:
 
 ## Decision
 
-Do not promote the unnotarized DMG to first-time users.
+Do not describe the unnotarized DMG as Gatekeeper-safe or production-notarized.
 
-Launch Vibe Vault CLI-first until Apple Developer Program enrollment is solved.
+Offer the DMG as a clearly labeled preview with the first-open limitation stated
+beside every download link. Keep Homebrew as the recommended CLI-only path until
+Apple Developer Program enrollment is solved.
 The source-visible CLI, VaultCore package, MCP server, scanner, git guard,
 browser host, launch docs, and threat model are enough for a technical launch.
 
@@ -45,8 +47,7 @@ vibevault scan
 
 ## What Not To Do
 
-- Do not ask security-minded users to right-click-open or bypass Gatekeeper for
-  the first public experience.
+- Do not hide the Control-click and Open requirement for the preview build.
 - Do not call the app "notarized" or "Gatekeeper-safe" until `spctl` and
   `stapler` pass.
 - Do not make Product Hunt the first launch while the native app is blocked.
@@ -75,5 +76,5 @@ spctl -a -vv -t open build/VibeVault.dmg
 spctl -a -vv build/VibeVault.app
 ```
 
-Only after these pass should the website make the native DMG the primary
-install path.
+Only after these pass should the website remove the preview warning and describe
+the native DMG as Gatekeeper-safe.

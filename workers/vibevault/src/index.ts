@@ -943,7 +943,7 @@ function escapeAttr(value: string): string {
 }
 
 function downloadDmgURL(env: Env): string {
-  return pick(env, "DOWNLOAD_DMG_URL", "download_dmg_url") || "https://lunaos.ai/downloads/VibeVault.dmg";
+  return pick(env, "DOWNLOAD_DMG_URL", "download_dmg_url") || "https://lunaos-marketing.pages.dev/downloads/VibeVault.dmg";
 }
 
 function checkoutCorsHeaders(): Record<string, string> {

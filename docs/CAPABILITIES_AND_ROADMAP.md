@@ -269,6 +269,7 @@ Current launch posture from existing readiness docs:
 
 - Homebrew-first CLI path is ready.
 - Public website, security page, AI-agent page, install page, and LLM guidance are documented as live.
+- Latest native DMG is available from the install page as a clearly labeled, unnotarized preview.
 - Chrome Web Store listing is documented as public.
 - Native DMG/app notarization remains blocked until Apple Developer Program / Developer ID credentials are available.
 
@@ -303,6 +304,7 @@ Current state:
 
 - App can be built and locally installed.
 - DMG artifact can be created.
+- The current DMG is published as an explicitly labeled preview download.
 - Developer ID notarization is blocked by Apple Developer Program enrollment.
 
 Work still needed:
@@ -311,7 +313,7 @@ Work still needed:
 - DMG notarization.
 - Stapled notarization ticket.
 - Gatekeeper verification for app and DMG.
-- Publish notarized DMG as the default native install path.
+- Remove the preview warning and promote the notarized DMG as Gatekeeper-safe.
 
 ### Provider Integrations
 

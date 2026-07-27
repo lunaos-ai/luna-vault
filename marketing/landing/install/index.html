@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Install Vibe Vault | CLI-first launch</title>
-  <meta name="description" content="Install Vibe Vault CLI and MCP from source while the notarized macOS app distribution is pending Apple Developer ID access." />
+  <title>Download Vibe Vault for Mac</title>
+  <meta name="description" content="Download the latest Vibe Vault desktop app for Apple Silicon Macs, or install its CLI, MCP server, and browser host with Homebrew." />
   <link rel="canonical" href="https://vibevault.lunaos.ai/download" />
   <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
   <style>
@@ -288,31 +288,77 @@
   <header class="hero">
     <div class="shell">
       <div class="hero-inner">
-        <p class="eyebrow">Homebrew-first launch path</p>
-        <h1>Install Vibe Vault without waiting for the notarized Mac app.</h1>
+        <p class="eyebrow">Latest desktop build</p>
+        <h1>Download Vibe Vault for Mac.</h1>
         <p class="lede">
-          The local CLI, MCP server, scanner, git guard, browser host, and core vault package
-          are available through Homebrew. The native DMG is held until Developer ID notarization is available.
+          Install the native vault, cloud sync, browser importer, MFA codes, version history,
+          and timed unlock sessions on an Apple Silicon Mac.
         </p>
         <div class="cta-row">
-          <a class="btn" href="#homebrew">Install with Homebrew</a>
+          <a class="btn" href="/downloads/VibeVault.dmg" download>Download Mac app (DMG)</a>
+          <a class="btn secondary" href="#homebrew">Install CLI with Homebrew</a>
           <a class="btn secondary" href="/security">Security architecture</a>
+        </div>
+        <div class="note">
+          Preview distribution: this build is ad-hoc signed and is not Apple-notarized yet. macOS may require
+          Control-clicking the installer and choosing Open. The app and vault remain local-first.
         </div>
       </div>
     </div>
   </header>
 
   <main>
+    <section id="mac">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Native app</p>
+            <h2>Install the latest desktop experience.</h2>
+          </div>
+          <p class="section-copy">
+            The DMG includes the Vibe Vault app plus its CLI, MCP server, and Chrome native messaging host.
+            It currently supports Apple Silicon Macs running macOS Sonoma or later.
+          </p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-index">01</span>
+            <div>
+              <strong>Download the DMG</strong>
+              <p>Get the current build directly from Vibe Vault.</p>
+              <div class="cta-row">
+                <a class="btn" href="/downloads/VibeVault.dmg" download>Download VibeVault.dmg</a>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">02</span>
+            <div>
+              <strong>Install Vibe Vault</strong>
+              <p>Open the DMG and run <code>Install Vibe Vault</code> to place the app in Applications.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">03</span>
+            <div>
+              <strong>Approve the preview build</strong>
+              <p>If Gatekeeper blocks the first launch, Control-click Vibe Vault in Applications, choose Open, then confirm.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="homebrew">
       <div class="shell">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Recommended now</p>
-            <h2>Install the CLI, MCP server, and browser host with Homebrew.</h2>
+            <p class="eyebrow">CLI-only option</p>
+            <h2>Install the command-line tools with Homebrew.</h2>
           </div>
           <p class="section-copy">
-            This avoids asking security-minded users to bypass Gatekeeper for an unnotarized app.
-            It installs the same local-first CLI path, including the native host used by the Chrome importer.
+            This is the recommended path when you only need the CLI, MCP server, scanner, git guard,
+            or native host used by the Chrome importer.
           </p>
         </div>
         <div class="steps">
@@ -343,10 +389,7 @@ vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfb
             </div>
           </div>
         </div>
-        <div class="note">
-          Native app status: the macOS menu-bar app exists, but the public DMG is not promoted until it is
-          signed with Developer ID, submitted to Apple notarization, stapled, and accepted by Gatekeeper.
-        </div>
+        <div class="note">Homebrew installs the stable command-line release. The DMG above contains the latest desktop build.</div>
       </div>
     </section>
 
@@ -374,8 +417,8 @@ swift build -c release --product vibevault-browser-host</pre>
       <div class="shell">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Why no DMG yet?</p>
-            <h2>Apple Developer ID is required for the public Mac app path.</h2>
+            <p class="eyebrow">Distribution status</p>
+            <h2>Developer ID notarization is still pending.</h2>
           </div>
           <p class="section-copy">
             Apple requires Apple Developer Program membership to request Apple-issued signing
@@ -385,16 +428,16 @@ swift build -c release --product vibevault-browser-host</pre>
         </div>
         <div class="grid">
           <article class="card">
-            <strong>Safe public path</strong>
-            <p>Homebrew-first CLI launch with scanner, MCP, guard, browser host, and docs.</p>
+            <strong>Available now</strong>
+            <p>The latest native DMG is available as a clearly labeled preview build.</p>
           </article>
           <article class="card">
-            <strong>Held path</strong>
-            <p>Native DMG distribution waits for Developer ID signing and notarization.</p>
+            <strong>Gatekeeper</strong>
+            <p>The first launch may require the documented Control-click and Open flow.</p>
           </article>
           <article class="card">
-            <strong>Do not lead with</strong>
-            <p>Instructions that ask first-time users to bypass Gatekeeper for a security tool.</p>
+            <strong>Next milestone</strong>
+            <p>Developer ID signing, Apple notarization, stapling, and automated update verification.</p>
           </article>
         </div>
         <div class="cta-row">
@@ -407,7 +450,7 @@ swift build -c release --product vibevault-browser-host</pre>
 
   <footer>
     <div class="shell">
-      Vibe Vault Solo is local-first. The CLI path gives developers an inspectable way to try the product while app notarization is blocked.
+      Vibe Vault Solo is local-first. Desktop preview and Homebrew CLI downloads are available now.
     </div>
   </footer>
 </body>
