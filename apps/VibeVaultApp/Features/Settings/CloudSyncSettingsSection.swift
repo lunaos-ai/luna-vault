@@ -25,6 +25,22 @@ struct CloudSyncSettingsSection: View {
         passphrase.count >= 12 && passphrase == confirmation && !isWorking
     }
 
+    private var hasValidPassphraseLength: Bool {
+        passphrase.count >= 12
+    }
+
+    private var passphrasesMatch: Bool {
+        !confirmation.isEmpty && passphrase == confirmation
+    }
+
+    private var exportReadinessMessage: String {
+        if isWorking { return "Wait for the current backup operation to finish." }
+        if !hasValidPassphraseLength { return "Enter a passphrase with at least 12 characters." }
+        if confirmation.isEmpty { return "Confirm the passphrase to enable encrypted export." }
+        if !passphrasesMatch { return "The passphrases do not match." }
+        return "Ready to export an encrypted backup."
+    }
+
     private var canSyncToICloud: Bool {
         canEncrypt && (status?.iCloudAvailable ?? false)
     }
@@ -69,6 +85,11 @@ struct CloudSyncSettingsSection: View {
 
             SecureField("Sync passphrase", text: $passphrase)
             SecureField("Confirm passphrase", text: $confirmation)
+            HStack(spacing: Tokens.Space.lg) {
+                passphraseRequirement("12+ characters", satisfied: hasValidPassphraseLength)
+                passphraseRequirement("Passphrases match", satisfied: passphrasesMatch)
+            }
+            .font(.caption)
 
             Picker("Existing names on import", selection: $importPolicy) {
                 ForEach(AppCloudSyncImportPolicy.allCases) { policy in
@@ -115,6 +136,7 @@ struct CloudSyncSettingsSection: View {
                     Label("Export backup...", systemImage: "externaldrive.badge.plus")
                 }
                 .disabled(!canEncrypt)
+                .help(exportReadinessMessage)
 
                 Button {
                     chooseImportURL()
@@ -130,6 +152,13 @@ struct CloudSyncSettingsSection: View {
                 }
                 .disabled(!canImportSelected)
             }
+
+            Label(
+                exportReadinessMessage,
+                systemImage: canEncrypt ? "checkmark.circle.fill" : "info.circle"
+            )
+            .font(.caption)
+            .foregroundStyle(canEncrypt ? Tokens.Status.success : Tokens.Text.secondary)
 
             LabeledContent(
                 "Recovery protection",
@@ -347,6 +376,11 @@ struct CloudSyncSettingsSection: View {
         } message: {
             Text("Existing protected backups still require this recovery key. New backups will use only the sync passphrase.")
         }
+    }
+
+    private func passphraseRequirement(_ label: String, satisfied: Bool) -> some View {
+        Label(label, systemImage: satisfied ? "checkmark.circle.fill" : "circle")
+            .foregroundStyle(satisfied ? Tokens.Status.success : Tokens.Text.secondary)
     }
 
     private func refreshStatus() {
