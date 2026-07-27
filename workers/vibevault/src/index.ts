@@ -15,6 +15,7 @@ export interface Env {
   LANDING_URL: string;
   DOWNLOAD_URL: string;
   DOWNLOAD_DMG_URL?: string;
+  LOCAL_DEV?: string;
   FROM_EMAIL: string;
   VARIANT_SEATS_JSON: string;
   VIBEVAULT_VARIANT_TEAM?: string;
@@ -333,62 +334,91 @@ const COMPARISON_PAGES: Record<string, ComparisonPage> = {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    const path = cleanPath(url.pathname);
-
-    if (request.method === "OPTIONS" && url.pathname === "/api/checkout") {
-      return new Response(null, { status: 204, headers: checkoutCorsHeaders() });
+    const requestURL = new URL(request.url);
+    const requestHost = request.headers.get("host")?.split(":", 1)[0];
+    if (env.LOCAL_DEV !== "true" && requestHost === "vibevault.lunaos.ai" && requestedOverHTTP(request, requestURL)) {
+      const destination = `https://vibevault.lunaos.ai${requestURL.pathname}${requestURL.search}`;
+      return Response.redirect(destination, 308);
     }
 
-    if (request.method === "GET" && url.pathname === "/health") {
-      return json({ ok: true, host: "vibevault.lunaos.ai" });
-    }
+    return secureResponse(await routeRequest(request, env, ctx));
+  },
+};
 
-    if (request.method === "GET" && url.pathname === "/api/checkout") {
-      return json(checkoutConfig(env), 200, {
-        "cache-control": "public, max-age=60",
-        ...checkoutCorsHeaders(),
-      });
-    }
+async function routeRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const url = new URL(request.url);
+  const path = cleanPath(url.pathname);
 
-    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/privacy") {
-      return html(privacyPolicyHTML(), 200, {
+  if (request.method === "OPTIONS" && url.pathname === "/api/checkout") {
+    return new Response(null, { status: 204, headers: checkoutCorsHeaders() });
+  }
+
+  if (request.method === "GET" && url.pathname === "/health") {
+    return json({ ok: true, host: "vibevault.lunaos.ai" });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/checkout") {
+    return json(checkoutConfig(env), 200, {
+      "cache-control": "public, max-age=60",
+      ...checkoutCorsHeaders(),
+    });
+  }
+
+  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/privacy") {
+    return html(privacyPolicyHTML(), 200, {
+      "cache-control": "public, max-age=3600",
+    });
+  }
+
+  if (request.method === "GET" || request.method === "HEAD") {
+    if (path === "/alternatives") {
+      return html(alternativesHTML(), 200, {
         "cache-control": "public, max-age=3600",
       });
     }
 
-    if (request.method === "GET" || request.method === "HEAD") {
-      if (path === "/alternatives") {
-        return html(alternativesHTML(), 200, {
-          "cache-control": "public, max-age=3600",
-        });
-      }
-
-      const comparison = COMPARISON_PAGES[path.slice(1)];
-      if (comparison) {
-        return html(comparisonHTML(comparison), 200, {
-          "cache-control": "public, max-age=3600",
-        });
-      }
-
-      const assetPath = CLEAN_STATIC_ROUTES[path];
-      if (assetPath) {
-        const staticURL = new URL(assetPath, url);
-        return env.ASSETS.fetch(new Request(staticURL, request));
-      }
+    const comparison = COMPARISON_PAGES[path.slice(1)];
+    if (comparison) {
+      return html(comparisonHTML(comparison), 200, {
+        "cache-control": "public, max-age=3600",
+      });
     }
 
-    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/downloads/VibeVault.dmg") {
-      return Response.redirect(downloadDmgURL(env), 302);
+    const assetPath = CLEAN_STATIC_ROUTES[path];
+    if (assetPath) {
+      const staticURL = new URL(assetPath, url);
+      return env.ASSETS.fetch(new Request(staticURL, request));
     }
+  }
 
-    if (request.method === "POST" && url.pathname === "/webhooks/lemonsqueezy") {
-      return handleLemonWebhook(request, env, ctx);
+  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/downloads/VibeVault.dmg") {
+    return Response.redirect(downloadDmgURL(env), 302);
+  }
+
+  if (request.method === "POST" && url.pathname === "/webhooks/lemonsqueezy") {
+    return handleLemonWebhook(request, env, ctx);
+  }
+
+  return env.ASSETS.fetch(request);
+}
+
+function secureResponse(response: Response): Response {
+  const secured = new Response(response.body, response);
+  secured.headers.set("strict-transport-security", "max-age=31536000; includeSubDomains");
+  return secured;
+}
+
+function requestedOverHTTP(request: Request, requestURL: URL): boolean {
+  const visitor = request.headers.get("cf-visitor");
+  if (visitor) {
+    try {
+      return (JSON.parse(visitor) as { scheme?: string }).scheme === "http";
+    } catch {
+      // Fall back to the request URL if an intermediary supplies malformed metadata.
     }
-
-    return env.ASSETS.fetch(request);
-  },
-};
+  }
+  return requestURL.protocol === "http:";
+}
 
 function cleanPath(path: string): string {
   if (path.length > 1 && path.endsWith("/")) return path.slice(0, -1);

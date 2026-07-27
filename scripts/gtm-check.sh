@@ -102,6 +102,20 @@ else
   warn "Could not verify live Worker health"
 fi
 
+if command -v curl >/dev/null 2>&1 &&
+   curl -sSI --max-time 8 http://vibevault.lunaos.ai/ | tr -d '\r' | grep -qi '^location: https://vibevault\.lunaos\.ai/'; then
+  ok "HTTP redirects to HTTPS"
+else
+  warn "HTTP does not redirect to HTTPS"
+fi
+
+if command -v curl >/dev/null 2>&1 &&
+   curl -sSI --max-time 8 https://vibevault.lunaos.ai/ | tr -d '\r' | grep -qi '^strict-transport-security:'; then
+  ok "HTTPS sends HSTS"
+else
+  warn "HTTPS response missing HSTS"
+fi
+
 # Soft: homebrew tap remote
 if command -v gh >/dev/null 2>&1 && gh repo view finsavvyai/homebrew-tap &>/dev/null; then
   ok "finsavvyai/homebrew-tap reachable"
