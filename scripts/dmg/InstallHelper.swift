@@ -3,6 +3,7 @@ import AppKit
 import Foundation
 
 let appName = "VibeVault.app"
+let installerName = "Install Vibe Vault.app"
 let destRoot = "/Applications"
 let userBin = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent(".local/bin", isDirectory: true)
@@ -21,10 +22,27 @@ enum InstallerError: LocalizedError {
 }
 
 func siblingApp() -> URL? {
+    let fm = FileManager.default
     let bundle = Bundle.main.bundleURL
     let parent = bundle.deletingLastPathComponent()
-  return FileManager.default.fileExists(atPath: parent.appendingPathComponent(appName).path)
-        ? parent.appendingPathComponent(appName) : nil
+    let sibling = parent.appendingPathComponent(appName)
+    if fm.fileExists(atPath: sibling.path) { return sibling }
+
+    // Unnotarized apps may be launched through App Translocation, which moves
+    // this installer away from its DMG siblings. Find the original mounted
+    // volume so the one-click install still works for preview downloads.
+    let volumes = URL(fileURLWithPath: "/Volumes", isDirectory: true)
+    guard let mountedVolumes = try? fm.contentsOfDirectory(
+        at: volumes, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+    ) else { return nil }
+    for volume in mountedVolumes {
+        let candidate = volume.appendingPathComponent(appName)
+        let installer = volume.appendingPathComponent(installerName)
+        if fm.fileExists(atPath: candidate.path) && fm.fileExists(atPath: installer.path) {
+            return candidate
+        }
+    }
+    return nil
 }
 
 func copyWithProgress(from src: URL, to dest: URL) throws {
@@ -109,7 +127,7 @@ struct InstallerMain {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         guard let src = siblingApp() else {
-            alert("VibeVault.app not found on this disk image.")
+            alert("VibeVault.app was not found beside the installer or on a mounted DMG.")
             exit(1)
         }
         let dest = URL(fileURLWithPath: destRoot).appendingPathComponent(appName)

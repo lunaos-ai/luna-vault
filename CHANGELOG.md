@@ -2,6 +2,12 @@
 
 All notable changes to Vibe Vault are documented here.
 
+## [0.1.2] — 2026-07-28
+
+### Fixed
+
+- DMG installer now finds the app when macOS App Translocation hides the DMG siblings.
+
 ## [0.1.1] — 2026-07-28
 
 ### Fixed
@@ -46,5 +52,6 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.1.2]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.2
 [0.1.1]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.0
