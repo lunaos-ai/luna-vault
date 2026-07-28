@@ -2,6 +2,12 @@
 
 All notable changes to Vibe Vault are documented here.
 
+## [0.1.1] — 2026-07-28
+
+### Fixed
+
+- DMG installer now updates the bundled CLI, MCP server, browser host, shell PATH, and MCP client configuration together with the app.
+
 ## [0.1.0] — 2026-07-15
 
 ### Added
@@ -40,4 +46,5 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.1.1]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.0
