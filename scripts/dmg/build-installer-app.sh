@@ -25,7 +25,7 @@ cat > "$OUT/Contents/Info.plist" <<'PLIST'
   <key>CFBundleIdentifier</key><string>dev.vibevault.installer</string>
   <key>CFBundleName</key><string>Install Vibe Vault</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleShortVersionString</key><string>0.1.2</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
