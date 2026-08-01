@@ -62,6 +62,9 @@ final class SecretTaskSuggesterTests: XCTestCase {
         let gemini = try String(contentsOf: tmp.appendingPathComponent("GEMINI.md"), encoding: .utf8)
         XCTAssertTrue(gemini.contains("Do not create `.env`"))
         XCTAssertTrue(gemini.contains("vibevault run -- <command>"))
+        XCTAssertTrue(gemini.contains("vibevault run --only NAME"))
+        XCTAssertTrue(gemini.contains("macOS Keychain context"))
+        XCTAssertTrue(gemini.contains("never reset the vault master key"))
     }
 
     func test_agent_policy_status_marks_old_policy_outdated() throws {

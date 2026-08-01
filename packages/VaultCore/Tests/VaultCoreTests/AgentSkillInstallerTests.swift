@@ -4,6 +4,10 @@ import XCTest
 final class AgentSkillInstallerTests: XCTestCase {
     func test_bundled_content_has_frontmatter() {
         XCTAssertTrue(AgentSkillContent.markdown.contains("name: vibevault"))
+        XCTAssertTrue(AgentSkillContent.markdown.contains("vibevault run --only GHCR_TOKEN"))
+        XCTAssertTrue(AgentSkillContent.markdown.contains("host-level"))
+        XCTAssertTrue(AgentSkillContent.markdown.contains("Keychain security context"))
+        XCTAssertTrue(AgentSkillContent.markdown.contains("do not reset or replace the key"))
     }
 
     func test_install_writes_skill_file() throws {
