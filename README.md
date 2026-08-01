@@ -121,6 +121,8 @@ vibevault run --only GHCR_TOKEN -- \
 See [AI Agent CLI Access](docs/AI_AGENT_CLI_ACCESS.md) for environment-variable
 mapping, controlled value retrieval, local-access requirements, and the safe
 response when an agent reports `bad master key in Keychain` but Terminal works.
+The same operational guidance ships inside `vibevault --help` and
+`vibevault help run`.
 
 The installed policy says:
 

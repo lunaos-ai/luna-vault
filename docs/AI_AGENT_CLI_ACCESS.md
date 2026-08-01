@@ -4,6 +4,13 @@ Use Vibe Vault without placing secret values in chat, command arguments,
 repository files, or agent logs. The CLI injects selected secrets into a child
 process environment and audits each read.
 
+The installed product carries this guidance in its own help output:
+
+```bash
+vibevault --help
+vibevault help run
+```
+
 ## Preferred: use a secret without revealing it
 
 ```bash
