@@ -1,11 +1,12 @@
 import SwiftUI
+import VaultCore
 
 struct PushciSettingsSection: View {
     var body: some View {
         Section {
-            Label("Local CLI sync", systemImage: "terminal")
+            Label("Cloud + local sync", systemImage: "cloud")
                 .foregroundStyle(Tokens.Text.secondary)
-            Text("PushCI secrets live in `.pushci/secrets.enc` per project. Vibe Vault calls `pushci secret set/get` — no cloud token required for local sync.")
+            Text("Cloud: onboard vault secrets into a PushCI project via PUT /api/projects/:id/secrets/:name (JWT from pushci login). Local: `pushci secret set` into `.pushci/secrets.enc`.")
                 .font(.caption)
                 .foregroundStyle(Tokens.Text.secondary)
             Link(destination: URL(string: "https://pushci.dev/docs")!) {
@@ -15,7 +16,7 @@ struct PushciSettingsSection: View {
         } header: {
             Text("pushci.dev")
         } footer: {
-            Text("Optional: set PUSHCI_TOKEN in shell for future cloud API. Providers → PushCI picks the project path.")
+            Text("Auth order: PUSHCI_TOKEN → vault prefs → ~/.pushci/config.json. Providers → PushCI sets project_id or local path.")
         }
     }
 }

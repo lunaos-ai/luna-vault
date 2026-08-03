@@ -12,16 +12,16 @@ enum MCPProviderTools {
                     "provider": ["type": "string", "description": "cloudflare | vercel | pushci"],
                     "account_id": ["type": "string"],
                     "script_name": ["type": "string"],
-                    "project_id": ["type": "string"],
+                    "project_id": ["type": "string", "description": "Vercel project id, or PushCI cloud project UUID"],
                     "team_id": ["type": "string"],
-                    "project_path": ["type": "string", "description": "Project root for Wrangler or PushCI scope detection (absolute path)"]
+                    "project_path": ["type": "string", "description": "Project root for Wrangler or local PushCI"]
                 ],
                 "required": ["provider"]
             ]
         ),
         MCPToolDef(
             name: "push_secrets",
-            description: "Push MCP-allowed vault secrets to Cloudflare, Vercel, or PushCI local store.",
+            description: "Push MCP-allowed vault secrets to Cloudflare, Vercel, or PushCI (local CLI or cloud project secrets).",
             inputSchema: [
                 "type": "object",
                 "properties": [
@@ -33,9 +33,11 @@ enum MCPProviderTools {
                     ],
                     "account_id": ["type": "string"],
                     "script_name": ["type": "string"],
-                    "project_id": ["type": "string"],
+                    "project_id": ["type": "string", "description": "Vercel project id, or PushCI cloud project UUID"],
                     "team_id": ["type": "string"],
-                    "project_path": ["type": "string"]
+                    "project_path": ["type": "string", "description": "Local PushCI project root (CLI secret store)"],
+                    "environment": ["type": "string", "description": "PushCI cloud secret environment (default *)"],
+                    "allow_ci": ["type": "boolean", "description": "PushCI cloud: add names to ci_secret_names"]
                 ],
                 "required": ["provider", "names"]
             ]
@@ -133,9 +135,19 @@ enum MCPProviderTools {
                 throw ProviderError.missingScope("project_id")
             }
         case "pushci":
+            if let p = args["project_id"] as? String, !p.isEmpty { scope["project_id"] = p }
             if let p = args["project_path"] as? String, !p.isEmpty { scope["project_path"] = p }
-            guard scope["project_path"] != nil else {
-                throw ProviderError.missingScope("project_path")
+            if let e = args["environment"] as? String, !e.isEmpty { scope["environment"] = e }
+            if let allow = args["allow_ci"] as? Bool, allow { scope["allow_ci"] = "true" }
+            if let allow = args["allow_ci"] as? String, ["1", "true", "yes"].contains(allow.lowercased()) {
+                scope["allow_ci"] = "true"
+            }
+            let env = ProcessInfo.processInfo.environment
+            if scope["project_id"] == nil {
+                scope["project_id"] = firstEnv(env, ["PUSHCI_PROJECT_ID"])
+            }
+            guard scope["project_id"] != nil || scope["project_path"] != nil else {
+                throw ProviderError.missingScope("project_id (cloud) or project_path (local CLI)")
             }
         default:
             throw ProviderError.unsupported(providerId)

@@ -288,6 +288,7 @@ struct CloudSyncSettingsSection: View {
                     LabeledContent("Exported", value: preview.exportedAtText)
                     LabeledContent("Secrets", value: "\(preview.secretCount)")
                     LabeledContent("Saved versions", value: "\(preview.revisionCount)")
+                    LabeledContent("Authenticators", value: "\(preview.authenticatorCount)")
                     LabeledContent("Size", value: preview.sizeText)
                     LabeledContent("New locally", value: "\(preview.newCount)")
                     LabeledContent("Backup is newer", value: "\(preview.backupNewerCount)")

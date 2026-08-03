@@ -4,7 +4,9 @@ import VaultCore
 
 struct PushciSyncView: View {
     @EnvironmentObject var env: AppEnvironment
+    @State private var projectId = ""
     @State private var projectPath = ""
+    @State private var allowCI = false
     @State private var reconcile: ProviderNameReconcile?
     @State private var selected: Set<String> = []
     @State private var phase: Phase = .idle
@@ -16,8 +18,10 @@ struct PushciSyncView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.xl) {
                 PushciConnectionCard(
+                    projectId: $projectId,
                     projectPath: $projectPath,
-                    cliReady: env.pushciScopeComplete,
+                    allowCI: $allowCI,
+                    cloudReady: PushciConfig.cloudToken(prefs: env.prefs) != nil,
                     lastScannedPath: env.lastScannedURL?.path,
                     onSetup: handleSetup
                 )
@@ -26,16 +30,15 @@ struct PushciSyncView: View {
                 if let reconcile {
                     CloudflareReconcilePanel(reconcile: reconcile, selectedWorkerNames: $selected)
                 }
-                Text("Local-only: secrets encrypted per machine. Cloud sync API coming to pushci.dev.")
-                    .font(.caption)
-                    .foregroundStyle(Tokens.Text.tertiary)
             }
             .padding(Tokens.Space.xxl)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .navigationTitle("PushCI")
         .onAppear { loadScope() }
+        .onChange(of: projectId) { _, v in env.setPushciProjectId(v) }
         .onChange(of: projectPath) { _, v in env.setPushciProjectPath(v) }
+        .onChange(of: allowCI) { _, v in env.setPushciAllowCI(v) }
     }
 
     private var actionRow: some View {
@@ -58,26 +61,27 @@ struct PushciSyncView: View {
     }
 
     private var canSync: Bool {
-        !projectPath.isEmpty && FileManager.default.fileExists(atPath: projectPath)
+        if !projectId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return PushciConfig.cloudToken(prefs: env.prefs) != nil
+        }
+        return !projectPath.isEmpty && FileManager.default.fileExists(atPath: projectPath)
     }
 
     private func handleSetup() {
-        if projectPath.isEmpty, let last = env.lastScannedURL?.path, !last.isEmpty {
+        if projectId.isEmpty, projectPath.isEmpty, let last = env.lastScannedURL?.path, !last.isEmpty {
             projectPath = last
             env.toastMessage = "Using last scanned project"
             return
         }
-        if projectPath.isEmpty {
-            env.toastMessage = "Enter a project path (folder with pushci init)"
-            return
-        }
-        if let url = URL(string: "https://pushci.dev/docs") {
+        if let url = URL(string: "https://pushci.dev/login") {
             NSWorkspace.shared.open(url)
         }
-        env.toastMessage = "Install CLI: brew install pushci"
+        env.toastMessage = "Run pushci login, then paste the cloud project ID"
     }
 
     private func loadScope() {
+        projectId = env.settings.pushciProjectId
+        allowCI = env.settings.pushciAllowCI
         projectPath = env.settings.pushciProjectPath.isEmpty
             ? (env.lastScannedURL?.path ?? "")
             : env.settings.pushciProjectPath

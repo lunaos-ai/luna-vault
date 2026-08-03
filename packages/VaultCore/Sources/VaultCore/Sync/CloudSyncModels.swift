@@ -6,23 +6,30 @@ public struct CloudSyncSnapshot: Codable, Equatable, Sendable {
     public let sourceHost: String
     public let secrets: [CloudSyncSecret]
     public let revisions: [SecretRevision]
+    public let authenticatorAccounts: [AuthenticatorAccount]
+    public let authenticatorRevisions: [AuthenticatorRevision]
 
     public init(
-        version: Int = 2,
+        version: Int = 3,
         exportedAt: Date = Date(),
         sourceHost: String = ProcessInfo.processInfo.hostName,
         secrets: [CloudSyncSecret],
-        revisions: [SecretRevision] = []
+        revisions: [SecretRevision] = [],
+        authenticatorAccounts: [AuthenticatorAccount] = [],
+        authenticatorRevisions: [AuthenticatorRevision] = []
     ) {
         self.version = version
         self.exportedAt = exportedAt
         self.sourceHost = sourceHost
         self.secrets = secrets
         self.revisions = revisions
+        self.authenticatorAccounts = authenticatorAccounts
+        self.authenticatorRevisions = authenticatorRevisions
     }
 
     enum CodingKeys: String, CodingKey {
         case version, exportedAt, sourceHost, secrets, revisions
+        case authenticatorAccounts, authenticatorRevisions
     }
 
     public init(from decoder: Decoder) throws {
@@ -32,6 +39,12 @@ public struct CloudSyncSnapshot: Codable, Equatable, Sendable {
         sourceHost = try container.decode(String.self, forKey: .sourceHost)
         secrets = try container.decode([CloudSyncSecret].self, forKey: .secrets)
         revisions = try container.decodeIfPresent([SecretRevision].self, forKey: .revisions) ?? []
+        authenticatorAccounts = try container.decodeIfPresent(
+            [AuthenticatorAccount].self, forKey: .authenticatorAccounts
+        ) ?? []
+        authenticatorRevisions = try container.decodeIfPresent(
+            [AuthenticatorRevision].self, forKey: .authenticatorRevisions
+        ) ?? []
     }
 }
 

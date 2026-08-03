@@ -47,6 +47,32 @@ final class CloudSyncTests: XCTestCase {
         XCTAssertEqual(decrypted, snapshot)
     }
 
+    func test_encrypt_decrypt_roundTripsStandaloneAuthenticatorsInVersionThree() throws {
+        let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let account = AuthenticatorAccount(
+            issuer: "Example", accountName: "alice@example.com",
+            secret: Data("totp-seed".utf8), createdAt: timestamp, updatedAt: timestamp
+        )
+        let revision = AuthenticatorRevision(
+            account: account, capturedAt: timestamp, action: .created, sourceHost: "mac-a"
+        )
+        let snapshot = CloudSyncSnapshot(
+            secrets: [], authenticatorAccounts: [account],
+            authenticatorRevisions: [revision]
+        )
+
+        let encrypted = try CloudSync.encrypt(
+            snapshot, passphrase: "correct horse battery staple"
+        )
+        let decrypted = try CloudSync.decrypt(
+            encrypted, passphrase: "correct horse battery staple"
+        )
+
+        XCTAssertEqual(decrypted.version, 3)
+        XCTAssertEqual(decrypted.authenticatorAccounts, [account])
+        XCTAssertEqual(decrypted.authenticatorRevisions, [revision])
+    }
+
     func test_decrypt_rejects_wrong_passphrase() throws {
         let snapshot = CloudSyncSnapshot(
             sourceHost: "mac-a",

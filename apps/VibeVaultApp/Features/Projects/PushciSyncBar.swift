@@ -5,17 +5,17 @@ struct PushciSyncBar: View {
     var onOpenPushci: () -> Void
 
     var body: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Image(systemName: "terminal.fill")
+        HStack(alignment: .center, spacing: Tokens.Space.md) {
+            Image(systemName: "cloud.fill")
                 .foregroundStyle(Tokens.Palette.accent)
             VStack(alignment: .leading, spacing: 2) {
-                Text("PushCI project")
-                    .font(.subheadline.weight(.semibold))
-                Text("Sync vault secrets into `.pushci/secrets.enc`")
+                Text("PushCI").font(.subheadline.weight(.semibold))
+                Text("Onboard vault secrets to a cloud project or local store")
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.secondary)
+                    .lineLimit(2)
             }
-            Spacer()
+            Spacer(minLength: 0)
             Button("Open PushCI sync", action: onOpenPushci)
                 .buttonStyle(.bordered)
                 .controlSize(.small)

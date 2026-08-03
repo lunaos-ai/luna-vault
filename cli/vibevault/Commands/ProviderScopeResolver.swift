@@ -23,6 +23,18 @@ enum ProviderScopeResolver {
                 scopeMap["script_name"] = firstEnv(env, ["CLOUDFLARE_SCRIPT_NAME", "CF_SCRIPT_NAME", "WRANGLER_SCRIPT_NAME"])
             }
         }
+        if provider == "pushci" {
+            let env = ProcessInfo.processInfo.environment
+            if scopeMap["project_id"] == nil {
+                scopeMap["project_id"] = firstEnv(env, ["PUSHCI_PROJECT_ID"])
+            }
+            if scopeMap["project_path"] == nil, let projectPath, !projectPath.isEmpty {
+                scopeMap["project_path"] = projectPath
+            }
+            if scopeMap["environment"] == nil {
+                scopeMap["environment"] = firstEnv(env, ["PUSHCI_SECRET_ENVIRONMENT"]) ?? "*"
+            }
+        }
         return ProviderTarget(provider: provider, scope: scopeMap)
     }
 

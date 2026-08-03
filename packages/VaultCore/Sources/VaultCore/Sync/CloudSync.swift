@@ -196,7 +196,7 @@ public enum CloudSync {
             let box = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag)
             let plain = try AES.GCM.open(box, using: dataKey)
             let snapshot = try decoder.decode(CloudSyncSnapshot.self, from: plain)
-            guard (legacyVersion...version).contains(snapshot.version) else {
+            guard (legacyVersion...3).contains(snapshot.version) else {
                 throw CloudSyncError.unsupportedVersion(snapshot.version)
             }
             return snapshot
