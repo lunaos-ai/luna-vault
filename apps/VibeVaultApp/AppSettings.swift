@@ -12,6 +12,8 @@ struct AppSettings: Codable, Equatable {
     var vercelProjectId: String = ""
     var vercelTeamId: String = ""
     var pushciProjectPath: String = ""
+    var pushciProjectId: String = ""
+    var pushciAllowCI: Bool = false
     var projectPrefixes: [String: String] = [:]
     var automaticBackupsEnabled: Bool = false
     var backupIntervalHours: Int = 24

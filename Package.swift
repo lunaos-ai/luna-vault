@@ -31,6 +31,11 @@ let package = Package(
             dependencies: ["VaultCore"],
             path: "packages/VaultCore/Tests/VaultCoreTests"
         ),
+        .testTarget(
+            name: "VibeVaultAppTests",
+            dependencies: ["VibeVaultApp"],
+            path: "apps/VibeVaultAppTests"
+        ),
         .executableTarget(
             name: "vibevault",
             dependencies: [

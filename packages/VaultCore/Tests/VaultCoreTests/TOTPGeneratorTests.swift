@@ -30,4 +30,38 @@ final class TOTPGeneratorTests: XCTestCase {
             XCTAssertEqual(error as? TOTPError, .invalidSecret)
         }
     }
+
+    func test_rotatingCodeIsRejectedAsEnrollmentMaterial() {
+        XCTAssertThrowsError(try TOTPGenerator.account(from: "123456")) { error in
+            XCTAssertEqual(error as? TOTPError, .temporaryCode)
+        }
+    }
+
+    func test_conflictingIssuerInLabelAndQueryIsRejected() {
+        let uri = "otpauth://totp/LabelIssuer:alice?secret=JBSWY3DPEHPK3PXP&issuer=QueryIssuer"
+        XCTAssertThrowsError(try TOTPGenerator.account(from: uri)) { error in
+            XCTAssertEqual(error as? TOTPError, .invalidParameter("issuer"))
+        }
+    }
+
+    func test_duplicateQueryParametersAreRejected() {
+        let uri = "otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP&secret=GEZDGNBVGY3TQOJQ"
+        XCTAssertThrowsError(try TOTPGenerator.account(from: uri)) { error in
+            XCTAssertEqual(error as? TOTPError, .invalidParameter("duplicate secret"))
+        }
+    }
+
+    func test_onlySixOrEightDigitCodesAreAccepted() {
+        let uri = "otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP&digits=7"
+        XCTAssertThrowsError(try TOTPGenerator.account(from: uri)) { error in
+            XCTAssertEqual(error as? TOTPError, .invalidParameter("digits"))
+        }
+    }
+
+    func test_timePeriodIsBounded() {
+        let uri = "otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP&period=3600"
+        XCTAssertThrowsError(try TOTPGenerator.account(from: uri)) { error in
+            XCTAssertEqual(error as? TOTPError, .invalidParameter("period"))
+        }
+    }
 }

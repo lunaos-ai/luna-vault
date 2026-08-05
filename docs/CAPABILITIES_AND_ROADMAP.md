@@ -99,6 +99,13 @@ The app uses review sheets before writing imported rows so users can rename, ski
 - Cloud Sync preserves TOTP setup URLs inside the encrypted sync snapshot.
 - CLI/app metadata paths preserve whether a secret has TOTP.
 
+Standalone authenticator accounts are implemented with a dedicated macOS
+destination, manual/URI and local QR-image enrollment, biometric code reveal,
+recovery-code lifecycle, schema-v3 encrypted persistence and sync, safe CLI
+commands, attached-record conversion, and an encrypted AMLIQ native handoff.
+The model and security boundary are specified in
+[`MFA_AUTHENTICATOR_PLAN.md`](MFA_AUTHENTICATOR_PLAN.md).
+
 ### Project Scanning
 
 The scanner detects required secret names from common local project files:

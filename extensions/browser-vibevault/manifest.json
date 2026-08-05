@@ -27,7 +27,9 @@
     "https://dashboard.stripe.com/*",
     "https://github.com/*",
     "https://vercel.com/*",
-    "https://dash.cloudflare.com/*"
+    "https://dash.cloudflare.com/*",
+    "https://amliq.finance/*",
+    "https://*.amliq.finance/*"
   ],
   "background": {
     "service_worker": "src/background.js"
@@ -50,7 +52,9 @@
         "https://dashboard.stripe.com/*",
         "https://github.com/*",
         "https://vercel.com/*",
-        "https://dash.cloudflare.com/*"
+        "https://dash.cloudflare.com/*",
+        "https://amliq.finance/*",
+        "https://*.amliq.finance/*"
       ],
       "js": ["src/content.js"],
       "css": ["src/styles.css"],

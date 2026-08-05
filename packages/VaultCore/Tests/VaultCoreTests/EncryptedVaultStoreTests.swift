@@ -124,6 +124,33 @@ final class EncryptedVaultStoreTests: XCTestCase {
         XCTAssertEqual(try migrated.read(name: "AFTER").value, "ok")
     }
 
+    func test_newerVaultSchemaFailsClosed() throws {
+        let keyBytes = Data(repeating: 5, count: 32)
+        try keyBytes.write(to: dir.appendingPathComponent("master.key"), options: .atomic)
+        KeychainMasterKey.deleteForTests(account: keyAccount)
+        let plaintext = Data("{\"version\":4,\"records\":{},\"revisions\":[],\"authenticatorAccounts\":[]}".utf8)
+        let blob = try VaultFileCrypto.seal(plaintext, key: SymmetricKey(data: keyBytes))
+        try blob.write(to: dir.appendingPathComponent("secrets.vault"), options: .atomic)
+
+        XCTAssertThrowsError(try EncryptedVaultStore(directory: dir).list()) { error in
+            XCTAssertTrue("\(error)".contains("requires a newer Vibe Vault"), "unexpected error: \(error)")
+        }
+    }
+
+    func test_authenticatorRevisionHistoryTracksCreateUpdateAndDelete() throws {
+        var account = AuthenticatorAccount(
+            issuer: "Example", accountName: "alice", secret: Data("seed".utf8)
+        )
+        try store.addAuthenticator(account)
+        account.favorite = true
+        try store.updateAuthenticator(account)
+        try store.deleteAuthenticator(id: account.id)
+
+        let history = try store.authenticatorRevisions(id: account.id)
+        XCTAssertEqual(history.map(\.action), [.deleted, .updated, .created])
+        XCTAssertTrue(history.first?.isDeleted == true)
+    }
+
     func test_migrates_legacy_vault_with_encrypted_rollback_copy() throws {
         let keyBytes = Data(repeating: 9, count: 32)
         let legacyKeyURL = dir.appendingPathComponent("master.key")

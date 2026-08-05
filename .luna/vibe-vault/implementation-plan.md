@@ -19,6 +19,9 @@ Canonical product docs: `PRODUCT.md`, `DESIGN.md`, `CLAUDE.md` at repo root.
 
 ## Next (credentials / release)
 
+- [x] Execute `docs/MFA_AUTHENTICATOR_PLAN.md`: first-class standalone TOTP
+  accounts, QR/image/manual import, recovery codes, safe CLI, encrypted sync,
+  and AMLIQ native handoff without seeds in URLs
 - [ ] Notarized Developer ID release build + `v0.1.0` tag
 - [ ] Homebrew tap push + launch posts
 - [ ] Authenticate Cloudflare Observability for day-7 post-launch

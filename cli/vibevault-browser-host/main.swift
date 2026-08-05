@@ -1,63 +1,8 @@
+import AppKit
 import Foundation
 import VaultCore
 
 private let maxMessageSize = 128 * 1024
-
-struct BrowserImportRequest: Decodable {
-    let type: String
-    let name: String?
-    let value: String?
-    let provider: String?
-    let sourceUrl: String?
-    let overwrite: Bool?
-    let mcpAllowed: Bool?
-}
-
-struct BrowserImportResponse: Encodable {
-    let ok: Bool
-    let name: String?
-    let error: String?
-    let code: String?
-    let version: String?
-
-    static func success(name: String) -> BrowserImportResponse {
-        BrowserImportResponse(ok: true, name: name, error: nil, code: nil, version: nil)
-    }
-
-    static func pong() -> BrowserImportResponse {
-        BrowserImportResponse(ok: true, name: nil, error: nil, code: nil, version: "0.1.0")
-    }
-
-    static func failure(_ error: String, code: String = "host_error") -> BrowserImportResponse {
-        BrowserImportResponse(ok: false, name: nil, error: error, code: code, version: nil)
-    }
-}
-
-enum BrowserHostError: Error, CustomStringConvertible {
-    case invalidType
-    case invalidName
-    case invalidValue
-    case duplicate(String)
-    case oversizedMessage
-    case incompleteMessage
-
-    var description: String {
-        switch self {
-        case .invalidType:
-            return "unsupported browser host request"
-        case .invalidName:
-            return "invalid secret name"
-        case .invalidValue:
-            return "invalid secret value"
-        case .duplicate(let name):
-            return "secret '\(name)' already exists"
-        case .oversizedMessage:
-            return "native message is too large"
-        case .incompleteMessage:
-            return "incomplete native message"
-        }
-    }
-}
 
 final class NativeMessagingHost {
     private let input: FileHandle
@@ -89,6 +34,22 @@ final class NativeMessagingHost {
             if request.type == "ping" {
                 return .pong()
             }
+            if request.type == "save_authenticator" {
+                guard let input = request.otpauthURI,
+                      !input.isEmpty, input.utf8.count <= 16_384 else {
+                    throw BrowserHostError.invalidAuthenticator
+                }
+                do {
+                    try AuthenticatorHandoff.enqueue(input)
+                } catch {
+                    throw BrowserHostError.invalidAuthenticator
+                }
+                openVibeVaultApp()
+                DistributedNotificationCenter.default().post(
+                    name: Notification.Name(AuthenticatorHandoff.notificationName), object: nil
+                )
+                return .success(name: "authenticator")
+            }
             guard request.type == "save_secret" else { throw BrowserHostError.invalidType }
             let name = try validatedName(request.name)
             let value = try validatedValue(request.value)
@@ -118,6 +79,15 @@ final class NativeMessagingHost {
         } catch {
             return .failure("could not save secret", code: "vault_error")
         }
+    }
+
+    private func openVibeVaultApp() {
+        guard let appURL = NSWorkspace.shared.urlForApplication(
+            withBundleIdentifier: "dev.vibevault"
+        ) else { return }
+        NSWorkspace.shared.openApplication(
+            at: appURL, configuration: NSWorkspace.OpenConfiguration()
+        ) { _, _ in }
     }
 
     private func readMessage() throws -> Data? {
@@ -190,6 +160,8 @@ final class NativeMessagingHost {
             return "oversized_message"
         case .incompleteMessage:
             return "incomplete_message"
+        case .invalidAuthenticator:
+            return "invalid_authenticator"
         }
     }
 }

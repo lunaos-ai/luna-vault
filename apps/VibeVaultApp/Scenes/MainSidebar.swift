@@ -1,12 +1,13 @@
 import SwiftUI
 
 enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-    case overview, vault, importSecrets = "import", projects, cloudSync = "cloud-sync", audit, providers, aiAgents = "ai-agents", settings
+    case overview, vault, authenticator, importSecrets = "import", projects, cloudSync = "cloud-sync", audit, providers, aiAgents = "ai-agents", settings
     var id: String { rawValue }
     var label: String {
         switch self {
         case .overview: return "Overview"
         case .vault: return "Vault"
+        case .authenticator: return "Authenticator"
         case .importSecrets: return "Import"
         case .projects: return "Projects"
         case .cloudSync: return "Cloud Sync"
@@ -20,6 +21,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         switch self {
         case .overview: return "square.grid.2x2.fill"
         case .vault: return "key.fill"
+        case .authenticator: return "number.square"
         case .importSecrets: return "square.and.arrow.down"
         case .projects: return "folder.badge.questionmark"
         case .cloudSync: return "icloud.fill"
@@ -31,7 +33,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
     }
     var section: String {
         switch self {
-        case .overview, .vault, .importSecrets: return "Library"
+        case .overview, .vault, .authenticator, .importSecrets: return "Library"
         case .projects, .cloudSync, .providers, .aiAgents: return "Workflows"
         case .audit, .settings: return "System"
         }

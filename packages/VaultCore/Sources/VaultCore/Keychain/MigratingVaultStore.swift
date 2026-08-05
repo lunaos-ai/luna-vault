@@ -1,7 +1,7 @@
 import Foundation
 
 /// File vault first; legacy Keychain is copied in once, then never read again for that name.
-public final class MigratingVaultStore: VersionedSecretStoring, @unchecked Sendable {
+public final class MigratingVaultStore: VersionedSecretStoring, VersionedAuthenticatorStoring, @unchecked Sendable {
     private let primary: EncryptedVaultStore
     private let legacy: KeychainStore
     private let queue = DispatchQueue(label: "dev.vibevault.migrate")
@@ -81,6 +81,49 @@ public final class MigratingVaultStore: VersionedSecretStoring, @unchecked Senda
 
     public func restoreRevision(id: UUID, restoredAt: Date = Date()) throws -> Secret {
         try primary.restoreRevision(id: id, restoredAt: restoredAt)
+    }
+
+    public func addAuthenticator(_ account: AuthenticatorAccount) throws {
+        try primary.addAuthenticator(account)
+    }
+
+    public func updateAuthenticator(_ account: AuthenticatorAccount) throws {
+        try primary.updateAuthenticator(account)
+    }
+
+    public func readAuthenticator(id: UUID) throws -> AuthenticatorAccount {
+        try primary.readAuthenticator(id: id)
+    }
+
+    public func listAuthenticators() throws -> [AuthenticatorAccountMetadata] {
+        try primary.listAuthenticators()
+    }
+
+    public func allAuthenticators() throws -> [AuthenticatorAccount] {
+        try primary.allAuthenticators()
+    }
+
+    public func deleteAuthenticator(id: UUID) throws {
+        try primary.deleteAuthenticator(id: id)
+    }
+
+    public func addAuthenticator(_ account: AuthenticatorAccount, action: AuthenticatorRevisionAction) throws {
+        try primary.addAuthenticator(account, action: action)
+    }
+    public func updateAuthenticator(_ account: AuthenticatorAccount, action: AuthenticatorRevisionAction) throws {
+        try primary.updateAuthenticator(account, action: action)
+    }
+    public func deleteAuthenticator(id: UUID, action: AuthenticatorRevisionAction) throws {
+        try primary.deleteAuthenticator(id: id, action: action)
+    }
+    public func authenticatorRevisions(id: UUID) throws -> [AuthenticatorRevision] {
+        try primary.authenticatorRevisions(id: id)
+    }
+    public func allAuthenticatorRevisions() throws -> [AuthenticatorRevision] {
+        try primary.allAuthenticatorRevisions()
+    }
+    public func mergeAuthenticatorRevisions(_ revisions: [AuthenticatorRevision]) throws {
+        try primary.mergeAuthenticatorRevisions(revisions)
     }
 
     /// How many Keychain items are not yet in the file vault.

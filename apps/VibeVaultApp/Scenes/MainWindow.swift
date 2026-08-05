@@ -25,6 +25,7 @@ struct MainWindow: View {
             env.refresh()
             env.refreshAudit()
             env.refreshSharedUnlockSessionStatus()
+            consumeAuthenticatorHandoff()
             showOnboarding = env.needsOnboarding
             if ProcessInfo.processInfo.environment["VIBEVAULT_UX_SMOKE"] == "1" {
                 showOnboarding = false
@@ -77,6 +78,11 @@ struct MainWindow: View {
                 await UXSmokeTour.run(setSelection: { selection = $0 }, env: env)
             }
         }
+        .onReceive(DistributedNotificationCenter.default().publisher(
+            for: Notification.Name(AuthenticatorHandoff.notificationName)
+        )) { _ in
+            consumeAuthenticatorHandoff()
+        }
         .sheet(isPresented: $showOnboarding) {
             OnboardingScene(
                 onScanProject: {
@@ -96,6 +102,17 @@ struct MainWindow: View {
             )
             .environmentObject(env)
             .interactiveDismissDisabled()
+        }
+    }
+
+    private func consumeAuthenticatorHandoff() {
+        do {
+            guard let input = try AuthenticatorHandoff.consume() else { return }
+            env.pendingAuthenticatorInput = input
+            selection = .authenticator
+        } catch {
+            env.lastError = "\(error)"
+            env.showToast("Could not open browser authenticator request", feedback: .caution)
         }
     }
 
@@ -120,6 +137,7 @@ struct MainWindow: View {
                 onScanProject: { selection = .projects },
                 onOpenImport: { selection = .importSecrets }
             )
+        case .authenticator: AuthenticatorView()
         case .importSecrets: ImportView()
         case .projects: ProjectScannerView()
         case .cloudSync: CloudSyncView()

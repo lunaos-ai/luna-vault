@@ -26,5 +26,7 @@
     <string>© 2026 LunaOS. All rights reserved.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>vibe-vault uses Touch ID to authorize reads of your secrets.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Vibe Vault uses the camera to scan authenticator QR codes locally.</string>
 </dict>
 </plist>

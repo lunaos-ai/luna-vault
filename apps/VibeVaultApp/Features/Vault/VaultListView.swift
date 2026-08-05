@@ -7,6 +7,7 @@ struct VaultListView: View {
     @State private var multiSelection: Set<Secret.ID> = []
     @State private var isSelecting = false
     @State private var showAdd = false
+    @State private var showAddVerificationCode = false
     @State private var search = ""
     @State private var filter: VaultListFilter = .all
     @State private var sort: VaultListSort = .name
@@ -37,6 +38,9 @@ struct VaultListView: View {
         .toolbar { toolbar }
         .sheet(isPresented: $showAdd) {
             AddSecretSheet().environmentObject(env)
+        }
+        .sheet(isPresented: $showAddVerificationCode) {
+            AddAuthenticatorSheet().environmentObject(env)
         }
         .sheet(isPresented: $showRecentlyDeleted) {
             RecentlyDeletedSecretsSheet().environmentObject(env)
@@ -179,11 +183,17 @@ struct VaultListView: View {
                 .help("Select multiple secrets")
                 .disabled(env.secrets.isEmpty)
             }
-            Button { showAdd = true } label: {
-                Label("Add Secret", systemImage: "plus")
+            Menu {
+                Button { showAdd = true } label: {
+                    Label("Secret", systemImage: "key")
+                }
+                Button { showAddVerificationCode = true } label: {
+                    Label("Verification Code", systemImage: "number.square")
+                }
+            } label: {
+                Label("Add", systemImage: "plus")
             }
-            .keyboardShortcut("n", modifiers: .command)
-            .help("Add secret (⌘N)")
+            .help("Add a secret or verification code")
             .disabled(isSelecting)
 
             Button {

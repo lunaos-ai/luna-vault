@@ -27,3 +27,26 @@ final class NullAuditLogger: AuditLogging, @unchecked Sendable {
     func query(_ filter: AuditFilter) throws -> [AuditEvent] { [] }
     func purge(olderThan: Date) throws -> Int { 0 }
 }
+
+final class InMemoryAuthenticatorStore: AuthenticatorStoring, @unchecked Sendable {
+    private var accounts: [UUID: AuthenticatorAccount] = [:]
+    func addAuthenticator(_ account: AuthenticatorAccount) throws {
+        if accounts[account.id] != nil { throw AuthenticatorError.duplicate(account.id) }
+        accounts[account.id] = account
+    }
+    func updateAuthenticator(_ account: AuthenticatorAccount) throws {
+        guard accounts[account.id] != nil else { throw AuthenticatorError.notFound(account.id) }
+        accounts[account.id] = account
+    }
+    func readAuthenticator(id: UUID) throws -> AuthenticatorAccount {
+        guard let account = accounts[id] else { throw AuthenticatorError.notFound(id) }
+        return account
+    }
+    func listAuthenticators() throws -> [AuthenticatorAccountMetadata] {
+        accounts.values.map(AuthenticatorAccountMetadata.init)
+    }
+    func allAuthenticators() throws -> [AuthenticatorAccount] { Array(accounts.values) }
+    func deleteAuthenticator(id: UUID) throws {
+        guard accounts.removeValue(forKey: id) != nil else { throw AuthenticatorError.notFound(id) }
+    }
+}

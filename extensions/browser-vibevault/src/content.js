@@ -1,4 +1,26 @@
 (() => {
+  if (location.hostname === "amliq.finance" || location.hostname.endsWith(".amliq.finance")) {
+    chrome.runtime.sendMessage({ type: "VV_PING_NATIVE" }, (response) => {
+      if (response?.ok) {
+        window.postMessage({ type: "VV_AUTHENTICATOR_AVAILABLE" }, location.origin);
+      }
+    });
+    window.addEventListener("message", (event) => {
+      if (event.source !== window || event.origin !== location.origin) return;
+      if (event.data?.type !== "VV_SAVE_AUTHENTICATOR") return;
+      const otpauthURI = String(event.data?.otpauthURI || "");
+      chrome.runtime.sendMessage(
+        { type: "VV_SAVE_AUTHENTICATOR", payload: { otpauthURI } },
+        (response) => window.postMessage({
+          type: "VV_SAVE_AUTHENTICATOR_RESULT",
+          ok: Boolean(response?.ok),
+          code: response?.code || null,
+          error: response?.error || null
+        }, location.origin)
+      );
+    });
+  }
+
   const PROVIDERS = [
     {
       id: "gemini",
