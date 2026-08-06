@@ -24,6 +24,7 @@ struct VibeVaultMCP {
             service: service, clientName: "unknown", prefs: prefs, registry: registry
         )
         let server = MCPServer(context: context, agentDetector: detector)
+        CoordinationRegistry.default.register()
         await server.run()
     }
 }

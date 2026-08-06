@@ -88,6 +88,7 @@ enum MCPTools {
             case "suggest_secrets_for_task": return try suggestSecrets(args: arguments, context: context)
             case "reconcile_provider": return try await MCPProviderTools.reconcile(args: arguments, context: context)
             case "push_secrets": return try await MCPProviderTools.push(args: arguments, context: context)
+            case "pull_secrets": return try await MCPProviderTools.pull(args: arguments, context: context)
             default: return errorResult("Unknown tool: \(name)")
             }
         } catch {

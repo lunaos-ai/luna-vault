@@ -54,8 +54,8 @@ struct PrepareCursorBar: View {
         status = nil
         defer { busy = false }
         do {
-            let binary = MCPBinaryLocator.resolve()
-            let path = FileManager.default.isExecutableFile(atPath: binary) ? binary : nil
+            let binary = MCPBinaryResolver.resolve() ?? ""
+            let path = !binary.isEmpty && FileManager.default.isExecutableFile(atPath: binary) ? binary : nil
             let result = try CursorProjectPrep.prepare(
                 projectURL: projectURL,
                 mcpBinaryPath: path,

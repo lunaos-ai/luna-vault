@@ -5,7 +5,7 @@ description: >-
   scanning projects for required env vars, importing dotenv, pushing to
   Cloudflare/Vercel/PushCI, reading secrets via MCP, or auditing agent access.
   Never ask the user to paste secrets into chat.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Vibe Vault
@@ -36,7 +36,8 @@ Local-first secret manager on macOS Keychain. Every read is audited per agent.
 | `read_secret` | Value if MCP-allowed |
 | `set_mcp_allowed` | Revoke only (`allowed: false`). Enable in the app. |
 | `reconcile_provider` | Compare vault ↔ Cloudflare/Vercel/PushCI |
-| `push_secrets` | Push MCP-allowed secrets to a provider |
+| `push_secrets` | Push MCP-allowed secrets to a provider (`dry_run` supported) |
+| `pull_secrets` | Pull secret names/values from a provider; optionally import into vault |
 | `get_audit_log` | Optional `agent`, `secret`, `limit` |
 | `suggest_secrets_for_task` | Names only for a task + project path |
 

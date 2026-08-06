@@ -42,7 +42,8 @@ let package = Package(
                 "VaultCore",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
-            path: "cli/vibevault"
+            path: "cli/vibevault",
+            exclude: ["vibevault.entitlements"]
         ),
         .executableTarget(
             name: "vibevault-browser-host",
@@ -52,7 +53,8 @@ let package = Package(
         .executableTarget(
             name: "vibevault-mcp",
             dependencies: ["VaultCore"],
-            path: "cli/vibevault-mcp"
+            path: "cli/vibevault-mcp",
+            exclude: ["vibevault-mcp.entitlements"]
         ),
         .executableTarget(
             name: "VibeVaultApp",
