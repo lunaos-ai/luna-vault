@@ -1,13 +1,13 @@
 import Foundation
 
 /// Embedded canonical coordination skill; keep in sync with
-/// `.devin/skills/luna-vault-agent-coordination/SKILL.md`.
+/// `.devin/skills/vibevault agent-coordination/SKILL.md`.
 public enum CoordinationSkillContent {
     public static let version = "1.0.0"
 
     public static let markdown = """
     ---
-    name: luna-vault-agent-coordination
+    name: vibevault agent-coordination
     description: Coordinate work across multiple AI-agent sessions for Luna Vault / Vibe Vault projects so they do not overwrite each other on the same repo or its dependency worktrees. Use when the user is working on a Luna Vault project that depends on another local project, wants another agent to update a dependency, or needs to avoid conflicting edits across Claude/Cursor/Devin sessions.
     version: \(version)
     ---
@@ -38,37 +38,39 @@ public enum CoordinationSkillContent {
     ## Quick start
 
     1. When the Vibe Vault MCP server is installed and started, the session is registered automatically under `~/.luna/agents/registry/`.
-    2. Before editing a repo or its dependency, run `luna-vault-agent lock <repo-path>`.
-    3. If you need another project changed, find an active agent with `luna-vault-agent peers --repo <other-repo>`.
-    4. Send a request: `luna-vault-agent ask --to <session-id> --task "update project Y to ..."`.
+    2. Before editing a repo or its dependency, run `vibevault agent lock <repo-path>`.
+    3. If you need another project changed, find an active agent with `vibevault agent peers --repo <other-repo>`.
+    4. Send a request: `vibevault agent ask --to <session-id> --task "update project Y to ..."`.
     5. Wait for the response file to appear, then apply/merge it.
-    6. Release the lock with `luna-vault-agent unlock <repo-path>` when done.
+    6. Release the lock with `vibevault agent unlock <repo-path>` when done.
 
-    If you are not running through the MCP server (for example, a standalone CLI workflow), register manually with `luna-vault-agent register --nick <nickname>`. The nickname makes it easy to tell multiple sessions on the same repo apart.
+    If you are not running through the MCP server (for example, a standalone CLI workflow), register manually with `vibevault agent register --nick <nickname>`. The nickname makes it easy to tell multiple sessions on the same repo apart.
+
+    If Vibe Vault is not available, the same protocol can be driven by `python3 .devin/skills/luna-vault-agent-coordination/scripts/luna-vault-agent.py`.
 
     ## Workflows
 
     ### Discover peers
 
     ```bash
-    luna-vault-agent peers --repo /Users/shaharsolomon/projects/lunaos/luna-vault
+    vibevault agent peers --repo /Users/shaharsolomon/projects/lunaos/luna-vault
     ```
 
     If a matching session is running, note its `sessionId` and capabilities.
 
     ### Request a change in another project
 
-    1. Run `luna-vault-agent ask --to <peer-session-id> --task "..."`.
-    2. Poll the inbox for a response: `luna-vault-agent poll --from <peer-session-id> --timeout 300`.
+    1. Run `vibevault agent ask --to <peer-session-id> --task "..."`.
+    2. Poll the inbox for a response: `vibevault agent poll --from <peer-session-id> --timeout 300`.
     3. The response contains either `status: done` with a diff/url or `status: blocked` with a reason.
     4. If done, review the change in the other project before returning to your main task.
 
     ### Avoid overwriting another agent
 
     ```bash
-    luna-vault-agent lock /path/to/project-X
+    vibevault agent lock /path/to/project-X
     # do your edits
-    luna-vault-agent unlock /path/to/project-X
+    vibevault agent unlock /path/to/project-X
     ```
 
     If the lock is already held, wait or message the holding session.
@@ -76,8 +78,8 @@ public enum CoordinationSkillContent {
     ### Leave a note for other agents
 
     ```bash
-    luna-vault-agent note --repo /path/to/project-X --text "Refactoring helper.ts; do not touch exports."
-    luna-vault-agent notes --repo /path/to/project-X
+    vibevault agent note --repo /path/to/project-X --text "Refactoring helper.ts; do not touch exports."
+    vibevault agent notes --repo /path/to/project-X
     ```
 
     ## Reference
