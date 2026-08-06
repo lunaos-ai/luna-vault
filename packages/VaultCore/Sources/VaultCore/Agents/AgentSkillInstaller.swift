@@ -113,7 +113,7 @@ public enum AgentSkillInstaller {
     /// Install all known skills for a single target.
     public static func installAll(target: AgentSkillTarget, fromRepo root: URL? = nil) throws {
         for skillName in AgentSkillName.allCases {
-            let content = root.map { try? loadSkillFromRepo(root: $0, skillName: skillName) } ?? nil
+            let content = root.map { loadSkillFromRepo(root: $0, skillName: skillName) } ?? nil
             try install(target: target, skillName: skillName, content: content ?? nil)
         }
     }
