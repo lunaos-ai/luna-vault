@@ -48,6 +48,8 @@ All notable changes to Vibe Vault are documented here.
 ### Changed
 
 - Replaced Windsurf with Devin as a supported AI coding client (MCP, agent skill, audit filters)
+- Added AI-agent CLI guidance for scoped injection, controlled value retrieval,
+  local macOS Keychain access, and safe handling of sandbox-only failures.
 
 ### Fixed
 

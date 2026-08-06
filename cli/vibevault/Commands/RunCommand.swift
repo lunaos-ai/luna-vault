@@ -6,7 +6,31 @@ struct RunCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "run",
         abstract: "Run a command with secrets injected as environment variables.",
-        usage: "vibevault run [--only NAME] [--exclude NAME] -- <command> [args...]"
+        usage: "vibevault run [--only NAME] [--exclude NAME] -- <command> [args...]",
+        discussion: """
+        Prefer injection over retrieval. Select only the secrets the child
+        process needs:
+
+          vibevault run --only GHCR_TOKEN -- your-command
+
+        Map a secret to the name expected by a child tool without printing it:
+
+          vibevault run --only GHCR_TOKEN -- \\
+            sh -c 'GH_TOKEN="$GHCR_TOKEN" exec gh auth status'
+
+        When the user explicitly needs the raw value, prefer the clipboard:
+
+          vibevault run --only GHCR_TOKEN -- \\
+            sh -c 'printf %s "$GHCR_TOKEN" | pbcopy'
+
+        `printenv GHCR_TOKEN` prints the value into terminal or agent output and
+        should be used only with explicit user approval.
+
+        This command needs local access to the same Mac, user, and macOS
+        Keychain context as Vibe Vault. If Terminal works but an agent sandbox
+        fails, request approved host-level execution; never reset the vault
+        master key.
+        """
     )
 
     @Option(name: .long, parsing: .upToNextOption, help: "Only inject these named secrets.") var only: [String] = []

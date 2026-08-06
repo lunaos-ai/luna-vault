@@ -99,6 +99,31 @@ rules:
 vibevault agents prepare --target all
 ```
 
+AI agents run `vibevault` on the same Mac and user account as the vault. They
+also need access to the local macOS login and Keychain security context. A
+sandboxed agent process can fail even when the identical command works in
+Terminal. In that case, request user-approved host-level execution; never reset
+or replace the vault master key.
+
+Use a value without revealing it:
+
+```bash
+vibevault run --only GHCR_TOKEN -- your-command
+```
+
+Copy a value only when the user explicitly needs it:
+
+```bash
+vibevault run --only GHCR_TOKEN -- \
+  sh -c 'printf %s "$GHCR_TOKEN" | pbcopy'
+```
+
+See [AI Agent CLI Access](docs/AI_AGENT_CLI_ACCESS.md) for environment-variable
+mapping, controlled value retrieval, local-access requirements, and the safe
+response when an agent reports `bad master key in Keychain` but Terminal works.
+The same operational guidance ships inside `vibevault --help` and
+`vibevault help run`.
+
 The installed policy says:
 
 ```md
@@ -109,6 +134,8 @@ The installed policy says:
 - If a secret is missing, ask the user to import it into Vibe Vault; never ask
   them to paste the value into chat.
 - Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Run the CLI locally with macOS Keychain access; request approved host-level
+  execution if the agent sandbox cannot access the vault.
 - Prefer `.env.example` only for non-secret defaults and required names.
 ```
 

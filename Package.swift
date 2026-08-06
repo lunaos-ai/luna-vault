@@ -45,6 +45,11 @@ let package = Package(
             path: "cli/vibevault",
             exclude: ["vibevault.entitlements"]
         ),
+        .testTarget(
+            name: "vibevaultTests",
+            dependencies: ["vibevault"],
+            path: "cli/vibevaultTests"
+        ),
         .executableTarget(
             name: "vibevault-browser-host",
             dependencies: ["VaultCore"],

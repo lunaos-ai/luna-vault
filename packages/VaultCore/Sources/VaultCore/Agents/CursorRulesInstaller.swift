@@ -3,7 +3,7 @@ import Foundation
 /// Installs `.cursor/rules/vibevault.mdc` so Cursor agents follow vault workflow.
 public enum CursorRulesInstaller {
     public static let fileName = "vibevault.mdc"
-    public static let version = "1.2.0"
+    public static let version = "1.3.0"
 
     public static func rulesDirectory(projectURL: URL) -> URL {
         projectURL.appendingPathComponent(".cursor/rules")
@@ -47,6 +47,8 @@ public enum CursorRulesInstaller {
         - Call `scan_project` with the workspace root before assuming env vars exist.
         - Only `read_secret` when the secret is MCP-allowed; otherwise tell the user to allow it in Vibe Vault.
         - Never commit `.env` or `.env.*` with real secrets. Suggest `vibevault guard install`.
+        - Prefer `vibevault run --only NAME -- <command>` so raw values never enter chat or logs.
+        - CLI access must be local to this Mac and macOS Keychain context. If Terminal works but the agent sandbox fails, request approved host-level execution; never reset the vault master key.
         - When asked to create a secret-bearing `.env`, create or update `.env.example` and tell the user to import real values into Vibe Vault.
         - Push to Cloudflare / Vercel / PushCI via MCP `push_secrets` or Providers UI — not by pasting tokens.
         - On "who read this secret?", use MCP `get_audit_log`.

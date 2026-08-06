@@ -33,6 +33,8 @@ public enum AgentSkillContent {
     3. **No `.env` in git.** Suggest import via Vibe Vault; use `vibevault guard install`.
     4. **Push.** MCP `push_secrets` or Providers UI (Cloudflare, Vercel, PushCI).
     5. **Audit.** Use `get_audit_log` when asked which agent read a key.
+    6. **Stay local.** CLI reads require the same Mac, user, and macOS Keychain
+       context. Request approved host-level execution when a sandbox blocks access.
 
     ## MCP tools
 
@@ -64,5 +66,29 @@ public enum AgentSkillContent {
     vibevault skill install
     vibevault cursor prepare --path .
     ```
+
+    Prefer scoped injection over reading a raw value:
+
+    ```bash
+    vibevault run --only GHCR_TOKEN -- your-command
+    ```
+
+    If a tool expects another variable name, map it only in the child process:
+
+    ```bash
+    vibevault run --only GHCR_TOKEN -- \\
+      sh -c 'GH_TOKEN="$GHCR_TOKEN" exec gh auth status'
+    ```
+
+    Only when the user explicitly needs the value, copy it without printing it:
+
+    ```bash
+    vibevault run --only GHCR_TOKEN -- \\
+      sh -c 'printf %s "$GHCR_TOKEN" | pbcopy'
+    ```
+
+    If `vibevault list` works in Terminal but an agent reports `bad master key in
+    Keychain`, do not reset or replace the key. Retry with user-approved host-level
+    local execution. The sandbox may lack the required Keychain security context.
     """
 }

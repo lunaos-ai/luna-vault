@@ -5,7 +5,7 @@ public enum AgentsMarkdownGenerator {
     public static let marker = "<!-- vibe-vault -->"
     public static let endMarker = "<!-- /vibe-vault -->"
     public static let fileName = "AGENTS.md"
-    public static let version = "1.2.0"
+    public static let version = "1.3.0"
 
     public static func generate(scan: ScanResult?, projectName: String) -> String {
         let required = Array(scan?.required ?? []).sorted()
@@ -28,6 +28,8 @@ public enum AgentsMarkdownGenerator {
         - Missing from vault: \(missingLine)
         - Do not commit `.env` / `.env.*` (except `.env.example`). Prefer `vibevault cursor prepare`.
         - Allow AI access per secret in Vibe Vault before calling `read_secret`.
+        - Prefer `vibevault run --only NAME -- <command>` so raw values never enter chat or logs.
+        - CLI access must be local to this Mac and macOS Keychain context. If Terminal works but the agent sandbox fails, request approved host-level execution; never reset the vault master key.
         - For real secrets, prefer Vibe Vault over creating plaintext `.env` files. If a secret is missing, ask the user to import it into Vibe Vault instead of pasting it in chat.
 
         \(endMarker)

@@ -28,8 +28,15 @@ vibevault agents status --target all
 - If a secret is missing, ask the user to import it into Vibe Vault; never ask
   them to paste the value into chat.
 - Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Prefer `vibevault run --only NAME -- <command>` over retrieving a raw value.
+- The CLI must run locally with access to the user's macOS login and Keychain
+  context. If Terminal works but an agent sandbox fails, request approved
+  host-level execution. Never reset or recreate the vault master key.
 - Prefer `.env.example` only for non-secret defaults and required names.
 ```
+
+For safe injection, clipboard retrieval, environment-variable mapping, and
+agent-only Keychain failures, see [AI Agent CLI Access](AI_AGENT_CLI_ACCESS.md).
 
 ## ChatGPT Codex
 

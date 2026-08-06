@@ -93,6 +93,8 @@ public enum AgentPolicyInstaller {
         - Do not create `.env` / `.env.*` files with real secret values.
         - If a secret is missing, ask the user to import it into Vibe Vault; never ask them to paste the raw value into chat.
         - Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+        - Prefer `vibevault run --only NAME -- <command>` so raw values never enter chat or logs.
+        - Vibe Vault CLI access must be local to this Mac and macOS Keychain context. If Terminal works but the agent sandbox fails, request approved host-level execution; never reset the vault master key.
         - Keep `.env.example` only for required names and safe defaults.
 
         \(AgentsMarkdownGenerator.endMarker)
