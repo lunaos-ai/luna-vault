@@ -36,8 +36,8 @@ public enum CursorProjectPrep {
         try CursorRulesInstaller.install(projectURL: projectURL)
         messages.append("Cursor rules")
 
-        try AgentSkillInstaller.install(target: .cursor)
-        messages.append("Skill")
+        try AgentSkillInstaller.installAll(target: .cursor)
+        messages.append("Skills")
 
         var mcpOK = false
         if let binary = mcpBinaryPath, FileManager.default.isExecutableFile(atPath: binary) {

@@ -17,10 +17,10 @@ struct SkillInstallCommand: AsyncParsableCommand {
     var target: String = "all"
 
     mutating func run() async throws {
-        let content = resolveContent()
+        let repo = resolveRepoRoot()
         let targets = try resolveTargets(target)
-        for t in targets { try AgentSkillInstaller.install(target: t, content: content) }
-        print("installed skill to \(targets.map { $0.installDirectory.path }.joined(separator: ", "))")
+        for t in targets { try AgentSkillInstaller.installAll(target: t, fromRepo: repo) }
+        print("installed skills to \(targets.map { $0.skillsRootDirectory.path }.joined(separator: ", "))")
     }
 
     private func resolveTargets(_ raw: String) throws -> [AgentSkillTarget] {
@@ -31,13 +31,17 @@ struct SkillInstallCommand: AsyncParsableCommand {
         return [t]
     }
 
-    private func resolveContent() -> String {
+    private func resolveRepoRoot() -> URL? {
         let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        if let c = AgentSkillInstaller.loadSkillFromRepo(root: cwd) { return c }
+        if AgentSkillInstaller.loadSkillFromRepo(root: cwd, skillName: .vibevault) != nil {
+            return cwd
+        }
         let repo = URL(fileURLWithPath: #file)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        if let c = AgentSkillInstaller.loadSkillFromRepo(root: repo) { return c }
-        return AgentSkillInstaller.bundledSkillContent()
+        if AgentSkillInstaller.loadSkillFromRepo(root: repo, skillName: .vibevault) != nil {
+            return repo
+        }
+        return nil
     }
 }
 
