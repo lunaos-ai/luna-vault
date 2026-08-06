@@ -64,6 +64,7 @@ def cmd_register(args: argparse.Namespace) -> int:
     payload = {
         "sessionId": sid,
         "agent": agent_name(),
+        "nick": args.nick or agent_name(),
         "pid": os.getpid(),
         "repo": args.repo,
         "worktree": args.worktree or args.repo,
@@ -84,7 +85,7 @@ def cmd_peers(args: argparse.Namespace) -> int:
         data = json.loads(path.read_text())
         if args.repo and data.get("repo") != args.repo:
             continue
-        print(f"{data['sessionId']}\t{data['agent']}\t{data.get('repo', '')}\t{','.join(data.get('capabilities', []))}")
+        print(f"{data['sessionId']}\t{data.get('nick', data['agent'])}\t{data['agent']}\t{data.get('repo', '')}\t{','.join(data.get('capabilities', []))}")
         found = True
     if not found:
         print("(no active peers)")
@@ -219,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     p_reg = sub.add_parser("register", help="register this session")
     p_reg.add_argument("--repo", required=True)
     p_reg.add_argument("--worktree")
+    p_reg.add_argument("--nick")
     p_reg.add_argument("--capabilities", nargs="+", default=[])
 
     p_peers = sub.add_parser("peers", help="list active peer sessions")

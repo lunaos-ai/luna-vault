@@ -36,7 +36,7 @@ You can also back this protocol with a shared SQLite database (`~/.luna/agents/c
 5. Wait for the response file to appear, then apply/merge it.
 6. Release the lock with `luna-vault-agent unlock <repo-path>` when done.
 
-If you are not running through the MCP server (for example, a standalone CLI workflow), register manually with `luna-vault-agent register`.
+If you are not running through the MCP server (for example, a standalone CLI workflow), register manually with `luna-vault-agent register --nick <nickname>`. The nickname makes it easy to tell multiple sessions on the same repo apart.
 
 ## Workflows
 

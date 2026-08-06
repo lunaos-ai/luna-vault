@@ -16,6 +16,7 @@
 {
   "sessionId": "...",
   "agent": "claude-code",
+  "nick": "cursor-vault-fix",
   "pid": 12345,
   "repo": "/Users/.../project-x",
   "worktree": "/Users/.../project-x",
@@ -23,6 +24,10 @@
   "startTime": "2026-08-06T14:00:00Z"
 }
 ```
+
+- `sessionId` is the unique key (one file per session).
+- `nick` is a human-readable name; it defaults to the agent name and can be set with `--nick`.
+- Multiple sessions may share the same `repo`; each gets its own registry file and its own lock must be respected.
 
 A session should update its registry file on heartbeat. Peers consider a file stale if it is older than 10 minutes and ignore it.
 
