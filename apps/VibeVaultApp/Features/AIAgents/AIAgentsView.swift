@@ -7,7 +7,7 @@ struct AIAgentsView: View {
     @State private var lastError: String?
     @State private var testResult: String?
     @State private var testing = false
-    @State private var binaryPath: String = MCPBinaryLocator.resolve()
+    @State private var binaryPath: String = MCPBinaryResolver.resolve() ?? ""
 
     private var priorityClients: [MCPClientID] {
         [.cursor, .vscode, .devin, .claudeCode, .claudeDesktop]
@@ -120,7 +120,7 @@ struct AIAgentsView: View {
         var out: [MCPClientID: MCPInstallStatus] = [:]
         for kind in MCPClientID.allCases { out[kind] = MCPClientInstaller.status(of: kind) }
         statuses = out
-        binaryPath = MCPBinaryLocator.resolve()
+        binaryPath = MCPBinaryResolver.resolve() ?? ""
     }
 
     private func install(_ client: MCPClientID) {

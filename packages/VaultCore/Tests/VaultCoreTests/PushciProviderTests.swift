@@ -4,6 +4,11 @@ import XCTest
 final class PushciProviderTests: XCTestCase {
     private var calls: [(URL, [String], String?)] = []
 
+    override func setUp() {
+        super.setUp()
+        calls = []
+    }
+
     private func mockRunner(projectPath: URL, args: [String], input: String?) throws -> String {
         calls.append((projectPath, args, input))
         switch args {
@@ -103,5 +108,26 @@ final class PushciProviderTests: XCTestCase {
         } catch {
             XCTAssertTrue("\(error)".contains("project_path"))
         }
+    }
+
+    func test_cloud_token_from_cli_config() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vv-pushci-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let cfgDir = dir.appendingPathComponent(".pushci", isDirectory: true)
+        try FileManager.default.createDirectory(at: cfgDir, withIntermediateDirectories: true)
+        let cfg = #"{"token":" jwt-from-file ","email":"dev@example.com"}"#
+        try Data(cfg.utf8).write(to: cfgDir.appendingPathComponent("config.json"))
+        XCTAssertEqual(PushciConfig.loadCLIConfigToken(home: dir), "jwt-from-file")
+    }
+
+    func test_cloud_token_prefers_env() {
+        let token = PushciConfig.cloudToken(
+            prefs: InMemoryPrefs(),
+            env: ["PUSHCI_TOKEN": " env-tok "],
+            home: URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")
+        )
+        XCTAssertEqual(token, "env-tok")
     }
 }

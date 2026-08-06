@@ -17,6 +17,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "VV_SAVE_AUTHENTICATOR") {
+    const input = String(message.payload?.otpauthURI || "");
+    chrome.runtime.sendNativeMessage(HOST_NAME, {
+      type: "save_authenticator",
+      otpauthURI: input
+    }, (response) => {
+      const error = chrome.runtime.lastError;
+      sendResponse(error
+        ? { ok: false, code: "native_host_unavailable", error: error.message }
+        : (response || { ok: false, code: "empty_response", error: "No response from Vibe Vault host" }));
+    });
+    return true;
+  }
+
   if (message.type !== "VV_SAVE_SECRET") {
     return false;
   }

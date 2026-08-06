@@ -110,8 +110,8 @@ struct OnboardingScene: View {
     }
 
     private func quickInstall(_ clients: [MCPClientID]) {
-        let binary = MCPBinaryLocator.resolve()
-        guard FileManager.default.isExecutableFile(atPath: binary) else {
+        let binary = MCPBinaryResolver.resolve() ?? ""
+        guard !binary.isEmpty, FileManager.default.isExecutableFile(atPath: binary) else {
             installStatus = "Build the app first, then reinstall MCP clients."
             return
         }

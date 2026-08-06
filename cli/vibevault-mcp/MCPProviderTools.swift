@@ -12,16 +12,17 @@ enum MCPProviderTools {
                     "provider": ["type": "string", "description": "cloudflare | vercel | pushci"],
                     "account_id": ["type": "string"],
                     "script_name": ["type": "string"],
-                    "project_id": ["type": "string"],
+                    "project_id": ["type": "string", "description": "Vercel project id, or PushCI cloud project UUID"],
                     "team_id": ["type": "string"],
-                    "project_path": ["type": "string", "description": "Project root for Wrangler or PushCI scope detection (absolute path)"]
+                    "project_path": ["type": "string", "description": "Project root for Wrangler or local PushCI"],
+                    "environment": ["type": "string", "description": "PushCI cloud secret environment (default *)"]
                 ],
                 "required": ["provider"]
             ]
         ),
         MCPToolDef(
             name: "push_secrets",
-            description: "Push MCP-allowed vault secrets to Cloudflare, Vercel, or PushCI local store.",
+            description: "Push MCP-allowed vault secrets to Cloudflare, Vercel, or PushCI.",
             inputSchema: [
                 "type": "object",
                 "properties": [
@@ -33,11 +34,32 @@ enum MCPProviderTools {
                     ],
                     "account_id": ["type": "string"],
                     "script_name": ["type": "string"],
-                    "project_id": ["type": "string"],
+                    "project_id": ["type": "string", "description": "Vercel project id, or PushCI cloud project UUID"],
                     "team_id": ["type": "string"],
-                    "project_path": ["type": "string"]
+                    "project_path": ["type": "string", "description": "Local PushCI project root or Wrangler project"],
+                    "environment": ["type": "string", "description": "PushCI cloud secret environment (default *)"],
+                    "allow_ci": ["type": "boolean", "description": "PushCI cloud: add names to ci_secret_names"],
+                    "dry_run": ["type": "boolean", "description": "Print what would be pushed without sending."]
                 ],
                 "required": ["provider", "names"]
+            ]
+        ),
+        MCPToolDef(
+            name: "pull_secrets",
+            description: "Pull secret names (and values where supported) from Cloudflare, Vercel, or PushCI.",
+            inputSchema: [
+                "type": "object",
+                "properties": [
+                    "provider": ["type": "string", "description": "cloudflare | vercel | pushci"],
+                    "account_id": ["type": "string"],
+                    "script_name": ["type": "string"],
+                    "project_id": ["type": "string", "description": "Vercel project id, or PushCI cloud project UUID"],
+                    "team_id": ["type": "string"],
+                    "project_path": ["type": "string", "description": "Local PushCI project root or Wrangler project"],
+                    "environment": ["type": "string", "description": "PushCI cloud secret environment (default *)"],
+                    "import_secrets": ["type": "boolean", "description": "Import pulled secrets with non-empty values into the local vault."]
+                ],
+                "required": ["provider"]
             ]
         )
     ]
@@ -47,7 +69,7 @@ enum MCPProviderTools {
             return MCPTools.errorResult("missing 'provider'")
         }
         let provider = try resolveProvider(id: providerId, context: context)
-        let target = try target(for: providerId, args: args)
+        let target = try MCPProviderTarget.resolve(id: providerId, args: args)
         let local = Set(try context.service.list().map(\.name))
         let r = try await ProviderNameSync.reconcile(
             provider: provider, target: target, localNames: local
@@ -77,7 +99,14 @@ enum MCPProviderTools {
             )
         }
         let provider = try resolveProvider(id: providerId, context: context)
-        let target = try target(for: providerId, args: args)
+        let target = try MCPProviderTarget.resolve(id: providerId, args: args)
+        if (args["dry_run"] as? Bool) == true {
+            let dest = target.scope["project_id"].map { "cloud project \($0)" }
+                ?? target.scope["project_path"].map { "local \($0)" }
+                ?? provider.displayName
+            return MCPTools.textResult("[dry-run] would push \(names.count) secrets to \(dest):\n" +
+                names.map { "  - \($0)" }.joined(separator: "\n"))
+        }
         var items: [Secret] = []
         for name in names {
             let secret = try await context.service.read(
@@ -96,58 +125,44 @@ enum MCPProviderTools {
         )
     }
 
+    static func pull(args: [String: Any], context: MCPContext) async throws -> [String: Any] {
+        guard let providerId = args["provider"] as? String else {
+            return MCPTools.errorResult("missing 'provider'")
+        }
+        let provider = try resolveProvider(id: providerId, context: context)
+        let target = try MCPProviderTarget.resolve(id: providerId, args: args)
+        let secrets = try await provider.pull(target: target)
+        let shouldImport = (args["import_secrets"] as? Bool) == true
+        if shouldImport {
+            let items = secrets
+                .filter { !$0.value.isEmpty }
+                .map { VaultService.ImportItem(name: $0.name, value: $0.value, notes: "imported from \(provider.displayName)") }
+            let result = try context.service.importSecrets(items, overwrite: true)
+            let lines = [
+                "pulled: \(secrets.count)",
+                "imported: \(result.imported.count)",
+                "updated: \(result.updated.count)",
+                "skipped: \(result.skipped.count)",
+                "failed: \(result.failed.count)"
+            ]
+            if !result.failed.isEmpty {
+                let failures = result.failed.map { "\($0.0): \($0.1)" }.joined(separator: "; ")
+                return MCPTools.textResult(lines.joined(separator: "\n") + "\n" + failures)
+            }
+            return MCPTools.textResult(lines.joined(separator: "\n"))
+        }
+        let lines = secrets.map { secret in
+            secret.value.isEmpty
+                ? "\(secret.name)  (value not retrievable from \(provider.displayName))"
+                : "\(secret.name)=\(secret.maskedValue)"
+        }
+        return MCPTools.textResult(lines.joined(separator: "\n"))
+    }
+
     private static func resolveProvider(id: String, context: MCPContext) throws -> SecretProvider {
         guard let p = context.registry.provider(id: id) else {
             throw ProviderError.unsupported(id)
         }
         return p
-    }
-
-    private static func target(for providerId: String, args: [String: Any]) throws -> ProviderTarget {
-        var scope: [String: String] = [:]
-        switch providerId {
-        case "cloudflare":
-            if let a = args["account_id"] as? String, !a.isEmpty { scope["account_id"] = a }
-            if let s = args["script_name"] as? String, !s.isEmpty { scope["script_name"] = s }
-            if let path = args["project_path"] as? String, !path.isEmpty {
-                let cfg = WranglerConfig.load(from: URL(fileURLWithPath: path).standardizedFileURL)
-                if scope["account_id"] == nil, let accountId = cfg.accountId { scope["account_id"] = accountId }
-                if scope["script_name"] == nil, let scriptName = cfg.scriptName { scope["script_name"] = scriptName }
-            }
-            let env = ProcessInfo.processInfo.environment
-            if scope["account_id"] == nil {
-                scope["account_id"] = firstEnv(env, ["CLOUDFLARE_ACCOUNT_ID", "CF_ACCOUNT_ID"])
-            }
-            if scope["script_name"] == nil {
-                scope["script_name"] = firstEnv(env, ["CLOUDFLARE_SCRIPT_NAME", "CF_SCRIPT_NAME", "WRANGLER_SCRIPT_NAME"])
-            }
-            guard scope["account_id"] != nil, scope["script_name"] != nil else {
-                throw ProviderError.missingScope(
-                    "account_id + script_name, project_path with Wrangler config, or Cloudflare env vars"
-                )
-            }
-        case "vercel":
-            if let p = args["project_id"] as? String, !p.isEmpty { scope["project_id"] = p }
-            if let t = args["team_id"] as? String, !t.isEmpty { scope["team_id"] = t }
-            guard scope["project_id"] != nil else {
-                throw ProviderError.missingScope("project_id")
-            }
-        case "pushci":
-            if let p = args["project_path"] as? String, !p.isEmpty { scope["project_path"] = p }
-            guard scope["project_path"] != nil else {
-                throw ProviderError.missingScope("project_path")
-            }
-        default:
-            throw ProviderError.unsupported(providerId)
-        }
-        return ProviderTarget(provider: providerId, scope: scope)
-    }
-
-    private static func firstEnv(_ env: [String: String], _ names: [String]) -> String? {
-        for name in names {
-            let value = env[name]?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if value?.isEmpty == false { return value }
-        }
-        return nil
     }
 }

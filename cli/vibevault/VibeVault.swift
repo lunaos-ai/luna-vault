@@ -26,7 +26,9 @@ struct VibeVault: AsyncParsableCommand {
             GuardCommand.self,
             CursorCommand.self,
             AgentsCommand.self,
-            LicenseCommand.self
+            AgentCommand.self,
+            LicenseCommand.self,
+            OTPCommand.self
         ]
     )
 }

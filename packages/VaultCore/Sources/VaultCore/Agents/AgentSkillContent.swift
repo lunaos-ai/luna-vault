@@ -2,7 +2,7 @@ import Foundation
 
 /// Embedded canonical skill; keep in sync with `skills/vibevault/SKILL.md`.
 public enum AgentSkillContent {
-    public static let version = "1.1.0"
+    public static let version = "1.2.0"
 
     public static let markdown = """
     ---
@@ -43,7 +43,8 @@ public enum AgentSkillContent {
     | `read_secret` | Value if MCP-allowed |
     | `set_mcp_allowed` | Revoke only (`allowed: false`). Enable AI access in the app. |
     | `reconcile_provider` | Compare vault ↔ Cloudflare/Vercel/PushCI |
-    | `push_secrets` | Push MCP-allowed secrets to a provider |
+    | `push_secrets` | Push MCP-allowed secrets to a provider (`dry_run` supported) |
+    | `pull_secrets` | Pull secret names/values from a provider; optionally import into vault |
     | `get_audit_log` | Optional `agent`, `secret`, `limit` |
     | `suggest_secrets_for_task` | Names only for a task + project path |
 

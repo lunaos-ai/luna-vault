@@ -1,0 +1,32 @@
+name: appstore
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  upload:
+    runs-on: macos-14
+    timeout-minutes: 30
+    env:
+      APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+      APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+      APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+      APPSTORE_DISTRIBUTION_IDENTITY: ${{ secrets.APPSTORE_DISTRIBUTION_IDENTITY }}
+      APPSTORE_INSTALLER_IDENTITY: ${{ secrets.APPSTORE_INSTALLER_IDENTITY }}
+      APPSTORE_PROVISION_PROFILE: ${{ secrets.APPSTORE_PROVISION_PROFILE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 15
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Upload to App Store Connect
+        if: env.APPSTORE_API_KEY_ID != '' && env.APPSTORE_API_KEY != ''
+        run: bash scripts/appstore-upload.sh
+
+      - name: Skip (no App Store credentials)
+        if: env.APPSTORE_API_KEY_ID == '' || env.APPSTORE_API_KEY == ''
+        run: echo "App Store credentials not configured; skipping upload."

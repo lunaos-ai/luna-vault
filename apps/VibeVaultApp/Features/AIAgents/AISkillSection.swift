@@ -69,8 +69,8 @@ struct AISkillSection: View {
 
     private func installAll() {
         do {
-            try AgentSkillInstaller.installAll(content: AgentSkillInstaller.bundledSkillContent())
-            message = "Skill v\(AgentSkillContent.version) installed."
+            try AgentSkillInstaller.installAll()
+            message = "Vibe Vault + coordination skills installed."
             refresh()
         } catch {
             message = "\(error)"

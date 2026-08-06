@@ -19,9 +19,12 @@ enum SyncSnapshotBuilder {
             let secret = try await service.read(name: name, reason: "Export \(name) for encrypted cloud sync")
             secrets.append(CloudSyncSecret(secret: secret))
         }
+        let authenticatorService = try AuthenticatorService(vaultService: service)
         return CloudSyncSnapshot(
             secrets: secrets,
-            revisions: try service.revisionsForEncryptedBackup()
+            revisions: try service.revisionsForEncryptedBackup(),
+            authenticatorAccounts: try await authenticatorService.accountsForEncryptedBackup(),
+            authenticatorRevisions: try authenticatorService.revisionsForEncryptedBackup()
         )
     }
 }
@@ -54,8 +57,17 @@ enum SyncImporter {
             }
         }
         try service.mergeRevisionsFromEncryptedBackup(snapshot.revisions)
+        let authenticatorService = try AuthenticatorService(vaultService: service)
+        let authResult = try await authenticatorService.importAccounts(
+            snapshot.authenticatorAccounts,
+            duplicatePolicy: overwrite ? .replace : .skip
+        )
+        try authenticatorService.mergeRevisionsFromEncryptedBackup(
+            snapshot.authenticatorRevisions
+        )
 
         print("imported \(result.imported.count), updated \(result.updated.count), skipped \(result.skipped.count), failed \(result.failed.count)")
+        print("authenticators imported \(authResult.imported.count), replaced \(authResult.replaced.count), skipped \(authResult.skipped.count)")
         print("source: \(snapshot.sourceHost) at \(ISO8601DateFormatter().string(from: snapshot.exportedAt))")
         for failure in result.failed {
             FileHandle.standardError.write(Data("failed \(failure.0): \(failure.1)\n".utf8))

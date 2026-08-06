@@ -3,6 +3,7 @@ import Foundation
 public enum ProviderCredentialStore {
     public static let cloudflareTokenKey = "cloudflare.api_token"
     public static let vercelTokenKey = "vercel.api_token"
+    public static let pushciTokenKey = "pushci.api_token"
 
     public static func cloudflareToken(prefs: PreferenceStoring) -> String? {
         token(forKey: cloudflareTokenKey, prefs: prefs)
@@ -29,6 +30,14 @@ public enum ProviderCredentialStore {
 
     public static func setVercelToken(_ token: String?, prefs: PreferenceStoring) {
         setToken(token, forKey: vercelTokenKey, prefs: prefs)
+    }
+
+    public static func pushciToken(prefs: PreferenceStoring) -> String? {
+        token(forKey: pushciTokenKey, prefs: prefs)
+    }
+
+    public static func setPushciToken(_ token: String?, prefs: PreferenceStoring) {
+        setToken(token, forKey: pushciTokenKey, prefs: prefs)
     }
 
     private static func token(forKey key: String, prefs: PreferenceStoring) -> String? {

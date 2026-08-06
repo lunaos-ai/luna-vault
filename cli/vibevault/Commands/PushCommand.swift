@@ -10,9 +10,11 @@ struct PushCommand: AsyncParsableCommand {
 
     @Option(name: .long, help: "Provider id (cloudflare, vercel, pushci).") var to: String
     @Option(name: .long, parsing: .upToNextOption, help: "Secret names to push (default: all).") var name: [String] = []
-    @Option(name: .long, parsing: .upToNextOption, help: "Scope key=value pairs (e.g. account_id=abc).") var scope: [String] = []
+    @Option(name: .long, parsing: .upToNextOption, help: "Scope key=value pairs (e.g. project_id=…).") var scope: [String] = []
     @Option(name: .long, help: "Project directory for provider scope auto-detection.") var project: String?
     @Flag(name: .long, help: "Dry-run; print what would be pushed.") var dryRun = false
+    @Flag(name: .long, help: "PushCI cloud: also add names to execution policy ci_secret_names.")
+    var allowCI = false
 
     mutating func run() async throws {
         let service = try VaultService.live()
@@ -22,10 +24,18 @@ struct PushCommand: AsyncParsableCommand {
             FileHandle.standardError.write(Data("unknown provider: \(to)\n".utf8))
             throw ExitCode(2)
         }
-        let target = try ProviderScopeResolver.target(provider: to, pairs: scope, projectPath: project)
+        var target = try ProviderScopeResolver.target(provider: to, pairs: scope, projectPath: project)
+        if to == "pushci", allowCI {
+            var scopeMap = target.scope
+            scopeMap["allow_ci"] = "true"
+            target = ProviderTarget(provider: to, scope: scopeMap)
+        }
         let names = name.isEmpty ? try service.list().map(\.name) : name
         if dryRun {
-            print("[dry-run] would push \(names.count) secrets to \(provider.displayName)")
+            let dest = target.scope["project_id"].map { "cloud project \($0)" }
+                ?? target.scope["project_path"].map { "local \($0)" }
+                ?? provider.displayName
+            print("[dry-run] would push \(names.count) secrets to \(dest)")
             for name in names { print("  - \(name)") }
             return
         }

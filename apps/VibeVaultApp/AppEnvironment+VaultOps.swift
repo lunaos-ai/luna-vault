@@ -122,6 +122,7 @@ extension AppEnvironment {
     func refresh() {
         do { secrets = try service.list().sorted { $0.name < $1.name } }
         catch { lastError = "\(error)" }
+        refreshAuthenticators()
     }
 
     func refreshAudit(filter: AuditFilter = AuditFilter()) {

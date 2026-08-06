@@ -25,6 +25,10 @@ public enum MCPBinaryResolver {
         }
         paths.append("/usr/local/bin/vibevault-mcp")
         paths.append("/opt/homebrew/bin/vibevault-mcp")
+        let pathVar = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"
+        for dir in pathVar.split(separator: ":") {
+            paths.append("\(dir)/vibevault-mcp")
+        }
         return paths
     }
 }

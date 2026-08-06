@@ -6,11 +6,12 @@ import Foundation
 public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Sendable {
     public static let revisionRetentionPerSecret = 50
     static let legacyMigrationBackupFilename = "secrets.vault.pre-versioning-v1"
+    static let schemaV3MigrationBackupFilename = "secrets.vault.pre-schema-v3"
 
     private let fileURL: URL
     private let keyURL: URL
     private let keyAccount: String
-    private let queue = DispatchQueue(label: "dev.vibevault.vaultfile")
+    let queue = DispatchQueue(label: "dev.vibevault.vaultfile")
     private var key: SymmetricKey?
 
     public static func defaultDirectory() -> URL {
@@ -157,7 +158,7 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
 
     // MARK: - Persistence
 
-    private func masterKey() throws -> SymmetricKey {
+    func masterKey() throws -> SymmetricKey {
         if let key { return key }
         let loaded = try VaultFileCrypto.loadOrCreateKey(
             legacyFileURL: keyURL, account: keyAccount
@@ -166,7 +167,7 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
         return loaded
     }
 
-    private func loadDocument() throws -> VaultDocument {
+    func loadDocument() throws -> VaultDocument {
         let fm = FileManager.default
         guard fm.fileExists(atPath: fileURL.path) else { return VaultDocument() }
         let blob = try Data(contentsOf: fileURL)
@@ -174,7 +175,16 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
         if var document = try? dec.decode(VaultDocument.self, from: plain) {
-            if backfillRevisionBaselines(in: &document) {
+            guard document.version <= 3 else {
+                throw SecretError.vaultIO("vault schema \(document.version) requires a newer Vibe Vault")
+            }
+            let requiresMigration = document.version < 3
+            document.version = 3
+            let addedBaselines = backfillRevisionBaselines(in: &document)
+            if requiresMigration {
+                try preserveVault(blob, filename: Self.schemaV3MigrationBackupFilename)
+            }
+            if requiresMigration || addedBaselines {
                 try saveDocument(document)
             }
             return document
@@ -188,8 +198,12 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
     }
 
     private func preserveLegacyVault(_ blob: Data) throws {
+        try preserveVault(blob, filename: Self.legacyMigrationBackupFilename)
+    }
+
+    private func preserveVault(_ blob: Data, filename: String) throws {
         let backupURL = fileURL.deletingLastPathComponent()
-            .appendingPathComponent(Self.legacyMigrationBackupFilename)
+            .appendingPathComponent(filename)
         guard !FileManager.default.fileExists(atPath: backupURL.path) else { return }
         try blob.write(to: backupURL, options: .atomic)
         try FileManager.default.setAttributes(
@@ -198,7 +212,7 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
         VaultPaths.excludeFromBackup(backupURL)
     }
 
-    private func saveDocument(_ document: VaultDocument) throws {
+    func saveDocument(_ document: VaultDocument) throws {
         let enc = JSONEncoder()
         enc.dateEncodingStrategy = .iso8601
         let plain = try enc.encode(document)
@@ -248,13 +262,36 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
         return true
     }
 
-    private struct VaultDocument: Codable {
-        var version = 2
+    struct VaultDocument: Codable {
+        var version = 3
         var records: [String: Record] = [:]
         var revisions: [SecretRevision] = []
+        var authenticatorAccounts: [UUID: AuthenticatorAccount] = [:]
+        var authenticatorRevisions: [AuthenticatorRevision] = []
+
+        enum CodingKeys: String, CodingKey {
+            case version, records, revisions, authenticatorAccounts, authenticatorRevisions
+        }
+
+        init(records: [String: Record] = [:]) {
+            self.records = records
+        }
+
+        init(from decoder: Decoder) throws {
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            version = try values.decodeIfPresent(Int.self, forKey: .version) ?? 2
+            records = try values.decodeIfPresent([String: Record].self, forKey: .records) ?? [:]
+            revisions = try values.decodeIfPresent([SecretRevision].self, forKey: .revisions) ?? []
+            authenticatorAccounts = try values.decodeIfPresent(
+                [UUID: AuthenticatorAccount].self, forKey: .authenticatorAccounts
+            ) ?? [:]
+            authenticatorRevisions = try values.decodeIfPresent(
+                [AuthenticatorRevision].self, forKey: .authenticatorRevisions
+            ) ?? []
+        }
     }
 
-    private struct Record: Codable {
+    struct Record: Codable {
         var name: String
         var value: String
         var createdAt: Date?

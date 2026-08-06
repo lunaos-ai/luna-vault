@@ -40,6 +40,11 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+### Added
+
+- PushCI cloud project secret onboarding: `vibevault push --to pushci --scope project_id=…`
+  (JWT from `PUSHCI_TOKEN` or `~/.pushci/config.json`; optional `--allow-ci` for `ci_secret_names`)
+
 ### Changed
 
 - Replaced Windsurf with Devin as a supported AI coding client (MCP, agent skill, audit filters)

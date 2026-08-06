@@ -5,6 +5,7 @@ import VaultCore
 @MainActor
 final class AppEnvironment: ObservableObject {
     @Published var secrets: [Secret] = []
+    @Published var authenticatorAccounts: [AuthenticatorAccountMetadata] = []
     @Published var lastError: String?
     @Published var scanResult: ScanResult?
     @Published var isScanning: Bool = false
@@ -37,6 +38,7 @@ final class AppEnvironment: ObservableObject {
     @Published var openAddSecret = false
     @Published var focusVaultSearch = false
     @Published var copySelectedSecret = false
+    @Published var pendingAuthenticatorInput: String?
     @Published var toastMessage: String?
     @Published var uiSoundsEnabled: Bool = true {
         didSet {
@@ -110,10 +112,15 @@ final class AppEnvironment: ObservableObject {
     )
 
     let service: VaultService
+    let authenticatorService: AuthenticatorService
     let registry: ProviderRegistry
 
-    init(service: VaultService, registry: ProviderRegistry, prefs: PreferenceStoring = KeychainPrefs()) {
+    init(
+        service: VaultService, authenticatorService: AuthenticatorService,
+        registry: ProviderRegistry, prefs: PreferenceStoring = KeychainPrefs()
+    ) {
         self.service = service
+        self.authenticatorService = authenticatorService
         self.registry = registry
         self.prefs = prefs
         var loaded = prefs.codable(AppSettings.self, forKey: Self.settingsKey)
@@ -152,8 +159,10 @@ final class AppEnvironment: ObservableObject {
     static func makeLive() -> AppEnvironment {
         let prefs = KeychainPrefs()
         do {
+            let service = try VaultService.live()
             return AppEnvironment(
-                service: try VaultService.live(),
+                service: service,
+                authenticatorService: try AuthenticatorService(vaultService: service),
                 registry: ProviderRegistry.defaultsWithToken(from: prefs),
                 prefs: prefs
             )
@@ -166,6 +175,11 @@ final class AppEnvironment: ObservableObject {
             )
             return AppEnvironment(
                 service: stub,
+                authenticatorService: AuthenticatorService(
+                    store: InMemoryAuthenticatorStore(), audit: stub.audit,
+                    detector: stub.detector, biometric: stub.biometric,
+                    sessionId: stub.sessionId
+                ),
                 registry: ProviderRegistry.defaultsWithToken(from: prefs),
                 prefs: prefs
             )

@@ -18,6 +18,7 @@ struct AppCloudSyncPreview: Equatable {
     let exportedAtText: String
     let secretCount: Int
     let revisionCount: Int
+    let authenticatorCount: Int
     let sizeText: String
     let newCount: Int
     let backupNewerCount: Int
@@ -179,9 +180,9 @@ extension AppEnvironment {
         do {
             let data = try Data(contentsOf: url)
             let snapshot = try decryptCloudSync(data, credential: credential)
-            let result = try importCloudSyncSnapshot(snapshot, policy: policy)
+            let result = try await importCloudSyncSnapshot(snapshot, policy: policy)
             refresh()
-            showToast("Imported \(result.imported + result.updated) secrets from \(sourceName)")
+            showToast("Imported \(result.imported + result.updated) vault items from \(sourceName)")
             return true
         } catch {
             lastError = "\(error)"
@@ -211,6 +212,7 @@ extension AppEnvironment {
             exportedAtText: snapshot.exportedAt.formatted(date: .abbreviated, time: .shortened),
             secretCount: snapshot.secrets.count,
             revisionCount: snapshot.revisions.count,
+            authenticatorCount: snapshot.authenticatorAccounts.count,
             sizeText: ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file),
             newCount: comparison.newNames.count,
             backupNewerCount: comparison.backupNewerNames.count,
@@ -391,14 +393,16 @@ extension AppEnvironment {
         }
         return CloudSyncSnapshot(
             secrets: items,
-            revisions: try service.revisionsForEncryptedBackup()
+            revisions: try service.revisionsForEncryptedBackup(),
+            authenticatorAccounts: try await authenticatorService.accountsForEncryptedBackup(),
+            authenticatorRevisions: try authenticatorService.revisionsForEncryptedBackup()
         )
     }
 
     private func importCloudSyncSnapshot(
         _ snapshot: CloudSyncSnapshot,
         policy: AppCloudSyncImportPolicy
-    ) throws -> (imported: Int, updated: Int, skipped: Int) {
+    ) async throws -> (imported: Int, updated: Int, skipped: Int) {
         var imported = 0
         var updated = 0
         var skipped = 0
@@ -450,6 +454,16 @@ extension AppEnvironment {
             }
         }
         try service.mergeRevisionsFromEncryptedBackup(snapshot.revisions)
+        let authResult = try await authenticatorService.importAccounts(
+            snapshot.authenticatorAccounts,
+            duplicatePolicy: policy == .replaceAll ? .replace : .skip
+        )
+        try authenticatorService.mergeRevisionsFromEncryptedBackup(
+            snapshot.authenticatorRevisions
+        )
+        imported += authResult.imported.count
+        updated += authResult.replaced.count
+        skipped += authResult.skipped.count
         return (imported: imported, updated: updated, skipped: skipped)
     }
 }

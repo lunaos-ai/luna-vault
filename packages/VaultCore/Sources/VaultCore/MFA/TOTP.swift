@@ -1,47 +1,15 @@
 import CryptoKit
 import Foundation
 
-public enum TOTPAlgorithm: String, Codable, Equatable, Sendable {
-    case sha1
-    case sha256
-    case sha512
-}
-
-public struct TOTPAccount: Equatable, Sendable {
-    public let secret: Data
-    public let issuer: String?
-    public let account: String?
-    public let digits: Int
-    public let period: Int
-    public let algorithm: TOTPAlgorithm
-}
-
-public struct TOTPCode: Equatable, Sendable {
-    public let code: String
-    public let secondsRemaining: Int
-    public let period: Int
-}
-
-public enum TOTPError: Error, Equatable, CustomStringConvertible {
-    case invalidSecret
-    case invalidURL
-    case unsupportedAlgorithm(String)
-    case invalidParameter(String)
-
-    public var description: String {
-        switch self {
-        case .invalidSecret: return "invalid MFA setup key"
-        case .invalidURL: return "invalid otpauth URL"
-        case .unsupportedAlgorithm(let value): return "unsupported MFA algorithm: \(value)"
-        case .invalidParameter(let value): return "invalid MFA parameter: \(value)"
-        }
-    }
-}
-
 public enum TOTPGenerator {
     public static func account(from input: String) throws -> TOTPAccount {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw TOTPError.invalidSecret }
+        guard trimmed.utf8.count <= 16_384 else { throw TOTPError.invalidParameter("input size") }
+        if trimmed.count == 6 || trimmed.count == 8,
+           trimmed.allSatisfy(\.isNumber) {
+            throw TOTPError.temporaryCode
+        }
         if trimmed.lowercased().hasPrefix("otpauth://") {
             return try account(fromAuthURL: trimmed)
         }
@@ -88,10 +56,10 @@ public enum TOTPGenerator {
     }
 
     public static func code(for account: TOTPAccount, at date: Date = Date()) throws -> TOTPCode {
-        guard account.digits > 0, account.digits <= 10 else {
+        guard account.digits == 6 || account.digits == 8 else {
             throw TOTPError.invalidParameter("digits")
         }
-        guard account.period > 0 else { throw TOTPError.invalidParameter("period") }
+        guard (15...300).contains(account.period) else { throw TOTPError.invalidParameter("period") }
 
         let counter = UInt64(floor(date.timeIntervalSince1970 / Double(account.period)))
         var bigEndianCounter = counter.bigEndian
@@ -129,13 +97,19 @@ public enum TOTPGenerator {
         var query: [String: String] = [:]
         for item in components.queryItems ?? [] {
             if let value = item.value {
-                query[item.name.lowercased()] = value
+                let name = item.name.lowercased()
+                guard query[name] == nil else {
+                    throw TOTPError.invalidParameter("duplicate \(name)")
+                }
+                query[name] = value
             }
         }
         guard let secretText = query["secret"], !secretText.isEmpty else { throw TOTPError.invalidSecret }
         let algorithm = try parseAlgorithm(query["algorithm"])
         let digits = try parsePositiveInt(query["digits"], defaultValue: 6, name: "digits")
+        guard digits == 6 || digits == 8 else { throw TOTPError.invalidParameter("digits") }
         let period = try parsePositiveInt(query["period"], defaultValue: 30, name: "period")
+        guard (15...300).contains(period) else { throw TOTPError.invalidParameter("period") }
         let label = components.path.removingPercentEncoding?
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let issuerFromLabel: String?
@@ -146,6 +120,9 @@ public enum TOTPGenerator {
         } else {
             issuerFromLabel = nil
             accountFromLabel = label?.isEmpty == false ? label : nil
+        }
+        if let issuerFromLabel, let issuer = query["issuer"], issuerFromLabel != issuer {
+            throw TOTPError.invalidParameter("issuer")
         }
         return TOTPAccount(
             secret: try decodeBase32(secretText),

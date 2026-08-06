@@ -79,7 +79,9 @@ public final class ProviderRegistry: @unchecked Sendable {
                 ProviderCredentialStore.vercelToken(prefs: prefs)
                     ?? ProcessInfo.processInfo.environment["VERCEL_TOKEN"]
             }),
-            PushciProvider()
+            PushciProvider(tokenSource: {
+                PushciConfig.cloudToken(prefs: prefs)
+            }, cloud: PushciCloudAPI(apiBase: PushciConfig.apiBase()))
         ])
         registry.register(CloudflareProvider(tokenSource: {
             ProviderCredentialStore.cloudflareToken(prefs: prefs)

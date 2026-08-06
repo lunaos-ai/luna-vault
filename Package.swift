@@ -31,13 +31,19 @@ let package = Package(
             dependencies: ["VaultCore"],
             path: "packages/VaultCore/Tests/VaultCoreTests"
         ),
+        .testTarget(
+            name: "VibeVaultAppTests",
+            dependencies: ["VibeVaultApp"],
+            path: "apps/VibeVaultAppTests"
+        ),
         .executableTarget(
             name: "vibevault",
             dependencies: [
                 "VaultCore",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
-            path: "cli/vibevault"
+            path: "cli/vibevault",
+            exclude: ["vibevault.entitlements"]
         ),
         .executableTarget(
             name: "vibevault-browser-host",
@@ -47,7 +53,8 @@ let package = Package(
         .executableTarget(
             name: "vibevault-mcp",
             dependencies: ["VaultCore"],
-            path: "cli/vibevault-mcp"
+            path: "cli/vibevault-mcp",
+            exclude: ["vibevault-mcp.entitlements"]
         ),
         .executableTarget(
             name: "VibeVaultApp",
