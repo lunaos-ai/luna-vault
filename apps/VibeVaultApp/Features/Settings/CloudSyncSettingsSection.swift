@@ -18,11 +18,21 @@ struct CloudSyncSettingsSection: View {
     @State private var recoveryRestoreKey = ""
     @State private var recoverySheetKey = ""
     @State private var recoverySheetInstallsKey = false
+    @State private var showExportBackupSheet = false
+    @State private var showImportBackupSheet = false
     @State private var showRecoverySheet = false
     @State private var confirmRemoveRecoveryKey = false
 
     private var canEncrypt: Bool {
         passphrase.count >= 12 && passphrase == confirmation && !isWorking
+    }
+
+    private var hasValidPassphraseLength: Bool {
+        passphrase.count >= 12
+    }
+
+    private var passphrasesMatch: Bool {
+        !confirmation.isEmpty && passphrase == confirmation
     }
 
     private var canSyncToICloud: Bool {
@@ -35,10 +45,6 @@ struct CloudSyncSettingsSection: View {
 
     private var canPreview: Bool {
         passphrase.count >= 12 && !isWorking
-    }
-
-    private var canImportSelected: Bool {
-        canPreview && selectedBackupURL != nil && preview != nil && selectedUnlockMethod == .passphrase
     }
 
     private var canUseRecoveryKey: Bool {
@@ -69,6 +75,11 @@ struct CloudSyncSettingsSection: View {
 
             SecureField("Sync passphrase", text: $passphrase)
             SecureField("Confirm passphrase", text: $confirmation)
+            HStack(spacing: Tokens.Space.lg) {
+                passphraseRequirement("12+ characters", satisfied: hasValidPassphraseLength)
+                passphraseRequirement("Passphrases match", satisfied: passphrasesMatch)
+            }
+            .font(.caption)
 
             Picker("Existing names on import", selection: $importPolicy) {
                 ForEach(AppCloudSyncImportPolicy.allCases) { policy in
@@ -110,25 +121,18 @@ struct CloudSyncSettingsSection: View {
 
             HStack {
                 Button {
-                    chooseExportURL()
+                    showExportBackupSheet = true
                 } label: {
-                    Label("Export backup...", systemImage: "externaldrive.badge.plus")
+                    Label("Export encrypted backup...", systemImage: "externaldrive.badge.plus")
                 }
-                .disabled(!canEncrypt)
+                .disabled(isWorking)
 
                 Button {
-                    chooseImportURL()
+                    showImportBackupSheet = true
                 } label: {
-                    Label("Choose backup...", systemImage: "folder")
+                    Label("Import encrypted backup...", systemImage: "square.and.arrow.down")
                 }
-                .disabled(!canPreview)
-
-                Button {
-                    Task { await importSelectedBackup() }
-                } label: {
-                    Label("Import selected", systemImage: "square.and.arrow.down")
-                }
-                .disabled(!canImportSelected)
+                .disabled(isWorking)
             }
 
             LabeledContent(
@@ -321,6 +325,28 @@ struct CloudSyncSettingsSection: View {
             selectedBackupURL = nil
             selectedUnlockMethod = nil
         }
+        .sheet(isPresented: $showExportBackupSheet) {
+            ExportBackupSheet(
+                recoveryProtectionEnabled: env.cachedHasBackupRecoveryKey,
+                onExport: { url, exportPassphrase in
+                    await exportBackup(to: url, passphrase: exportPassphrase)
+                }
+            )
+        }
+        .sheet(isPresented: $showImportBackupSheet) {
+            ImportBackupSheet(
+                initialPolicy: importPolicy,
+                onImport: { url, importPassphrase, policy in
+                    importPolicy = policy
+                    return await importBackup(
+                        from: url,
+                        passphrase: importPassphrase,
+                        policy: policy
+                    )
+                }
+            )
+            .environmentObject(env)
+        }
         .sheet(isPresented: $showRecoverySheet) {
             RecoveryKeySheet(
                 recoveryKey: recoverySheetKey,
@@ -348,6 +374,11 @@ struct CloudSyncSettingsSection: View {
         } message: {
             Text("Existing protected backups still require this recovery key. New backups will use only the sync passphrase.")
         }
+    }
+
+    private func passphraseRequirement(_ label: String, satisfied: Bool) -> some View {
+        Label(label, systemImage: satisfied ? "checkmark.circle.fill" : "circle")
+            .foregroundStyle(satisfied ? Tokens.Status.success : Tokens.Text.secondary)
     }
 
     private func refreshStatus() {
@@ -391,37 +422,6 @@ struct CloudSyncSettingsSection: View {
     private func previewICloud() {
         guard canPull else { return }
         previewBackup(at: CloudSync.defaultICloudURL())
-    }
-
-    private func chooseExportURL() {
-        guard canEncrypt else { return }
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = CloudSync.fileName
-        panel.title = "Export encrypted Vibe Vault backup"
-        panel.canCreateDirectories = true
-        if let type = UTType(filenameExtension: "vvsync") {
-            panel.allowedContentTypes = [type]
-        }
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            Task { await exportBackup(to: url) }
-        }
-    }
-
-    private func chooseImportURL() {
-        guard canPreview else { return }
-        let panel = NSOpenPanel()
-        panel.title = "Choose encrypted Vibe Vault backup"
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        if let type = UTType(filenameExtension: "vvsync") {
-            panel.allowedContentTypes = [type]
-        }
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            previewBackup(at: url)
-        }
     }
 
     private func previewBackup(at url: URL) {
@@ -519,29 +519,35 @@ struct CloudSyncSettingsSection: View {
         }
     }
 
-    private func exportBackup(to url: URL) async {
-        guard canEncrypt else { return }
-        isWorking = true
-        let exported = await env.pushCloudSync(to: url, passphrase: passphrase, destinationName: "backup")
-        isWorking = false
-        refreshStatus()
-        if exported {
-            confirmation = ""
-            previewBackup(at: url)
-        }
-    }
-
-    private func importSelectedBackup() async {
-        guard canImportSelected, let selectedBackupURL else { return }
+    private func exportBackup(to url: URL, passphrase exportPassphrase: String) async -> Bool {
+        guard exportPassphrase.count >= 12, !isWorking else { return false }
         isWorking = true
         defer {
             isWorking = false
             refreshStatus()
         }
-        _ = await env.pullCloudSync(
-            from: selectedBackupURL,
-            passphrase: passphrase,
-            policy: importPolicy,
+        return await env.pushCloudSync(
+            to: url,
+            passphrase: exportPassphrase,
+            destinationName: "backup"
+        )
+    }
+
+    private func importBackup(
+        from url: URL,
+        passphrase importPassphrase: String,
+        policy: AppCloudSyncImportPolicy
+    ) async -> Bool {
+        guard importPassphrase.count >= 12, !isWorking else { return false }
+        isWorking = true
+        defer {
+            isWorking = false
+            refreshStatus()
+        }
+        return await env.pullCloudSync(
+            from: url,
+            passphrase: importPassphrase,
+            policy: policy,
             sourceName: "backup"
         )
     }
@@ -568,6 +574,316 @@ struct CloudSyncSettingsSection: View {
 private enum BackupUnlockMethod {
     case passphrase
     case recoveryKey
+}
+
+private struct ImportBackupSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var env: AppEnvironment
+    let onImport: (URL, String, AppCloudSyncImportPolicy) async -> Bool
+    @State private var selectedURL: URL?
+    @State private var passphrase = ""
+    @State private var policy: AppCloudSyncImportPolicy
+    @State private var preview: AppCloudSyncPreview?
+    @State private var previewError: String?
+    @State private var isImporting = false
+
+    init(
+        initialPolicy: AppCloudSyncImportPolicy,
+        onImport: @escaping (URL, String, AppCloudSyncImportPolicy) async -> Bool
+    ) {
+        self.onImport = onImport
+        _policy = State(initialValue: initialPolicy)
+    }
+
+    private var canPreview: Bool {
+        selectedURL != nil && passphrase.count >= 12 && !isImporting
+    }
+
+    private var canImport: Bool {
+        canPreview && preview != nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            Label("Import encrypted backup", systemImage: "square.and.arrow.down")
+                .font(.title2.weight(.semibold))
+
+            Text("Choose a portable .vvsync backup, unlock it with its passphrase, then review its contents before importing.")
+                .foregroundStyle(Tokens.Text.secondary)
+
+            HStack(spacing: Tokens.Space.md) {
+                Label(
+                    selectedURL?.lastPathComponent ?? "No backup selected",
+                    systemImage: selectedURL == nil ? "doc.badge.plus" : "lock.doc"
+                )
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+                Spacer()
+
+                Button {
+                    chooseBackup()
+                } label: {
+                    Label(selectedURL == nil ? "Choose backup..." : "Change...", systemImage: "folder")
+                }
+                .disabled(isImporting)
+            }
+            .padding(Tokens.Space.md)
+            .deepInset()
+
+            SecureField("Backup passphrase", text: $passphrase)
+                .textContentType(.password)
+
+            Label(
+                "At least 12 characters",
+                systemImage: passphrase.count >= 12 ? "checkmark.circle.fill" : "circle"
+            )
+            .font(.caption)
+            .foregroundStyle(passphrase.count >= 12 ? Tokens.Status.success : Tokens.Text.secondary)
+
+            Picker("Existing names", selection: $policy) {
+                ForEach(AppCloudSyncImportPolicy.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .disabled(isImporting)
+
+            HStack {
+                Button {
+                    previewBackup()
+                } label: {
+                    Label("Preview backup", systemImage: "doc.text.magnifyingglass")
+                }
+                .disabled(!canPreview)
+
+                if preview != nil {
+                    Label("Ready to import", systemImage: "checkmark.circle.fill")
+                        .font(.callout)
+                        .foregroundStyle(Tokens.Status.success)
+                }
+            }
+
+            if let preview {
+                VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+                    LabeledContent("Source Mac", value: preview.sourceHost)
+                    LabeledContent("Exported", value: preview.exportedAtText)
+                    LabeledContent("Secrets", value: "\(preview.secretCount)")
+                    LabeledContent("Saved versions", value: "\(preview.revisionCount)")
+                    LabeledContent("Size", value: preview.sizeText)
+                    Divider()
+                    LabeledContent("New locally", value: "\(preview.newCount)")
+                    LabeledContent("Backup is newer", value: "\(preview.backupNewerCount)")
+                    LabeledContent("Local is newer", value: "\(preview.localNewerCount)")
+                }
+                .font(.callout)
+                .textSelection(.enabled)
+            }
+
+            if let previewError {
+                Label(previewError, systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(Tokens.Status.danger)
+            }
+
+            Divider()
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                    .disabled(isImporting)
+
+                Spacer()
+
+                Button {
+                    importBackup()
+                } label: {
+                    if isImporting {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Label("Import backup", systemImage: "square.and.arrow.down")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canImport)
+            }
+        }
+        .padding(Tokens.Space.xl)
+        .frame(width: 580)
+        .onChange(of: passphrase) { _, _ in resetPreview() }
+        .onChange(of: policy) { _, _ in resetPreview() }
+    }
+
+    private func chooseBackup() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose encrypted Vibe Vault backup"
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        if let type = UTType(filenameExtension: "vvsync") {
+            panel.allowedContentTypes = [type]
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        selectedURL = url
+        resetPreview()
+    }
+
+    private func previewBackup() {
+        guard canPreview, let selectedURL else { return }
+        do {
+            preview = try env.previewCloudSyncBundle(at: selectedURL, passphrase: passphrase)
+            previewError = nil
+            env.showToast("Backup preview ready", feedback: .tick)
+        } catch {
+            preview = nil
+            previewError = "Could not unlock this backup. Check the file and passphrase."
+            env.lastError = "\(error)"
+            env.showToast("Backup preview failed", feedback: .caution)
+        }
+    }
+
+    private func importBackup() {
+        guard canImport, let selectedURL else { return }
+        let importPassphrase = passphrase
+        let importPolicy = policy
+        isImporting = true
+        previewError = nil
+        Task { @MainActor in
+            let imported = await onImport(selectedURL, importPassphrase, importPolicy)
+            isImporting = false
+            if imported {
+                passphrase = ""
+                dismiss()
+            } else {
+                previewError = "The backup could not be imported. Review the app error and try again."
+            }
+        }
+    }
+
+    private func resetPreview() {
+        preview = nil
+        previewError = nil
+    }
+}
+
+private struct ExportBackupSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let recoveryProtectionEnabled: Bool
+    let onExport: (URL, String) async -> Bool
+    @State private var passphrase = ""
+    @State private var confirmation = ""
+    @State private var isExporting = false
+    @State private var exportFailed = false
+
+    private var hasValidPassphraseLength: Bool {
+        passphrase.count >= 12
+    }
+
+    private var passphrasesMatch: Bool {
+        !confirmation.isEmpty && passphrase == confirmation
+    }
+
+    private var canExport: Bool {
+        hasValidPassphraseLength && passphrasesMatch && !isExporting
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.lg) {
+            Label("Export encrypted backup", systemImage: "externaldrive.badge.plus")
+                .font(.title2.weight(.semibold))
+
+            Text("Create a portable .vvsync file for another Mac or for offline recovery. Choose a new passphrase for this backup file.")
+                .foregroundStyle(Tokens.Text.secondary)
+
+            SecureField("Backup passphrase", text: $passphrase)
+                .textContentType(.newPassword)
+            SecureField("Confirm backup passphrase", text: $confirmation)
+                .textContentType(.newPassword)
+
+            HStack(spacing: Tokens.Space.lg) {
+                requirement("12+ characters", satisfied: hasValidPassphraseLength)
+                requirement("Passphrases match", satisfied: passphrasesMatch)
+            }
+            .font(.caption)
+
+            Label(
+                recoveryProtectionEnabled
+                    ? "Your recovery key will also protect this backup."
+                    : "This passphrase is the only way to unlock the exported backup.",
+                systemImage: recoveryProtectionEnabled ? "key.fill" : "exclamationmark.shield"
+            )
+            .font(.callout)
+            .foregroundStyle(Tokens.Text.secondary)
+
+            if exportFailed {
+                Label("The backup could not be exported. Review the app error and try again.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(Tokens.Status.danger)
+            }
+
+            Divider()
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                    .disabled(isExporting)
+
+                Spacer()
+
+                Button {
+                    chooseDestinationAndExport()
+                } label: {
+                    if isExporting {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Label("Choose destination and export", systemImage: "square.and.arrow.down")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canExport)
+            }
+        }
+        .padding(Tokens.Space.xl)
+        .frame(width: 560)
+        .onChange(of: passphrase) { _, _ in exportFailed = false }
+        .onChange(of: confirmation) { _, _ in exportFailed = false }
+    }
+
+    private func requirement(_ label: String, satisfied: Bool) -> some View {
+        Label(label, systemImage: satisfied ? "checkmark.circle.fill" : "circle")
+            .foregroundStyle(satisfied ? Tokens.Status.success : Tokens.Text.secondary)
+    }
+
+    private func chooseDestinationAndExport() {
+        guard canExport else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = CloudSync.fileName
+        panel.title = "Export encrypted Vibe Vault backup"
+        panel.canCreateDirectories = true
+        if let type = UTType(filenameExtension: "vvsync") {
+            panel.allowedContentTypes = [type]
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let exportPassphrase = passphrase
+        isExporting = true
+        exportFailed = false
+        Task { @MainActor in
+            let exported = await onExport(url, exportPassphrase)
+            isExporting = false
+            if exported {
+                passphrase = ""
+                confirmation = ""
+                dismiss()
+            } else {
+                exportFailed = true
+            }
+        }
+    }
 }
 
 private struct RecoveryKeySheet: View {

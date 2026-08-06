@@ -36,9 +36,10 @@ echo "==> Creating ${DMG_MB}M read-write image..."
 hdiutil create -size "${DMG_MB}m" -fs HFS+ -volname "$VOLUME_NAME" -ov "$RW_DMG" >/dev/null
 
 MOUNT_OUT=$(hdiutil attach -readwrite -noverify -noautoopen "$RW_DMG")
-MOUNT_POINT="/Volumes/$VOLUME_NAME"
-if [ ! -d "$MOUNT_POINT" ]; then
-    MOUNT_POINT=$(echo "$MOUNT_OUT" | grep -o '/Volumes/.*' | head -1)
+MOUNT_POINT=$(echo "$MOUNT_OUT" | grep -o '/Volumes/.*' | head -1)
+if [ -z "$MOUNT_POINT" ] || [ ! -d "$MOUNT_POINT" ]; then
+    echo "error: could not resolve mounted DMG path" >&2
+    exit 1
 fi
 trap 'hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true' EXIT
 

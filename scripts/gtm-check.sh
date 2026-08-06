@@ -15,7 +15,7 @@ echo "==> GTM check (vibe-vault)"
 # Hard: release artifacts in repo
 [ -f LICENSE ] && ok "LICENSE" || fail "LICENSE missing"
 [ -f CHANGELOG.md ] && ok "CHANGELOG.md" || fail "CHANGELOG.md missing"
-grep -q '0\.1\.0' cli/vibevault/VibeVault.swift && ok "CLI version 0.1.0" || fail "CLI version not 0.1.0"
+grep -q '0\.1\.2' cli/vibevault/VibeVault.swift && ok "CLI version 0.1.2" || fail "CLI version not 0.1.2"
 [ -f dist/homebrew/vibevault.rb ] && ok "Homebrew formula" || fail "Homebrew formula missing"
 [ -f marketing/landing/index.html ] && ok "Landing page" || fail "Landing page missing"
 [ -f docs/launch/LAUNCH_PACK.md ] && ok "Launch pack" || fail "Launch pack missing"
@@ -30,7 +30,8 @@ grep -q '0\.1\.0' cli/vibevault/VibeVault.swift && ok "CLI version 0.1.0" || fai
 [ -f dist/cursor-directory/vibe-vault.json ] && ok "Cursor directory draft" || fail "Cursor directory draft missing"
 
 grep -qi 'Generate new local secrets' workers/vibevault/public/index.html && ok "Landing mentions key generator" || fail "Landing missing key generator copy"
-grep -qi 'Homebrew-first launch path' workers/vibevault/public/install/index.html && ok "Homebrew-first install page" || fail "Install page missing Homebrew-first path"
+grep -qi '/downloads/VibeVault.dmg' workers/vibevault/public/install/index.html && ok "Desktop DMG download CTA" || fail "Install page missing DMG download"
+grep -qi 'not Apple-notarized' workers/vibevault/public/install/index.html && ok "DMG preview warning" || fail "Install page missing notarization warning"
 grep -qi 'Credential boundary for AI agents' workers/vibevault/public/agents/index.html && ok "AI-agent landing page" || fail "AI-agent landing page missing"
 grep -q 'vibevault agents prepare --target all' workers/vibevault/public/agents/index.html && ok "Agent policy install CTA" || fail "Agents page missing policy install CTA"
 [ -f workers/vibevault/public/llms.txt ] && grep -q 'vibevault agents prepare --target all' workers/vibevault/public/llms.txt && ok "LLM guidance file" || fail "LLM guidance file missing"
@@ -101,6 +102,20 @@ else
   warn "Could not verify live Worker health"
 fi
 
+if command -v curl >/dev/null 2>&1 &&
+   curl -sSI --max-time 8 http://vibevault.lunaos.ai/ | tr -d '\r' | grep -qi '^location: https://vibevault\.lunaos\.ai/'; then
+  ok "HTTP redirects to HTTPS"
+else
+  warn "HTTP does not redirect to HTTPS"
+fi
+
+if command -v curl >/dev/null 2>&1 &&
+   curl -sSI --max-time 8 https://vibevault.lunaos.ai/ | tr -d '\r' | grep -qi '^strict-transport-security:'; then
+  ok "HTTPS sends HSTS"
+else
+  warn "HTTPS response missing HSTS"
+fi
+
 # Soft: homebrew tap remote
 if command -v gh >/dev/null 2>&1 && gh repo view finsavvyai/homebrew-tap &>/dev/null; then
   ok "finsavvyai/homebrew-tap reachable"
@@ -111,4 +126,4 @@ fi
 echo ""
 echo "Summary: $FAIL fail, $WARN warn"
 if [ "$FAIL" -gt 0 ]; then exit 1; fi
-echo "GTM artifacts ready. Homebrew, source, website, and Chrome importer are live; native app launch still needs Developer ID notarization."
+echo "GTM artifacts ready. Desktop preview, Homebrew, source, website, and Chrome importer are live; Gatekeeper-safe native distribution still needs Developer ID notarization."

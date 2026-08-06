@@ -13,11 +13,12 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/webhooks/*", "/health", "/download", "/install", "/alternatives", "/alternatives/*", "/vs-*", "/api/*"]
+    "run_worker_first": true
   },
   "vars": {
     "LANDING_URL": "https://vibevault.lunaos.ai/",
     "DOWNLOAD_URL": "https://lunaos.ai/download/vibevault",
+    "DOWNLOAD_DMG_URL": "https://lunaos-marketing.pages.dev/downloads/VibeVault.dmg",
     "FROM_EMAIL": "licenses@lunaos.ai",
     "VIBEVAULT_CHECKOUT_BASE": "https://finsavvy.lemonsqueezy.com/checkout/buy",
     "VIBEVAULT_STORE_ID": "214097",

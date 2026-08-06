@@ -16,7 +16,7 @@ final class PushciCloudAPITests: XCTestCase {
     }
 
     private func provider(cloud: PushciCloudAPI) -> PushciProvider {
-        PushciProvider(tokenSource: { "jwt" }, runner: { _, _ in "" }, cloud: cloud)
+        PushciProvider(tokenSource: { "jwt" }, runner: { _, _, _ in "" }, cloud: cloud)
     }
 
     func test_cloud_pull_lists_names_only() async throws {
@@ -109,7 +109,7 @@ final class PushciCloudAPITests: XCTestCase {
     }
 
     func test_cloud_missing_auth() async {
-        let provider = PushciProvider(tokenSource: { nil }, runner: { _, _ in "" })
+        let provider = PushciProvider(tokenSource: { nil }, runner: { _, _, _ in "" })
         do {
             _ = try await provider.push(
                 secrets: [Secret(name: "FOO", value: "x")],
