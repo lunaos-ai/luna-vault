@@ -12,12 +12,12 @@
 class Vibevault < Formula
   desc "Local-first macOS secrets for AI coding — Keychain, MCP audit, provider sync"
   homepage "https://vibevault.lunaos.ai/"
-  version "0.1.2"
+  version "0.1.3"
   license "MIT"
 
   if Hardware::CPU.arm?
-    url "https://github.com/lunaos-ai/luna-vault/releases/download/v0.1.2/vibevault_0.1.2_darwin_arm64.tar.gz"
-    sha256 "1d534225fa043827081c160c40d4a897cdf4315ea2e59a87a14726ac58b0226d"
+    url "https://github.com/lunaos-ai/luna-vault/releases/download/v0.1.3/vibevault_0.1.3_darwin_arm64.tar.gz"
+    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   end
 
   head "https://github.com/lunaos-ai/luna-vault.git", branch: "main"
@@ -54,6 +54,6 @@ class Vibevault < Formula
   end
 
   test do
-    assert_match "0.1.2", shell_output("#{bin}/vibevault --version")
+    assert_match "0.1.3", shell_output("#{bin}/vibevault --version")
   end
 end

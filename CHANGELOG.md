@@ -2,6 +2,18 @@
 
 All notable changes to Vibe Vault are documented here.
 
+## [0.1.3] — 2026-08-06
+
+### Added
+
+- Cross-session agent coordination (`vibevault agent`, bundled skill, nickname support).
+- Mac App Store upload workflow and documentation.
+
+### Engineering
+
+- Split Swift source files to enforce 200 LOC limit.
+- Version tag check in `scripts/gtm-check.sh` now uses the current git tag.
+
 ## [0.1.2] — 2026-07-28
 
 ### Fixed
@@ -44,6 +56,8 @@ All notable changes to Vibe Vault are documented here.
 
 - PushCI cloud project secret onboarding: `vibevault push --to pushci --scope project_id=…`
   (JWT from `PUSHCI_TOKEN` or `~/.pushci/config.json`; optional `--allow-ci` for `ci_secret_names`)
+- Recovery-key-wrapped local master-key envelope, Time Machine eligibility, and
+  `vibevault recovery status|restore` for recovery after macOS Keychain loss.
 
 ### Changed
 
@@ -51,6 +65,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Fixed
 
+- Existing encrypted vaults now fail closed when their Keychain master key is missing or malformed instead of silently generating an unusable replacement.
 - Provider Setup sheets (Cloudflare / Vercel / PushCI token paste)
 - Import review: rename rows + project prefix; AI allow default off
 - MCP shares file vault store; `mcp test` finds bundled binary

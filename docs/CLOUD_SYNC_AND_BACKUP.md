@@ -20,6 +20,7 @@ Vibe Vault supports encrypted, user-controlled sync bundles for moving a local v
 - Single-secret preview and restore from the secret detail screen.
 - Recently Deleted recovery for names whose latest local revision is a deletion.
 - Optional printable recovery key for restoring a protected bundle when its passphrase is unavailable.
+- Local master-key recovery protection for restoring a Keychain key after Keychain loss or Mac migration.
 
 ## Security Model
 
@@ -33,6 +34,8 @@ Vibe Vault supports encrypted, user-controlled sync bundles for moving a local v
 - Manual sync passphrases are never stored by Vibe Vault.
 - Enabling scheduled backups stores that passphrase in macOS Keychain with `WhenUnlockedThisDeviceOnly` access. Disabling the schedule removes it.
 - A configured recovery key is stored only in this Mac's Keychain with `WhenUnlockedThisDeviceOnly` access so scheduled and CLI backups can include recovery protection.
+- The same recovery key wraps a copy of the local vault master key in `master-key.vvrecovery`. The raw master key is never stored in the vault database or beside its ciphertext.
+- `secrets.vault`, `master-key.vvrecovery`, and their containing directory remain eligible for Time Machine backup. The recovery key must be saved separately from that backup.
 - Recovery keys are not uploaded separately, synced through a Vibe Vault account, or escrowed by LunaOS.
 - Files are written atomically and permissions are set to `0600`.
 - Vibe Vault can still decrypt existing v1 passphrase-only bundles.
@@ -72,10 +75,13 @@ To configure recovery protection:
 1. Select **Create recovery key**.
 2. Copy the key or export the recovery kit.
 3. Select **I saved this key** to store it in this Mac's Keychain.
-4. Create a new backup or select **Sync to iCloud**. Existing bundles are not changed retroactively.
-5. On another Mac, enter the same key under **Restore with recovery key** and select **Use for future backups** if that Mac should protect its new bundles with the same key.
+4. Vibe Vault immediately protects the local vault master key for Keychain-loss recovery.
+5. Create a new backup or select **Sync to iCloud**. Existing bundles are not changed retroactively.
+6. On another Mac, enter the same key under **Restore with recovery key** and select **Use for future backups** if that Mac should protect its new bundles with the same key.
 
 Replacing a recovery key affects new backups only. Keep an old recovery key until every backup protected by it has expired from retention or been replaced.
+
+After upgrading, the app also creates the local recovery envelope automatically when a recovery key was already configured on that Mac.
 
 To enable managed backup history:
 
@@ -131,8 +137,14 @@ vibevault sync backup --retain 30
 # List timestamped backup history.
 vibevault sync history
 
-# Generate and install a recovery key for future app and CLI backups.
+# Generate one key that protects the local master key and future backup bundles.
 vibevault sync recovery-key --install
+
+# Check local master-key recovery protection without opening the vault.
+vibevault recovery status
+
+# Restore a missing Keychain master key after restoring the Vibe Vault folder.
+vibevault recovery restore --recovery-key-stdin
 
 # Import only bundle entries newer than matching local entries.
 vibevault sync import --path ~/Backups/vault.vvsync --newer-only
@@ -152,6 +164,12 @@ vibevault sync import --path ~/Backups/vault.vvsync --recovery-key-stdin --newer
 Push, export, and backup commands automatically use the recovery key configured in this Mac's Vibe Vault Keychain. `--recovery-key-env` can supply an explicit key instead.
 
 ## Recovery Scenarios
+
+### Lost or reset macOS Keychain
+
+Restore `~/Library/Application Support/vibe-vault` from Time Machine if it is missing, then run `vibevault recovery status`. If `secrets.vault` and `master-key.vvrecovery` are present, run `vibevault recovery restore --recovery-key-stdin` and enter the separately saved printable recovery key. Vibe Vault authenticates the existing ciphertext before writing the restored key to Keychain. A wrong key makes no Keychain change.
+
+If the recovery envelope was never created, use a retained `.vvsync` backup and its passphrase or recovery key. The encrypted local vault cannot be decrypted from `secrets.vault` alone.
 
 ### Lost sync passphrase
 
@@ -177,7 +195,7 @@ Install Vibe Vault on the new Mac, make the encrypted bundle available through i
 
 ### Recovery testing
 
-Periodically export a fresh bundle, preview it with `vibevault sync preview`, and verify that the expected secret count and source timestamp are present. A preview validates decryption and bundle integrity without changing the local vault.
+Periodically run `vibevault recovery status`, export a fresh bundle, preview it with `vibevault sync preview`, and verify that the expected secret count and source timestamp are present. A preview validates decryption and bundle integrity without changing the local vault. Keep the printable recovery key in a password manager or offline recovery kit, not only in the same Mac's Keychain.
 
 ## Current Limits
 

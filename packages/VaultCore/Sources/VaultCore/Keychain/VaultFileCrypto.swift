@@ -16,7 +16,15 @@ enum VaultFileCrypto {
         return try AES.GCM.open(box, using: key)
     }
 
-    static func loadOrCreateKey(legacyFileURL: URL, account: String) throws -> SymmetricKey {
-        try KeychainMasterKey.loadOrCreate(migratingFrom: legacyFileURL, account: account)
+    static func loadOrCreateKey(
+        legacyFileURL: URL,
+        account: String,
+        allowCreate: Bool = true
+    ) throws -> SymmetricKey {
+        try KeychainMasterKey.loadOrCreate(
+            migratingFrom: legacyFileURL,
+            account: account,
+            allowCreate: allowCreate
+        )
     }
 }
