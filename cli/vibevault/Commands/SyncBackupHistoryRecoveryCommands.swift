@@ -84,13 +84,17 @@ struct SyncRecoveryKeyCommand: ParsableCommand {
     mutating func run() throws {
         let key = try CloudRecoveryKey.generate()
         if install {
+            try LocalVaultRecovery.protect(
+                directory: EncryptedVaultStore.defaultDirectory(),
+                recoveryKey: key
+            )
             let prefs = KeychainPrefs()
             let encoded = Data(key.utf8)
             prefs.set(encoded, forKey: CloudRecoveryKey.preferenceKey)
             guard prefs.data(forKey: CloudRecoveryKey.preferenceKey) == encoded else {
                 throw ValidationError("could not store recovery key in macOS Keychain")
             }
-            print("installed recovery key in this Mac's Keychain")
+            print("installed recovery key and protected the local vault master key")
         }
         print(key)
         FileHandle.standardError.write(Data("Store this key separately from encrypted backups; it cannot be recovered.\n".utf8))

@@ -22,6 +22,7 @@ struct VibeVault: AsyncParsableCommand {
             MCPCommand.self,
             BrowserCommand.self,
             SyncCommand.self,
+            RecoveryCommand.self,
             SkillCommand.self,
             GuardCommand.self,
             CursorCommand.self,

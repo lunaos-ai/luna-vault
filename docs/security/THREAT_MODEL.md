@@ -12,7 +12,8 @@ Vibe Vault protects local AI-coding credentials by reducing copy-paste, keeping 
 
 ## Architecture Summary
 
-- Credentials are stored locally. The vault ciphertext lives on disk and the master key is held in macOS Keychain.
+- Credentials are stored locally. The vault ciphertext lives on disk and the active master key is held in macOS Keychain.
+- When recovery is configured, a user-held recovery key wraps the master key into a separate authenticated envelope. The raw master key is not stored in the vault database.
 - Solo use does not require a Vibe Vault cloud account.
 - Secret reads can require local approval, such as Touch ID, before a value is copied, injected, or served through MCP.
 - Audit events record metadata: credential name, action, project context, agent or process, result, and timestamp.
@@ -33,6 +34,7 @@ Vibe Vault protects local AI-coding credentials by reducing copy-paste, keeping 
 - Vibe Vault cannot prevent a compromised agent from printing, uploading, or misusing a credential that the user approved for that session.
 - Vibe Vault cannot defend against full local device compromise, malware with the user's privileges, or malicious software with Keychain/Accessibility access.
 - Vibe Vault cannot revoke provider credentials by itself; rotate or revoke keys at the provider.
+- Vibe Vault cannot recover a lost master key without both the recovery envelope and its separately saved recovery key, or a decryptable `.vvsync` backup.
 - Vibe Vault audit logs are local evidence, not tamper-proof centralized compliance logs.
 - Vibe Vault does not currently provide SSO, SCIM, SIEM export, centralized admin policy, or remote device posture enforcement.
 

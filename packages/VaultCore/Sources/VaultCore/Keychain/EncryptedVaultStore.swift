@@ -21,11 +21,8 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
     public init(directory: URL = EncryptedVaultStore.defaultDirectory()) {
         self.fileURL = directory.appendingPathComponent("secrets.vault")
         self.keyURL = directory.appendingPathComponent("master.key")
-        let leaf = directory.standardizedFileURL.lastPathComponent
-        self.keyAccount = leaf == "vibe-vault"
-            ? KeychainMasterKey.defaultAccount
-            : "vault.master.\(leaf)"
-        VaultPaths.excludeFromBackup(directory)
+        self.keyAccount = KeychainMasterKey.account(forVaultDirectory: directory)
+        VaultPaths.includeInBackup(directory)
     }
 
     public func add(_ secret: Secret) throws {

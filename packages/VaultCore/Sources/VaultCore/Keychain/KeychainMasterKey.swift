@@ -11,7 +11,8 @@ enum KeychainMasterKey {
 
     static func loadOrCreate(
         migratingFrom legacyFile: URL?,
-        account: String = defaultAccount
+        account: String = defaultAccount,
+        allowCreate: Bool = true
     ) throws -> SymmetricKey {
         if let cached = cacheQueue.sync(execute: { cache[account] }) {
             return cached
@@ -21,11 +22,35 @@ enum KeychainMasterKey {
             key = existing
         } else if let legacyFile, let migrated = try migrateFile(legacyFile, account: account) {
             key = migrated
+        } else if !allowCreate {
+            throw LocalVaultRecoveryError.masterKeyUnavailable
         } else {
             key = try create(account: account)
         }
         cacheQueue.sync { cache[account] = key }
         return key
+    }
+
+    static func account(forVaultDirectory directory: URL) -> String {
+        let leaf = directory.standardizedFileURL.lastPathComponent
+        return leaf == "vibe-vault" ? defaultAccount : "vault.master.\(leaf)"
+    }
+
+    static func exists(account: String) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+    }
+
+    static func install(_ key: SymmetricKey, account: String) throws {
+        let data = key.withUnsafeBytes { Data($0) }
+        guard data.count == 32 else { throw LocalVaultRecoveryError.corruptEnvelope }
+        try store(data, account: account)
+        cacheQueue.sync { cache[account] = key }
     }
 
     private static func read(account: String) throws -> SymmetricKey? {
@@ -39,8 +64,9 @@ enum KeychainMasterKey {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == errSecItemNotFound { return nil }
-        guard status == errSecSuccess, let data = item as? Data, data.count == 32 else {
-            throw SecretError.vaultIO("bad master key in Keychain")
+        guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
+        guard let data = item as? Data, data.count == 32 else {
+            throw LocalVaultRecoveryError.masterKeyUnavailable
         }
         return SymmetricKey(data: data)
     }
@@ -70,14 +96,20 @@ enum KeychainMasterKey {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
-        SecItemDelete(del as CFDictionary)
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+        let updateStatus = SecItemUpdate(del as CFDictionary, attributes as CFDictionary)
+        if updateStatus == errSecSuccess { return }
+        guard updateStatus == errSecItemNotFound else {
+            throw SecretError.keychainStatus(updateStatus)
+        }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
+        ].merging(attributes) { _, new in new }
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
     }

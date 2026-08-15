@@ -5,7 +5,11 @@ cd "$(dirname "$0")/.."
 swift test --enable-code-coverage
 
 PROF=$(find .build -name "*.profdata" | head -n1)
-BIN=$(find .build -name "VaultCoreTests.xctest" | head -n1)/Contents/MacOS/VaultCoreTests
+TEST_BUNDLE=$(find .build -name "*.xctest" -type d | head -n1)
+BIN=""
+if [ -n "$TEST_BUNDLE" ]; then
+    BIN=$(find "$TEST_BUNDLE/Contents/MacOS" -type f -perm -111 | head -n1)
+fi
 if [ -z "$PROF" ] || [ -z "$BIN" ]; then
     echo "coverage artifacts not found"
     exit 1

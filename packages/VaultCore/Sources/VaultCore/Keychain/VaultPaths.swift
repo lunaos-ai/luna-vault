@@ -14,13 +14,20 @@ enum VaultPaths {
 
     private static func preparedDirectory(_ directory: URL) -> URL {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        excludeFromBackup(directory)
+        includeInBackup(directory)
         return directory
     }
 
     static func excludeFromBackup(_ url: URL) {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
+        var mutable = url
+        try? mutable.setResourceValues(values)
+    }
+
+    static func includeInBackup(_ url: URL) {
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = false
         var mutable = url
         try? mutable.setResourceValues(values)
     }

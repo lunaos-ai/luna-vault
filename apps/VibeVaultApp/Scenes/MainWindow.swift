@@ -18,6 +18,17 @@ struct MainWindow: View {
                 .background(Tokens.Surface.background.ignoresSafeArea())
         }
         .toast($env.toastMessage)
+        .alert(
+            "Vibe Vault needs attention",
+            isPresented: Binding(
+                get: { env.lastError != nil },
+                set: { if !$0 { env.lastError = nil } }
+            )
+        ) {
+            Button("OK") { env.lastError = nil }
+        } message: {
+            Text(env.lastError ?? "Unknown vault error")
+        }
         .sheet(isPresented: $showAddSecret) {
             AddSecretSheet().environmentObject(env)
         }

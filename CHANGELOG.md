@@ -56,6 +56,8 @@ All notable changes to Vibe Vault are documented here.
 
 - PushCI cloud project secret onboarding: `vibevault push --to pushci --scope project_id=…`
   (JWT from `PUSHCI_TOKEN` or `~/.pushci/config.json`; optional `--allow-ci` for `ci_secret_names`)
+- Recovery-key-wrapped local master-key envelope, Time Machine eligibility, and
+  `vibevault recovery status|restore` for recovery after macOS Keychain loss.
 
 ### Changed
 
@@ -63,6 +65,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Fixed
 
+- Existing encrypted vaults now fail closed when their Keychain master key is missing or malformed instead of silently generating an unusable replacement.
 - Provider Setup sheets (Cloudflare / Vercel / PushCI token paste)
 - Import review: rename rows + project prefix; AI allow default off
 - MCP shares file vault store; `mcp test` finds bundled binary

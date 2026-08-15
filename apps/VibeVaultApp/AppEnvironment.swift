@@ -150,6 +150,7 @@ final class AppEnvironment: ObservableObject {
             self.biometricStatus = "Unlocked until \(status.expiresAt.formatted(date: .omitted, time: .shortened))"
         }
         Task { @MainActor [weak self] in
+            self?.ensureLocalRecoveryProtection()
             self?.reloadProviderCaches()
             self?.updateSchedulerState()
             self?.updateBackupSchedulerState()

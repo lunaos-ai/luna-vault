@@ -29,6 +29,10 @@ extension AppEnvironment {
 
     func saveBackupRecoveryKey(_ recoveryKey: String) throws {
         let canonical = try CloudRecoveryKey.canonicalize(recoveryKey)
+        try LocalVaultRecovery.protect(
+            directory: EncryptedVaultStore.defaultDirectory(),
+            recoveryKey: canonical
+        )
         let encoded = Data(canonical.utf8)
         prefs.set(encoded, forKey: Self.backupRecoveryKeyKey)
         guard prefs.data(forKey: Self.backupRecoveryKeyKey) == encoded else {
@@ -36,6 +40,20 @@ extension AppEnvironment {
         }
         cachedHasBackupRecoveryKey = true
         showToast("Recovery protection enabled")
+    }
+
+    func ensureLocalRecoveryProtection() {
+        let directory = EncryptedVaultStore.defaultDirectory()
+        guard !LocalVaultRecovery.isProtected(directory: directory),
+              let recoveryKey = backupRecoveryKey() else { return }
+        do {
+            try LocalVaultRecovery.protect(
+                directory: directory,
+                recoveryKey: recoveryKey
+            )
+        } catch {
+            lastError = "Could not enable local vault recovery: \(error)"
+        }
     }
 
     func revealBackupRecoveryKey() async throws -> String {

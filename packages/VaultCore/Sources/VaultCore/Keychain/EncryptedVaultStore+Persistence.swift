@@ -4,8 +4,11 @@ import Foundation
 extension EncryptedVaultStore {
     func masterKey() throws -> SymmetricKey {
         if let cachedKey = key { return cachedKey }
+        let allowCreate = !FileManager.default.fileExists(atPath: fileURL.path)
         let loaded = try VaultFileCrypto.loadOrCreateKey(
-            legacyFileURL: keyURL, account: keyAccount
+            legacyFileURL: keyURL,
+            account: keyAccount,
+            allowCreate: allowCreate
         )
         key = loaded
         return loaded
@@ -53,7 +56,7 @@ extension EncryptedVaultStore {
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600], ofItemAtPath: backupURL.path
         )
-        VaultPaths.excludeFromBackup(backupURL)
+        VaultPaths.includeInBackup(backupURL)
     }
 
     func saveDocument(_ document: VaultDocument) throws {
@@ -65,7 +68,7 @@ extension EncryptedVaultStore {
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600], ofItemAtPath: fileURL.path
         )
-        VaultPaths.excludeFromBackup(fileURL)
+        VaultPaths.includeInBackup(fileURL)
     }
 
     func appendRevision(
