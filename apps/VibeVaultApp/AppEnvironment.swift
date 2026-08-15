@@ -174,7 +174,7 @@ final class AppEnvironment: ObservableObject {
                 detector: StubAgentDetector(),
                 biometric: NoopBiometricGate()
             )
-            return AppEnvironment(
+            let env = AppEnvironment(
                 service: stub,
                 authenticatorService: AuthenticatorService(
                     store: InMemoryAuthenticatorStore(), audit: stub.audit,
@@ -184,6 +184,8 @@ final class AppEnvironment: ObservableObject {
                 registry: ProviderRegistry.defaultsWithToken(from: prefs),
                 prefs: prefs
             )
+            env.lastError = "vault master key is unavailable or does not match the encrypted vault; restore it with your recovery key"
+            return env
         }
     }
 }
