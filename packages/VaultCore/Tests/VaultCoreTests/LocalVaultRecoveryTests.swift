@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import VaultCore
 
@@ -68,6 +69,16 @@ final class LocalVaultRecoveryTests: XCTestCase {
             XCTAssertEqual($0 as? LocalVaultRecoveryError, .masterKeyUnavailable)
         }
         XCTAssertFalse(KeychainMasterKey.exists(account: account))
+    }
+
+    func testExistingVaultWithWrongMasterKeyReportsRecoveryState() throws {
+        let store = EncryptedVaultStore(directory: directory)
+        try store.add(Secret(name: "TOKEN", value: "keep-me"))
+        try KeychainMasterKey.install(SymmetricKey(size: .bits256), account: account)
+
+        XCTAssertThrowsError(try EncryptedVaultStore(directory: directory).list()) {
+            XCTAssertEqual($0 as? LocalVaultRecoveryError, .masterKeyUnavailable)
+        }
     }
 
     func testRecoveryEnvelopeAndVaultRemainEligibleForTimeMachine() throws {

@@ -18,7 +18,13 @@ extension EncryptedVaultStore {
         let fm = FileManager.default
         guard fm.fileExists(atPath: fileURL.path) else { return VaultDocument() }
         let blob = try Data(contentsOf: fileURL)
-        let plain = try VaultFileCrypto.open(blob, key: masterKey())
+        let vaultKey = try masterKey()
+        let plain: Data
+        do {
+            plain = try VaultFileCrypto.open(blob, key: vaultKey)
+        } catch {
+            throw LocalVaultRecoveryError.masterKeyUnavailable
+        }
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
         if var document = try? dec.decode(VaultDocument.self, from: plain) {

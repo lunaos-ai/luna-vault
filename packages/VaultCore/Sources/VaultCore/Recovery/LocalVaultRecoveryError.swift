@@ -11,7 +11,7 @@ public enum LocalVaultRecoveryError: Error, Equatable, CustomStringConvertible {
     public var description: String {
         switch self {
         case .masterKeyUnavailable:
-            return "vault master key is unavailable; restore it with your recovery key"
+            return "vault master key is unavailable or does not match the encrypted vault; restore it with your recovery key"
         case .recoveryEnvelopeMissing:
             return "local recovery envelope is missing"
         case .vaultMissing:
