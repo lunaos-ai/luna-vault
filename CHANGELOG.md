@@ -2,6 +2,18 @@
 
 All notable changes to Vibe Vault are documented here.
 
+## [0.1.3] — 2026-08-06
+
+### Added
+
+- Cross-session agent coordination (`vibevault agent`, bundled skill, nickname support).
+- Mac App Store upload workflow and documentation.
+
+### Engineering
+
+- Split Swift source files to enforce 200 LOC limit.
+- Version tag check in `scripts/gtm-check.sh` now uses the current git tag.
+
 ## [0.1.2] — 2026-07-28
 
 ### Fixed

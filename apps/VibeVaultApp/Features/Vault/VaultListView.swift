@@ -3,28 +3,28 @@ import VaultCore
 
 struct VaultListView: View {
     @EnvironmentObject var env: AppEnvironment
-    @State private var selection: Secret.ID?
-    @State private var multiSelection: Set<Secret.ID> = []
-    @State private var isSelecting = false
-    @State private var showAdd = false
-    @State private var showAddVerificationCode = false
-    @State private var search = ""
-    @State private var filter: VaultListFilter = .all
-    @State private var sort: VaultListSort = .name
-    @State private var grouping: VaultListGrouping = .none
-    @State private var showRecentlyDeleted = false
-    @State private var recentlyDeletedCount = 0
-    @FocusState private var searchFocused: Bool
+    @State var selection: Secret.ID?
+    @State var multiSelection: Set<Secret.ID> = []
+    @State var isSelecting = false
+    @State var showAdd = false
+    @State var showAddVerificationCode = false
+    @State var search = ""
+    @State var filter: VaultListFilter = .all
+    @State var sort: VaultListSort = .name
+    @State var grouping: VaultListGrouping = .none
+    @State var showRecentlyDeleted = false
+    @State var recentlyDeletedCount = 0
+    @FocusState var searchFocused: Bool
     var highlightName: String? = nil
     var onHighlightHandled: (() -> Void)? = nil
     var onScanProject: (() -> Void)? = nil
     var onOpenImport: (() -> Void)? = nil
 
-    private var filtered: [Secret] {
+    var filtered: [Secret] {
         vaultFilteredSecrets(env.secrets, filter: filter, search: search)
     }
 
-    private var sections: [VaultSecretSection] {
+    var sections: [VaultSecretSection] {
         vaultSecretSections(filtered, grouping: grouping, sort: sort)
     }
 
@@ -71,7 +71,7 @@ struct VaultListView: View {
         }
     }
 
-    private var sidebar: some View {
+    var sidebar: some View {
         VStack(spacing: 0) {
             KeychainMigrationBanner()
                 .environmentObject(env)
@@ -108,7 +108,7 @@ struct VaultListView: View {
     }
 
     @ViewBuilder
-    private var secretList: some View {
+    var secretList: some View {
         Group {
             if isSelecting {
                 List(selection: $multiSelection) {
@@ -125,7 +125,7 @@ struct VaultListView: View {
     }
 
     @ViewBuilder
-    private var listRows: some View {
+    var listRows: some View {
         if grouping == .none {
             ForEach(sections.first?.secrets ?? []) { row in
                 SecretRow(secret: row).tag(row.id)
@@ -144,7 +144,7 @@ struct VaultListView: View {
     }
 
     @ViewBuilder
-    private var detail: some View {
+    var detail: some View {
         if isSelecting {
             VaultBulkSelectDetail(
                 selectedCount: multiSelection.count,
@@ -163,77 +163,5 @@ struct VaultListView: View {
         } else {
             VaultSelectHint(secretCount: env.secrets.count, onAdd: { showAdd = true })
         }
-    }
-
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            Button { env.refresh() } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .help("Reload secrets")
-            if isSelecting {
-                Button("Done", action: exitSelectMode)
-                    .keyboardShortcut(.defaultAction)
-                    .help("Leave select mode")
-            } else {
-                Button { enterSelectMode() } label: {
-                    Label("Select", systemImage: "checkmark.circle")
-                }
-                .help("Select multiple secrets")
-                .disabled(env.secrets.isEmpty)
-            }
-            Menu {
-                Button { showAdd = true } label: {
-                    Label("Secret", systemImage: "key")
-                }
-                Button { showAddVerificationCode = true } label: {
-                    Label("Verification Code", systemImage: "number.square")
-                }
-            } label: {
-                Label("Add", systemImage: "plus")
-            }
-            .help("Add a secret or verification code")
-            .disabled(isSelecting)
-
-            Button {
-                showRecentlyDeleted = true
-            } label: {
-                Label("Recently Deleted", systemImage: recentlyDeletedCount > 0 ? "trash.fill" : "trash")
-            }
-            .help(recentlyDeletedCount > 0 ? "Recently deleted (\(recentlyDeletedCount))" : "Recently deleted")
-            .disabled(isSelecting)
-        }
-    }
-
-    private func enterSelectMode() {
-        multiSelection = selection.map { [$0] } ?? []
-        selection = nil
-        isSelecting = true
-    }
-
-    private func exitSelectMode() {
-        if multiSelection.count == 1 { selection = multiSelection.first }
-        multiSelection = []
-        isSelecting = false
-    }
-
-    private func applyBulkMCP(allowed: Bool) async {
-        let names = Set(multiSelection)
-        guard !names.isEmpty else { return }
-        await env.setMCPAllowed(for: names, allowed: allowed)
-    }
-
-    private func applyHighlight(_ name: String?) {
-        guard let name, let secret = env.secrets.first(where: { $0.name == name }) else { return }
-        if isSelecting { exitSelectMode() }
-        selection = secret.id
-        search = ""
-        filter = .all
-        onHighlightHandled?()
-    }
-
-    private func refreshRecentlyDeletedCount() {
-        recentlyDeletedCount = (try? env.service.deletedSecretRevisionSummaries().count) ?? 0
     }
 }

@@ -85,68 +85,6 @@ final class CloudSyncTests: XCTestCase {
         }
     }
 
-    func test_recovery_key_decrypts_bundle_independently() throws {
-        let recoveryKey = try CloudRecoveryKey.generate()
-        let capturedAt = Date(timeIntervalSince1970: 1_800_000_000)
-        let snapshot = CloudSyncSnapshot(
-            exportedAt: capturedAt,
-            secrets: [CloudSyncSecret(name: "TOKEN", value: "recover-me", updatedAt: capturedAt)],
-            revisions: [
-                SecretRevision(
-                    secret: Secret(name: "TOKEN", value: "older-value", updatedAt: capturedAt),
-                    capturedAt: capturedAt,
-                    action: .rotated,
-                    sourceHost: "mac-a"
-                )
-            ]
-        )
-        let encrypted = try CloudSync.encrypt(
-            snapshot,
-            passphrase: "correct horse battery staple",
-            recoveryKey: recoveryKey
-        )
-
-        XCTAssertEqual(try CloudSync.decrypt(encrypted, recoveryKey: recoveryKey), snapshot)
-        XCTAssertEqual(
-            try CloudSync.decrypt(encrypted, passphrase: "correct horse battery staple"),
-            snapshot
-        )
-    }
-
-    func test_recovery_key_rejects_wrong_key() throws {
-        let encrypted = try CloudSync.encrypt(
-            CloudSyncSnapshot(secrets: []),
-            passphrase: "correct horse battery staple",
-            recoveryKey: CloudRecoveryKey.generate()
-        )
-
-        XCTAssertThrowsError(
-            try CloudSync.decrypt(encrypted, recoveryKey: CloudRecoveryKey.generate())
-        ) { error in
-            XCTAssertEqual(error as? CloudSyncError, .authenticationFailed)
-        }
-    }
-
-    func test_bundle_without_recovery_wrapper_reports_unavailable() throws {
-        let encrypted = try CloudSync.encrypt(
-            CloudSyncSnapshot(secrets: []),
-            passphrase: "correct horse battery staple"
-        )
-
-        XCTAssertThrowsError(
-            try CloudSync.decrypt(encrypted, recoveryKey: CloudRecoveryKey.generate())
-        ) { error in
-            XCTAssertEqual(error as? CloudSyncError, .recoveryUnavailable)
-        }
-    }
-
-    func test_recovery_key_has_stable_printable_format() throws {
-        let generated = try CloudRecoveryKey.generate()
-        XCTAssertTrue(generated.hasPrefix("VV-RK1-"))
-        XCTAssertEqual(try CloudRecoveryKey.canonicalize(generated.lowercased()), generated)
-        XCTAssertThrowsError(try CloudRecoveryKey.canonicalize("not-a-recovery-key"))
-    }
-
     func test_decrypt_remains_compatible_with_v1_bundle() throws {
         let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
         let snapshot = CloudSyncSnapshot(
@@ -231,30 +169,6 @@ final class CloudSyncTests: XCTestCase {
         }
     }
 
-    func test_default_icloud_path_is_vibevault_sync_bundle() {
-        let path = CloudSync.defaultICloudURL().path
-        XCTAssertTrue(path.contains("Mobile Documents/com~apple~CloudDocs/Documents"))
-        XCTAssertTrue(path.hasSuffix("VibeVault/Sync/vault.vvsync"))
-    }
-
-    func test_icloud_availability_requires_a_writable_directory() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-
-        XCTAssertFalse(CloudSync.isICloudDriveAvailable(at: root))
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        XCTAssertTrue(CloudSync.isICloudDriveAvailable(at: root))
-    }
-
-    func test_icloud_availability_rejects_a_file() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try Data().write(to: root)
-
-        XCTAssertFalse(CloudSync.isICloudDriveAvailable(at: root))
-    }
 }
 
 private func makeLegacyV1Bundle(snapshot: CloudSyncSnapshot, passphrase: String) throws -> Data {

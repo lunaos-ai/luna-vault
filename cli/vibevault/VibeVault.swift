@@ -7,7 +7,7 @@ struct VibeVault: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "vibevault",
         abstract: "Local-first secret manager for AI-coding workflows.",
-        version: "0.1.2",
+        version: "0.1.3",
         subcommands: [
             AddCommand.self,
             ListCommand.self,

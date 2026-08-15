@@ -15,7 +15,12 @@ echo "==> GTM check (vibe-vault)"
 # Hard: release artifacts in repo
 [ -f LICENSE ] && ok "LICENSE" || fail "LICENSE missing"
 [ -f CHANGELOG.md ] && ok "CHANGELOG.md" || fail "CHANGELOG.md missing"
-grep -q '0\.1\.2' cli/vibevault/VibeVault.swift && ok "CLI version 0.1.2" || fail "CLI version not 0.1.2"
+CLI_VERSION="$(git describe --tags --match 'v*' --exact-match 2>/dev/null | sed 's/^v//' || echo '0.1.2')"
+if grep -q "$CLI_VERSION" cli/vibevault/VibeVault.swift; then
+  ok "CLI version $CLI_VERSION"
+else
+  fail "CLI version not $CLI_VERSION"
+fi
 [ -f dist/homebrew/vibevault.rb ] && ok "Homebrew formula" || fail "Homebrew formula missing"
 [ -f marketing/landing/index.html ] && ok "Landing page" || fail "Landing page missing"
 [ -f docs/launch/LAUNCH_PACK.md ] && ok "Launch pack" || fail "Launch pack missing"
