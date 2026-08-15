@@ -21,7 +21,8 @@ final class CloudBackupScheduler {
         stop()
         self.intervalHours = max(1, intervalHours)
         timer = Timer.scheduledTimer(withTimeInterval: 60 * 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in await self?.runIfDue() }
+            guard let self else { return }
+            Task { @MainActor in await self.runIfDue() }
         }
         Task { await runIfDue() }
     }

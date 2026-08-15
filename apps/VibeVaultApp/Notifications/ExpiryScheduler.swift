@@ -30,7 +30,8 @@ final class ExpiryScheduler: ObservableObject {
         Task { _ = await notifier.requestAuthorization() }
         let interval = max(60, intervalMinutes * 60)
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor in await self?.runOnce(warnWithinDays: warnWithinDays) }
+            guard let self else { return }
+            Task { @MainActor in await self.runOnce(warnWithinDays: warnWithinDays) }
         }
         Task { await runOnce(warnWithinDays: warnWithinDays) }
     }
