@@ -23,7 +23,7 @@ struct BrowserImportResponse: Encodable {
     }
 
     static func pong() -> BrowserImportResponse {
-        BrowserImportResponse(ok: true, name: nil, error: nil, code: nil, version: "0.1.0")
+        BrowserImportResponse(ok: true, name: nil, error: nil, code: nil, version: "0.1.4")
     }
 
     static func failure(_ error: String, code: String = "host_error") -> BrowserImportResponse {

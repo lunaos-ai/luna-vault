@@ -4,6 +4,7 @@ import Foundation
 
 let appName = "VibeVault.app"
 let installerName = "Install Vibe Vault.app"
+let browserExtensionID = "nfeigikipagiccmhlolgfbeienkckbpc"
 let destRoot = "/Applications"
 let userBin = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent(".local/bin", isDirectory: true)
@@ -106,19 +107,45 @@ func addUserBinToPath() throws {
     try (existing + suffix + "\(marker)\n\(line)\n").write(to: profile, atomically: true, encoding: .utf8)
 }
 
-func installMCPConfiguration(for app: URL) throws {
+func runVibeVaultSetup(
+    for app: URL,
+    arguments: [String],
+    description: String
+) throws {
     let cli = app.appendingPathComponent("Contents/Helpers/vibevault")
-    let mcp = app.appendingPathComponent("Contents/MacOS/vibevault-mcp")
     let process = Process()
     process.executableURL = cli
-    process.arguments = ["mcp", "install", "--client", "all", "--binary", mcp.path]
+    process.arguments = arguments
     process.standardOutput = Pipe()
     process.standardError = Pipe()
     try process.run()
     process.waitUntilExit()
     guard process.terminationStatus == 0 else {
-        throw InstallerError.commandFailed("MCP configuration", process.terminationStatus)
+        throw InstallerError.commandFailed(description, process.terminationStatus)
     }
+}
+
+func installMCPConfiguration(for app: URL) throws {
+    let mcp = app.appendingPathComponent("Contents/MacOS/vibevault-mcp")
+    try runVibeVaultSetup(
+        for: app,
+        arguments: ["mcp", "install", "--client", "all", "--binary", mcp.path],
+        description: "MCP configuration"
+    )
+}
+
+func installBrowserHostConfiguration(for app: URL) throws {
+    let host = app.appendingPathComponent("Contents/Helpers/vibevault-browser-host")
+    try runVibeVaultSetup(
+        for: app,
+        arguments: [
+            "browser", "install",
+            "--browser", "all",
+            "--extension-id", browserExtensionID,
+            "--host-binary", host.path
+        ],
+        description: "browser host configuration"
+    )
 }
 
 @main
@@ -136,6 +163,7 @@ struct InstallerMain {
             try installToolLinks(for: dest)
             try addUserBinToPath()
             try installMCPConfiguration(for: dest)
+            try installBrowserHostConfiguration(for: dest)
             let open = alert(
                 "Vibe Vault, CLI, MCP, and browser host are installed.",
                 buttons: ["Open Vibe Vault", "Close"],

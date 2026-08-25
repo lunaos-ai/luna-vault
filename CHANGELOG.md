@@ -2,6 +2,14 @@
 
 All notable changes to Vibe Vault are documented here.
 
+## [0.1.4] — 2026-08-25
+
+### Fixed
+
+- The one-click macOS installer now registers the Vibe Vault native messaging
+  host for the published Chrome extension in Chrome, Brave, Edge, and Chromium,
+  so detected provider keys can be saved immediately after installation.
+
 ## [0.1.3] — 2026-08-06
 
 ### Added
@@ -72,6 +80,8 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.1.4]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.4
+[0.1.3]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.3
 [0.1.2]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.2
 [0.1.1]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.1
 [0.1.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.0

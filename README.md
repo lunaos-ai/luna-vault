@@ -4,7 +4,7 @@ Secure credential access for AI coding agents on macOS. Lives in your menu bar.
 
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)](https://vibevault.lunaos.ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.0-indigo)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.4-indigo)](CHANGELOG.md)
 
 ```bash
 # instead of this:
@@ -183,7 +183,7 @@ NOTARIZE=1 NOTARIZE_DMG=1 bash scripts/release.sh   # needs Apple creds
 bash scripts/publish-to-website.sh
 bash scripts/gtm-check.sh
 bash scripts/publish-all.sh --dry-run
-bash scripts/publish-all.sh --yes --tag v0.1.0
+bash scripts/publish-all.sh --yes --tag v0.1.4
 ```
 
 ### Encrypted cloud sync
@@ -230,4 +230,4 @@ MIT for CLI + VaultCore + MCP (`LICENSE`). App binary branding may remain LunaOS
 
 ## Status
 
-**v0.1.0** — see `CHANGELOG.md`.
+**v0.1.4** — see `CHANGELOG.md`.
