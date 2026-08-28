@@ -76,7 +76,8 @@ public enum EnvImporter {
             }
         }
         pattern += "$"
-        return (try? NSRegularExpression(pattern: pattern)) ?? NSRegularExpression()
+        return (try? NSRegularExpression(pattern: pattern))
+            ?? (try! NSRegularExpression(pattern: "^$"))
     }
 }
 

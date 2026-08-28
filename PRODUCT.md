@@ -59,13 +59,21 @@ Keychain is an architecture choice, not the moat. The moat is workflow adoption,
 
 Phase 1: individual developer value.
 
-- encrypted vault with Keychain-held master key
+- encrypted vault with Keychain-held master key (macOS)
+- CLI + MCP on macOS, Linux, and Windows (WSL2 / experimental native)
 - Cursor and Claude Code setup
 - reliable audit log
 - `.env` guard and git leak protection
 - provider sync
-- signed and notarized distribution
+- signed and notarized macOS distribution
 - clear CLI diagnostics and docs
+
+Phase 1b: cross-platform CLI.
+
+- Linux CLI packages and CI
+- Windows via WSL2, then native Credential Manager / DPAPI
+- encrypted export/import for Mac ↔ Linux/Windows vault moves
+- SwiftCrossUI desktop shell (`VibeVaultDesktop`) on Linux/Windows; SwiftUI app stays macOS-first
 
 Phase 2: team adoption.
 

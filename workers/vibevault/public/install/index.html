@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Download Vibe Vault for Mac</title>
-  <meta name="description" content="Download the latest Vibe Vault desktop app for Apple Silicon Macs, or install its CLI, MCP server, and browser host with Homebrew." />
+  <title>Download Vibe Vault · Mac, Linux, Windows</title>
+  <meta name="description" content="Install Vibe Vault on Mac (DMG or Homebrew), Linux (CLI and Gtk desktop), or Windows via WSL2. Local-first vault, MCP server, and agent-aware credential access." />
   <link rel="canonical" href="https://vibevault.lunaos.ai/download" />
   <link rel="icon" href="/assets/vibe-vaulta-app-icon.png" type="image/png" />
   <style>
@@ -294,19 +294,20 @@
   <header class="hero">
     <div class="shell">
       <div class="hero-inner">
-        <p class="eyebrow">Latest desktop build</p>
-        <h1>Download Vibe Vault for Mac.</h1>
+        <p class="eyebrow">Install</p>
+        <h1>Download Vibe Vault for Mac, Linux, and Windows.</h1>
         <p class="lede">
-          Install the native vault, cloud sync, browser importer, MFA codes, version history,
-          and timed unlock sessions on an Apple Silicon Mac.
+          Native Mac app via DMG or Homebrew. CLI, MCP, and desktop shells on Linux and
+          Windows (WSL2). Secrets stay local; no cloud account.
         </p>
         <div class="cta-row">
           <a class="btn" href="/downloads/VibeVault.dmg" download>Download Mac app (DMG)</a>
-          <a class="btn secondary" href="#homebrew">Install CLI with Homebrew</a>
-          <a class="btn secondary" href="/security">Security architecture</a>
+          <a class="btn secondary" href="#homebrew">Homebrew CLI</a>
+          <a class="btn secondary" href="#linux">Linux</a>
+          <a class="btn secondary" href="#windows">Windows (WSL2)</a>
         </div>
         <div class="note">
-          Preview distribution: this build is ad-hoc signed and is not Apple-notarized yet. macOS may require
+          Preview Mac distribution: this build is ad-hoc signed and is not Apple-notarized yet. macOS may require
           Control-clicking the installer and choosing Open. The app and vault remain local-first.
         </div>
       </div>
@@ -399,6 +400,96 @@ vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfb
       </div>
     </section>
 
+    <section id="linux">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Linux</p>
+            <h2>Build CLI, MCP, and Gtk desktop from source.</h2>
+          </div>
+          <p class="section-copy">
+            Linux uses the same VaultCore as macOS. Unlock with a session lease instead of Touch ID.
+            Desktop builds need Swift 6+ and Gtk 4.
+          </p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-index">01</span>
+            <div>
+              <strong>CLI and MCP (Docker)</strong>
+              <pre class="command" tabindex="0">bash scripts/build-linux.sh
+# .build/release/vibevault
+# .build/release/vibevault-mcp</pre>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">02</span>
+            <div>
+              <strong>Desktop shell (Gtk 4)</strong>
+              <pre class="command" tabindex="0">bash scripts/build-desktop-linux.sh
+# apps/VibeVaultDesktop/.build/release/VibeVaultDesktop</pre>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">03</span>
+            <div>
+              <strong>Unlock before reads</strong>
+              <pre class="command" tabindex="0">vibevault session unlock --minutes 30
+vibevault license status</pre>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          Full notes: <a href="https://github.com/lunaos-ai/luna-vault/blob/main/docs/WINDOWS_AND_LINUX.md">docs/WINDOWS_AND_LINUX.md</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="windows">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Windows</p>
+            <h2>Supported today through WSL2.</h2>
+          </div>
+          <p class="section-copy">
+            Use Ubuntu on WSL2 for CLI, MCP, and the Gtk desktop shell. Native WinUI Swift builds
+            are experimental; Credential Manager / DPAPI storage is on the roadmap.
+          </p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-index">01</span>
+            <div>
+              <strong>Open WSL and install Swift 6+</strong>
+              <p>Install a current Swift toolchain from <a href="https://www.swift.org/install/">swift.org</a>, then Gtk 4 headers for the desktop shell.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">02</span>
+            <div>
+              <strong>Build CLI and desktop</strong>
+              <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
+cd luna-vault
+bash scripts/build-wsl.sh</pre>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">03</span>
+            <div>
+              <strong>Unlock and scan</strong>
+              <pre class="command" tabindex="0">vibevault session unlock --minutes 30
+vibevault scan
+vibevault mcp install --client all</pre>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          Vault data defaults to the Linux home inside WSL. Point <code>VIBEVAULT_VAULT_DIR</code> at a Windows path under <code>/mnt/c/...</code> if you need shared storage. Desktop UI needs WSLg (Windows 11) or an X server.
+        </div>
+      </div>
+    </section>
+
     <section>
       <div class="shell">
         <div class="section-head">
@@ -456,7 +547,7 @@ swift build -c release --product vibevault-browser-host</pre>
 
   <footer>
     <div class="shell">
-      Vibe Vault Solo is local-first. Desktop preview and Homebrew CLI downloads are available now.
+      Vibe Vault Solo is local-first. Mac DMG, Homebrew CLI, Linux, and Windows (WSL2) builds are available now.
     </div>
   </footer>
 </body>

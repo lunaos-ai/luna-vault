@@ -18,6 +18,7 @@ struct CloudSyncActionButtons: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(!canSyncToICloud)
+            .accessibilityIdentifier("cloudSync.pushToICloud")
 
             Button {
                 Task { await onPull() }

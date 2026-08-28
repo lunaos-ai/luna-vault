@@ -1,6 +1,7 @@
-import CryptoKit
 import Foundation
+#if canImport(Security)
 import Security
+#endif
 
 /// AES master key for the on-disk vault — stored in Keychain, not beside the ciphertext.
 enum KeychainMasterKey {
@@ -37,6 +38,7 @@ enum KeychainMasterKey {
     }
 
     static func exists(account: String) -> Bool {
+        #if canImport(Security)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -44,6 +46,9 @@ enum KeychainMasterKey {
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+        #else
+        return FileSecureStore.masterKeyExists(account: account, directory: VaultPaths.defaultDirectory())
+        #endif
     }
 
     static func install(_ key: SymmetricKey, account: String) throws {
@@ -54,6 +59,7 @@ enum KeychainMasterKey {
     }
 
     private static func read(account: String) throws -> SymmetricKey? {
+        #if canImport(Security)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -69,15 +75,25 @@ enum KeychainMasterKey {
             throw LocalVaultRecoveryError.masterKeyUnavailable
         }
         return SymmetricKey(data: data)
+        #else
+        return try FileSecureStore.loadMasterKey(account: account, directory: VaultPaths.defaultDirectory())
+        #endif
     }
 
     private static func create(account: String) throws -> SymmetricKey {
+        #if canImport(Security)
         var bytes = [UInt8](repeating: 0, count: 32)
         let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         guard status == errSecSuccess else { throw SecretError.vaultIO("keygen failed") }
         let data = Data(bytes)
         try store(data, account: account)
         return SymmetricKey(data: data)
+        #else
+        let key = try PlatformRandom.symmetricKey()
+        let data = key.withUnsafeBytes { Data($0) }
+        try store(data, account: account)
+        return key
+        #endif
     }
 
     private static func migrateFile(_ url: URL, account: String) throws -> SymmetricKey? {
@@ -91,6 +107,7 @@ enum KeychainMasterKey {
     }
 
     private static func store(_ data: Data, account: String) throws {
+        #if canImport(Security)
         let del: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -112,16 +129,27 @@ enum KeychainMasterKey {
         ].merging(attributes) { _, new in new }
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
+        #else
+        try FileSecureStore.storeMasterKey(
+            SymmetricKey(data: data),
+            account: account,
+            directory: VaultPaths.defaultDirectory()
+        )
+        #endif
     }
 
     /// Test helper: remove Keychain item for a vault account.
     static func deleteForTests(account: String) {
         _ = cacheQueue.sync { cache.removeValue(forKey: account) }
+        #if canImport(Security)
         let del: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
         SecItemDelete(del as CFDictionary)
+        #else
+        FileSecureStore.deleteMasterKey(account: account, directory: VaultPaths.defaultDirectory())
+        #endif
     }
 }

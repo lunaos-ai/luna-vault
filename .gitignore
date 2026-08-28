@@ -35,3 +35,7 @@ workers/vibevault/node_modules/
 workers/vibevault/.wrangler/
 workers/vibevault/dist/
 .wrangler/
+
+# Local SwiftCrossUI clones / smoke builds
+.tmp-scui/
+.tmp-scui-*/

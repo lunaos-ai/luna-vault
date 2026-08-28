@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// Compact license string: `VV1.<base64url JSON>.<base64url Ed25519 sig>`

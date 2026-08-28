@@ -15,8 +15,8 @@ public struct PushciCloudAPI: Sendable {
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, resp) = try await session.data(for: req)
-        let status = (resp as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, resp) = try await session.vvData(for: req)
+        let status = resp.statusCode
         guard (200..<300).contains(status) else {
             throw ProviderError.http(status: status, body: safeBody(data))
         }
@@ -40,8 +40,8 @@ public struct PushciCloudAPI: Sendable {
         req.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let body: [String: String] = ["value": value, "environment": environment]
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, resp) = try await session.data(for: req)
-        let status = (resp as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, resp) = try await session.vvData(for: req)
+        let status = resp.statusCode
         guard (200..<300).contains(status) else {
             throw ProviderError.http(status: status, body: safeBody(data))
         }
@@ -58,8 +58,8 @@ public struct PushciCloudAPI: Sendable {
         var get = URLRequest(url: url)
         get.httpMethod = "GET"
         get.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, resp) = try await session.data(for: get)
-        let status = (resp as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, resp) = try await session.vvData(for: get)
+        let status = resp.statusCode
         guard (200..<300).contains(status),
               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               var policy = json["policy"] as? [String: Any]
@@ -74,8 +74,8 @@ public struct PushciCloudAPI: Sendable {
         put.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         put.addValue("application/json", forHTTPHeaderField: "Content-Type")
         put.httpBody = try JSONSerialization.data(withJSONObject: policy)
-        let (putData, putResp) = try await session.data(for: put)
-        let putStatus = (putResp as? HTTPURLResponse)?.statusCode ?? -1
+        let (putData, putResp) = try await session.vvData(for: put)
+        let putStatus = putResp.statusCode
         guard (200..<300).contains(putStatus) else {
             throw ProviderError.http(status: putStatus, body: safeBody(putData))
         }

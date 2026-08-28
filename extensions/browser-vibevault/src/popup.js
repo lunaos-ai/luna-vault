@@ -35,7 +35,7 @@ function pingNativeHost() {
       setStatus(
         "Not connected",
         "pill error",
-        "Run the setup command once. If Chrome was open, restart Chrome or click Test again."
+        "Run the setup command below for Chrome, then fully quit and reopen Chrome (not just the tab)."
       );
       return;
     }

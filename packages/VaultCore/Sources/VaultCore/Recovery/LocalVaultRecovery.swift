@@ -1,6 +1,7 @@
-import CryptoKit
 import Foundation
+#if canImport(Security)
 import Security
+#endif
 
 public enum LocalVaultRecovery {
     public static let fileName = "master-key.vvrecovery"
@@ -103,11 +104,7 @@ public enum LocalVaultRecovery {
     }
 
     private static func randomData(count: Int) throws -> Data {
-        var bytes = [UInt8](repeating: 0, count: count)
-        guard SecRandomCopyBytes(kSecRandomDefault, count, &bytes) == errSecSuccess else {
-            throw CloudSyncError.randomGenerationFailed
-        }
-        return Data(bytes)
+        Data(try PlatformRandom.bytes(count: count))
     }
 
     private struct Envelope: Codable {

@@ -5,6 +5,12 @@ Vibe Vault Importer requires the Vibe Vault macOS app or CLI and the native mess
 The extension has no hosted login flow. Solo users connect a local native host;
 Team licenses are handled by the Vibe Vault app or CLI and are verified offline.
 
+## v0.1.2
+
+- Clearer errors when Chrome native messaging host is missing (run `vibevault browser install --browser chrome`).
+- Retry save when the service worker wakes slowly.
+- Prevent panel re-render from interrupting an in-flight save.
+
 ## Test Setup
 
 1. Install/build Vibe Vault.

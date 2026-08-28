@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 public enum CloudRecoveryKey {
     public static let prefix = "VV-RK1"
@@ -7,10 +6,7 @@ public enum CloudRecoveryKey {
     private static let byteCount = 32
 
     public static func generate() throws -> String {
-        var bytes = [UInt8](repeating: 0, count: byteCount)
-        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-            throw CloudSyncError.randomGenerationFailed
-        }
+        let bytes = try PlatformRandom.bytes(count: byteCount)
         return format(Data(bytes).map { String(format: "%02X", $0) }.joined())
     }
 

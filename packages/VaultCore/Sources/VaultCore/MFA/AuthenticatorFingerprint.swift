@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 extension AuthenticatorAccount {

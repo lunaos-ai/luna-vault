@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 public protocol KeychainStoring: Sendable {
     func add(_ secret: Secret) throws
@@ -9,6 +8,9 @@ public protocol KeychainStoring: Sendable {
     func list() throws -> [Secret]
     func exists(name: String) throws -> Bool
 }
+
+#if canImport(Security)
+import Security
 
 public final class KeychainStore: KeychainStoring, @unchecked Sendable {
     public static let service = "dev.vibevault"
@@ -154,3 +156,25 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
         }
     }
 }
+
+#else
+/// Legacy Keychain secret store — unavailable outside Apple platforms.
+public final class KeychainStore: KeychainStoring, @unchecked Sendable {
+    public static let service = "dev.vibevault"
+    public static let sharedAccessGroup = "group.dev.vibevault"
+    static let openACLLabel = "vv.open-acl"
+    public init(service: String = KeychainStore.service, accessGroup: String? = nil) {}
+    public func add(_ secret: Secret) throws { throw SecretError.vaultIO("Keychain unavailable on this platform") }
+    public func update(_ secret: Secret) throws { throw SecretError.vaultIO("Keychain unavailable on this platform") }
+    public func read(name: String) throws -> Secret { throw SecretError.notFound(name: name) }
+    public func delete(name: String) throws { throw SecretError.notFound(name: name) }
+    public func list() throws -> [Secret] { [] }
+    public func exists(name: String) throws -> Bool { false }
+    static func validateName(_ name: String) throws {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed == name, name.count <= 256 else { throw SecretError.invalidName(name) }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-."))
+        guard name.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { throw SecretError.invalidName(name) }
+    }
+}
+#endif

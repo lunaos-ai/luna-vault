@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// Embedded Ed25519 public key (32 bytes, base64). Rotate by regenerating the keypair.

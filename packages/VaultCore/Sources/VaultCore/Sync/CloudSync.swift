@@ -1,7 +1,7 @@
-import CommonCrypto
-import CryptoKit
 import Foundation
+#if canImport(Security)
 import Security
+#endif
 
 public enum CloudSync {
     public static let fileName = "vault.vvsync"
@@ -112,21 +112,12 @@ public enum CloudSync {
         iterations: Int,
         info: Data
     ) throws -> SymmetricKey {
-        var stretched = Data(count: 32)
-        let passphraseLength = passphrase.utf8.count
-        let status = stretched.withUnsafeMutableBytes { stretchedBytes in
-            salt.withUnsafeBytes { saltBytes in
-                CCKeyDerivationPBKDF(
-                    CCPBKDFAlgorithm(kCCPBKDF2),
-                    passphrase, passphraseLength,
-                    saltBytes.bindMemory(to: UInt8.self).baseAddress, salt.count,
-                    CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
-                    UInt32(iterations),
-                    stretchedBytes.bindMemory(to: UInt8.self).baseAddress, 32
-                )
-            }
-        }
-        guard status == kCCSuccess else { throw CloudSyncError.keyDerivationFailed }
+        let stretched = try PlatformPBKDF2.derive(
+            passphrase: passphrase,
+            salt: salt,
+            iterations: iterations,
+            byteCount: 32
+        )
         return HKDF<SHA256>.deriveKey(
             inputKeyMaterial: SymmetricKey(data: stretched),
             salt: salt,
@@ -149,11 +140,7 @@ public enum CloudSync {
     }
 
     static func secureRandomData(count: Int) throws -> Data {
-        var bytes = [UInt8](repeating: 0, count: count)
-        guard SecRandomCopyBytes(kSecRandomDefault, count, &bytes) == errSecSuccess else {
-            throw CloudSyncError.randomGenerationFailed
-        }
-        return Data(bytes)
+        Data(try PlatformRandom.bytes(count: count))
     }
 
     static let encoder: JSONEncoder = {

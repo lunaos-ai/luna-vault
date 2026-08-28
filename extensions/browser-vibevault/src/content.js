@@ -131,6 +131,7 @@
   let panel;
   let scanTimer;
   let dismissedCandidateCount = 0;
+  let saveInFlight = false;
 
   scan();
   installObservers();
@@ -274,6 +275,7 @@
   }
 
   function renderPanel() {
+    if (saveInFlight) return;
     if (!panel) {
       panel = document.createElement("div");
       panel.id = "vv-importer";
@@ -355,39 +357,78 @@
       return;
     }
 
+    saveInFlight = true;
     button.disabled = true;
     status.textContent = "Saving to Vibe Vault...";
     status.dataset.state = "pending";
 
+    sendSave(secretName, candidate.value, candidate.sourceLabel, overwrite, 0, (result) => {
+      saveInFlight = false;
+      button.disabled = false;
+      if (!result.ok) {
+        status.textContent = result.error;
+        status.dataset.state = "error";
+        return;
+      }
+      status.textContent = `Saved ${result.name || secretName}.`;
+      status.dataset.state = "ok";
+      candidates.delete(candidate.id);
+      valueToId.delete(candidate.value);
+      if (candidates.size === 0) {
+        window.setTimeout(() => {
+          panel?.remove();
+          panel = null;
+        }, 1800);
+      } else {
+        delete panel.dataset.vvSignature;
+        renderPanel();
+      }
+    });
+  }
+
+  function sendSave(name, value, provider, overwrite, attempt, done) {
     chrome.runtime.sendMessage(
       {
         type: "VV_SAVE_SECRET",
         payload: {
-          name: secretName,
-          value: candidate.value,
-          provider: candidate.sourceLabel,
+          name,
+          value,
+          provider,
           sourceUrl: location.href,
           overwrite,
           mcpAllowed: false
         }
       },
       (response) => {
-        button.disabled = false;
-        const error = chrome.runtime.lastError;
-        if (error) {
-          status.textContent = error.message;
-          status.dataset.state = "error";
+        const runtimeError = chrome.runtime.lastError;
+        if (runtimeError) {
+          const retryable = /Receiving end does not exist|message port closed/i.test(runtimeError.message);
+          if (retryable && attempt < 1) {
+            window.setTimeout(() => sendSave(name, value, provider, overwrite, attempt + 1, done), 250);
+            return;
+          }
+          done({ ok: false, error: formatSaveError(runtimeError.message, response) });
           return;
         }
         if (!response?.ok) {
-          status.textContent = response?.error || "Could not save secret.";
-          status.dataset.state = "error";
+          done({ ok: false, error: formatSaveError(response?.error, response) });
           return;
         }
-        status.textContent = `Saved ${response.name || secretName}.`;
-        status.dataset.state = "ok";
+        done({ ok: true, name: response.name || name });
       }
     );
+  }
+
+  function formatSaveError(message, response) {
+    const code = response?.code || "";
+    const detail = message || response?.error || "Could not save secret.";
+    if (code === "native_host_unavailable" || /native messaging host not found|Specified native messaging host not found/i.test(detail)) {
+      return "Vibe Vault host not connected in Chrome. Open the extension popup, run the install command, then restart Chrome.";
+    }
+    if (code === "duplicate") {
+      return `${detail} Enable "Update if name exists" and save again.`;
+    }
+    return detail;
   }
 
   function isVisible(element) {

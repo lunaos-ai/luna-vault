@@ -25,10 +25,12 @@ public struct PackageJsonParser: SecretFileParser {
         let ns = text as NSString
         for pattern in patterns {
             guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            var found = Set<String>()
             regex.enumerateMatches(in: text, range: NSRange(location: 0, length: ns.length)) { m, _, _ in
                 guard let m = m, m.numberOfRanges > 1 else { return }
-                out.insert(ns.substring(with: m.range(at: 1)))
+                found.insert(ns.substring(with: m.range(at: 1)))
             }
+            out.formUnion(found)
         }
     }
 }

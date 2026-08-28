@@ -38,11 +38,8 @@ public final class CloudflareProvider: SecretProvider, @unchecked Sendable {
             let body: [String: Any] = ["name": secret.name, "text": secret.value, "type": "secret_text"]
             req.httpBody = try JSONSerialization.data(withJSONObject: body)
             do {
-                let (data, resp) = try await session.data(for: req)
-                guard let http = resp as? HTTPURLResponse else {
-                    failed.append((secret.name, "missing HTTP response"))
-                    continue
-                }
+                let (data, resp) = try await session.vvData(for: req)
+                let http = resp
                 guard (200..<300).contains(http.statusCode), cloudflareSucceeded(data) else {
                     failed.append((secret.name, cloudflareError(data: data, status: http.statusCode)))
                     continue
@@ -63,16 +60,14 @@ public final class CloudflareProvider: SecretProvider, @unchecked Sendable {
         let url = try secretsURL(accountId: account, scriptName: script)
         var req = URLRequest(url: url)
         req.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, resp) = try await session.data(for: req)
-        guard let http = resp as? HTTPURLResponse else {
-            throw ProviderError.transport("missing HTTP response")
-        }
+        let (data, resp) = try await session.vvData(for: req)
+        let http = resp
         guard (200..<300).contains(http.statusCode), cloudflareSucceeded(data) else {
             throw ProviderError.http(status: http.statusCode, body: cloudflareError(data: data, status: http.statusCode))
         }
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [[String: Any]] else { return [] }
-        return result.compactMap { item in
+        return result.compactMap { item -> Secret? in
             guard let name = item["name"] as? String else { return nil }
             return Secret(name: name, value: "")
         }

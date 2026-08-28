@@ -1,6 +1,38 @@
 // swift-tools-version: 5.10
 import PackageDescription
 
+#if os(Linux) || os(Windows)
+let cryptoPackage: [Package.Dependency] = [
+    .package(url: "https://github.com/apple/swift-crypto.git", from: "3.8.0"),
+]
+let cryptoDeps: [Target.Dependency] = [
+    .product(name: "Crypto", package: "swift-crypto"),
+]
+let sqliteTargets: [Target] = [
+    .systemLibrary(
+        name: "CSQLite",
+        pkgConfig: "sqlite3",
+        providers: [.apt(["libsqlite3-dev"])]
+    ),
+]
+let sqliteDeps: [Target.Dependency] = ["CSQLite"]
+let appleFrameworks: [LinkerSetting] = [
+    .linkedLibrary("sqlite3"),
+]
+#else
+let cryptoPackage: [Package.Dependency] = []
+let cryptoDeps: [Target.Dependency] = []
+let sqliteTargets: [Target] = []
+let sqliteDeps: [Target.Dependency] = []
+let appleFrameworks: [LinkerSetting] = [
+    .linkedLibrary("sqlite3"),
+    .linkedFramework("Security"),
+    .linkedFramework("LocalAuthentication"),
+    .linkedFramework("CryptoKit"),
+    .linkedFramework("Vision"),
+]
+#endif
+
 let package = Package(
     name: "vibe-vault",
     platforms: [.macOS(.v14)],
@@ -9,22 +41,20 @@ let package = Package(
         .executable(name: "vibevault", targets: ["vibevault"]),
         .executable(name: "vibevault-browser-host", targets: ["vibevault-browser-host"]),
         .executable(name: "vibevault-mcp", targets: ["vibevault-mcp"]),
-        .executable(name: "VibeVaultApp", targets: ["VibeVaultApp"])
+        .executable(name: "VibeVaultApp", targets: ["VibeVaultApp"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0")
-    ],
-    targets: [
+        .package(
+            url: "https://github.com/apple/swift-argument-parser.git",
+            "1.3.0"..<"1.8.0"
+        ),
+    ] + cryptoPackage,
+    targets: sqliteTargets + [
         .target(
             name: "VaultCore",
+            dependencies: cryptoDeps + sqliteDeps,
             path: "packages/VaultCore/Sources/VaultCore",
-            linkerSettings: [
-                .linkedLibrary("sqlite3"),
-                .linkedFramework("Security"),
-                .linkedFramework("LocalAuthentication"),
-                .linkedFramework("CryptoKit"),
-                .linkedFramework("Vision")
-            ]
+            linkerSettings: appleFrameworks
         ),
         .testTarget(
             name: "VaultCoreTests",
@@ -40,7 +70,7 @@ let package = Package(
             name: "vibevault",
             dependencies: [
                 "VaultCore",
-                .product(name: "ArgumentParser", package: "swift-argument-parser")
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "cli/vibevault",
             exclude: ["vibevault.entitlements"]
@@ -61,6 +91,6 @@ let package = Package(
             dependencies: ["VaultCore"],
             path: "apps/VibeVaultApp",
             exclude: ["Info.plist", "VibeVault.entitlements", "Resources"]
-        )
+        ),
     ]
 )

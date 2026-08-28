@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vibe Vault | Secure credential access for AI coding agents</title>
-  <meta name="description" content="Give AI coding agents secure access to credentials without exposing raw API keys. Local-first macOS vault, Touch ID approval, per-agent audit, and no cloud account." />
+  <meta name="description" content="Give AI coding agents secure access to credentials without exposing raw API keys. Local-first vault on macOS, Linux, and Windows (WSL2), with approval gates, per-agent audit, and no cloud account." />
   <meta property="og:title" content="Vibe Vault" />
   <meta property="og:description" content="Secure credential access for AI coding agents. Your AI gets the access it needs; your secrets stay protected." />
   <meta property="og:url" content="https://vibevault.lunaos.ai/" />
@@ -12,7 +12,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#090909" />
   <link rel="canonical" href="https://vibevault.lunaos.ai/" />
-  <link rel="icon" href="assets/vibevault-logo-luxury.png" type="image/png" />
+  <link rel="icon" href="/assets/vibevault-logo-luxury.png" type="image/png" />
   <script>
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       document.documentElement.classList.add("motion");
@@ -173,7 +173,7 @@
       background:
         linear-gradient(90deg, rgba(9, 9, 9, 0.98) 0%, rgba(9, 9, 9, 0.88) 36%, rgba(9, 9, 9, 0.42) 68%, rgba(9, 9, 9, 0.64) 100%),
         linear-gradient(0deg, rgba(9, 9, 9, 1) 0%, rgba(9, 9, 9, 0.04) 38%),
-        url("assets/vibevault-desktop-hero.png") center right / cover no-repeat;
+        url("/assets/vibevault-desktop-hero.png") center right / cover no-repeat;
     }
 
     .hero::after {
@@ -967,7 +967,7 @@
         margin-top: -64px;
         background:
           linear-gradient(180deg, rgba(9, 9, 9, 0.78), rgba(9, 9, 9, 0.98) 72%),
-          url("assets/vibevault-desktop-hero.png") center top / cover no-repeat;
+          url("/assets/vibevault-desktop-hero.png") center top / cover no-repeat;
       }
 
       .hero::after {
@@ -1042,16 +1042,16 @@
   <div class="shell">
     <nav class="topbar" aria-label="Primary">
       <a class="brand" href="https://vibevault.lunaos.ai/">
-        <img src="assets/vibevault-logo-luxury.png" width="30" height="30" alt="" />
+        <img src="/assets/vibevault-logo-luxury.png" width="30" height="30" alt="" />
         Vibe Vault
       </a>
       <div class="nav-links">
         <a href="#why">Risk</a>
         <a href="https://vibevault.lunaos.ai/agents">Agents</a>
         <a href="#workflow">Demo</a>
-        <a href="/scan">Scanner</a>
+        <a href="https://vibevault.lunaos.ai/scan">Scanner</a>
         <a href="/alternatives">Compare</a>
-        <a href="/security">Security</a>
+        <a href="https://vibevault.lunaos.ai/security">Security</a>
         <a href="#pricing">Pricing</a>
         <a class="download" href="https://vibevault.lunaos.ai/download">Install</a>
       </div>
@@ -1066,9 +1066,10 @@
         <p class="hero-claim">Stop AI coding agents from exposing your API keys.</p>
         <p class="lede">
           Give Cursor, Claude Code, Devin, and VS Code secure access to credentials through
-          a local macOS vault, with Touch ID approval, per-agent audit logs, and no cloud account.
+          a local vault: native Mac app, plus CLI, MCP, and desktop shells on Linux and Windows (WSL2).
+          Approval gates, per-agent audit logs, and no cloud account.
         </p>
-        <p class="trust-line">Free for solo developers · macOS 14+ · Local-first · No account required</p>
+        <p class="trust-line">Free for solo developers · macOS · Linux · Windows (WSL2) · Local-first · No account required</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="https://vibevault.lunaos.ai/download">Install CLI</a>
           <a class="btn btn-secondary" href="#workflow">Watch Demo</a>
@@ -1341,7 +1342,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           <article class="proof">
             <span class="label">Multi-repo work</span>
             <h3>Stop duplicating <code>.env</code> files.</h3>
-            <p>Run <a href="/scan"><code>vibevault scan</code></a> to find expected env names and tracked local secret files before an agent session.</p>
+            <p>Run <a href="https://vibevault.lunaos.ai/scan"><code>vibevault scan</code></a> to find expected env names and tracked local secret files before an agent session.</p>
           </article>
           <article class="proof">
             <span class="label">Deployment sync</span>
@@ -1377,18 +1378,20 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
         <div class="section-head reveal">
           <div>
             <p class="section-label">Expansion path</p>
-            <h2>macOS first, then agent identity and broader runtime governance.</h2>
+            <h2>Mac-native first, now shipping Linux and Windows workflows.</h2>
           </div>
           <p class="section-copy">
-            Vibe Vault starts where the workflow is local and high-risk: Mac developers using
-            AI agents. The larger category is identity and access management for AI coding agents.
+            Vibe Vault starts where the workflow is local and high-risk: developers using AI agents
+            on their machines. The Mac app remains the primary desktop; CLI, MCP, and Gtk desktop
+            shells cover Linux and Windows via WSL2. The larger category is identity and access
+            management for AI coding agents.
           </p>
         </div>
 
         <div class="pipeline reveal" aria-label="AI credential infrastructure roadmap">
           <div class="pipe-step"><span>Available</span><strong>macOS local vault</strong></div>
           <div class="pipe-step"><span>Available</span><strong>Agent audit and provider sync</strong></div>
-          <div class="pipe-step"><span>Planned</span><strong>Linux and Windows workflows</strong></div>
+          <div class="pipe-step"><span>Available</span><strong>Linux and Windows (WSL2)</strong></div>
           <div class="pipe-step"><span>Planned</span><strong>Repository-level policies</strong></div>
           <div class="pipe-step"><span>Research</span><strong>Remote dev environments</strong></div>
           <div class="pipe-step"><span>Later</span><strong>Agent identity governance</strong></div>
@@ -1412,7 +1415,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           <div class="security-list reveal">
             <div class="security-row">
               <strong>Storage model</strong>
-              <span>Credentials live in local encrypted storage with the master key held in macOS Keychain.</span>
+              <span>Credentials live in local encrypted storage. On macOS the master key is in Keychain; on Linux and Windows it uses a mode-0600 file store (DPAPI planned).</span>
             </div>
             <div class="security-row">
               <strong>Access model</strong>
@@ -1581,11 +1584,11 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           </details>
           <details>
             <summary>Can local malware read my secrets?</summary>
-            <p>No local secret manager can defend against complete device compromise. Vibe Vault relies on macOS Keychain, local approval, and reduced copy-paste exposure; it is not an anti-malware boundary.</p>
+            <p>No local secret manager can defend against complete device compromise. Vibe Vault relies on platform key storage (Keychain on Mac, protected file store on Linux/Windows), local approval, and reduced copy-paste exposure; it is not an anti-malware boundary.</p>
           </details>
           <details>
             <summary>Where do secrets live?</summary>
-            <p>Secrets are encrypted locally. The vault ciphertext lives on disk and the master key is held in macOS Keychain.</p>
+            <p>Secrets are encrypted locally. The vault ciphertext lives on disk. On macOS the master key is held in Keychain; on Linux and Windows it uses a protected local file store.</p>
           </details>
           <details>
             <summary>Does Team phone home?</summary>
@@ -1609,7 +1612,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           </details>
           <details>
             <summary>Is Windows or Linux supported?</summary>
-            <p>Not yet. Vibe Vault is macOS-first because it uses local developer machines and native Keychain security. Linux, Windows, and remote development environments are on the expansion path.</p>
+            <p>Yes. The native SwiftUI app is macOS-first. CLI, MCP, and a cross-platform desktop shell ship for Linux and for Windows via WSL2. Unlock with <code>vibevault session unlock</code> where Touch ID is unavailable. See the <a href="https://vibevault.lunaos.ai/install/#windows">install page</a> and docs for build steps.</p>
           </details>
         </div>
       </div>
@@ -1630,7 +1633,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
 
   <div class="shell">
     <footer>
-      <div>(c) LunaOS | macOS 14+</div>
+      <div>(c) LunaOS | macOS · Linux · Windows (WSL2)</div>
       <div>
         <a href="https://lunaos.ai">lunaos.ai</a> |
         <a href="https://github.com/lunaos-ai/luna-vault">GitHub</a> |
@@ -1665,7 +1668,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
       (async function () {
         var host = window.location.hostname;
         var isLocalPreview = host === "localhost" || host === "127.0.0.1" || window.location.protocol === "file:";
-        var checkoutEndpoint = host === "vibevault.lunaos.ai" ? "/api/checkout" : "https://vibevault.lunaos.ai/api/checkout";
+        var checkoutEndpoint = "/api/checkout";
         function disableBuyLinks(label) {
           document.querySelectorAll("a.buy[data-tier]").forEach(function (a) {
             a.setAttribute("aria-disabled", "true");

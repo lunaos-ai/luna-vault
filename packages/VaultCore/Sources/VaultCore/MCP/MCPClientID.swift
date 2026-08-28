@@ -22,10 +22,24 @@ public enum MCPClientID: String, CaseIterable, Sendable {
     public var configHint: String {
         switch self {
         case .cursor: return "~/.cursor/mcp.json"
-        case .vscode: return "~/Library/Application Support/Code/User/mcp.json"
+        case .vscode:
+            #if os(macOS)
+            return "~/Library/Application Support/Code/User/mcp.json"
+            #elseif os(Windows)
+            return "%APPDATA%/Code/User/mcp.json"
+            #else
+            return "~/.config/Code/User/mcp.json"
+            #endif
         case .devin: return "~/.devin/mcp.json (or Devin workspace MCP settings)"
         case .claudeCode: return "~/.claude/mcp.json"
-        case .claudeDesktop: return "~/Library/Application Support/Claude/claude_desktop_config.json"
+        case .claudeDesktop:
+            #if os(macOS)
+            return "~/Library/Application Support/Claude/claude_desktop_config.json"
+            #elseif os(Windows)
+            return "%APPDATA%/Claude/claude_desktop_config.json"
+            #else
+            return "~/.config/Claude/claude_desktop_config.json"
+            #endif
         }
     }
 
@@ -34,11 +48,25 @@ public enum MCPClientID: String, CaseIterable, Sendable {
         switch self {
         case .cursor: return home.appendingPathComponent(".cursor/mcp.json")
         case .vscode:
+            #if os(macOS)
             return home.appendingPathComponent("Library/Application Support/Code/User/mcp.json")
+            #elseif os(Windows)
+            let appData = ProcessInfo.processInfo.environment["APPDATA"] ?? home.appendingPathComponent("AppData/Roaming").path
+            return URL(fileURLWithPath: appData).appendingPathComponent("Code/User/mcp.json")
+            #else
+            return home.appendingPathComponent(".config/Code/User/mcp.json")
+            #endif
         case .devin: return home.appendingPathComponent(".devin/mcp.json")
         case .claudeCode: return home.appendingPathComponent(".claude/mcp.json")
         case .claudeDesktop:
+            #if os(macOS)
             return home.appendingPathComponent("Library/Application Support/Claude/claude_desktop_config.json")
+            #elseif os(Windows)
+            let appData = ProcessInfo.processInfo.environment["APPDATA"] ?? home.appendingPathComponent("AppData/Roaming").path
+            return URL(fileURLWithPath: appData).appendingPathComponent("Claude/claude_desktop_config.json")
+            #else
+            return home.appendingPathComponent(".config/Claude/claude_desktop_config.json")
+            #endif
         }
     }
 }

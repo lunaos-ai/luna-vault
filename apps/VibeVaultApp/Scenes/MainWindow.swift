@@ -43,6 +43,11 @@ struct MainWindow: View {
                 try? await Task.sleep(nanoseconds: 600_000_000)
                 await UXSmokeTour.run(setSelection: { selection = $0 }, env: env)
             }
+            if ProcessInfo.processInfo.environment["VIBEVAULT_UI_SMOKE"] == "cloud-sync-team" {
+                showOnboarding = false
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                await CloudSyncTeamUISmoke.run(setSelection: { selection = $0 }, env: env)
+            }
         }
         .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
             env.refreshSharedUnlockSessionStatus()

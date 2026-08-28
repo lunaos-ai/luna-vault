@@ -41,8 +41,8 @@ public final class VercelProvider: SecretProvider, @unchecked Sendable {
             ]
             req.httpBody = try JSONSerialization.data(withJSONObject: body)
             do {
-                let (data, resp) = try await session.data(for: req)
-                let status = (resp as? HTTPURLResponse)?.statusCode ?? -1
+                let (data, resp) = try await session.vvData(for: req)
+                let status = resp.statusCode
                 if (200..<300).contains(status) {
                     pushed.append(secret.name)
                 } else {
@@ -62,14 +62,14 @@ public final class VercelProvider: SecretProvider, @unchecked Sendable {
         let url = URL(string: "https://api.vercel.com/v9/projects/\(project)/env\(teamQuery)")!
         var req = URLRequest(url: url)
         req.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, resp) = try await session.data(for: req)
-        let status = (resp as? HTTPURLResponse)?.statusCode ?? -1
+        let (data, resp) = try await session.vvData(for: req)
+        let status = resp.statusCode
         guard (200..<300).contains(status) else {
             throw ProviderError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let envs = json["envs"] as? [[String: Any]] else { return [] }
-        return envs.compactMap { item in
+        return envs.compactMap { item -> Secret? in
             guard let key = item["key"] as? String else { return nil }
             let value = item["value"] as? String ?? ""
             return Secret(name: key, value: value)

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vibe Vault Importer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Save newly generated provider API keys directly into Vibe Vault.",
   "minimum_chrome_version": "114",
   "icons": {

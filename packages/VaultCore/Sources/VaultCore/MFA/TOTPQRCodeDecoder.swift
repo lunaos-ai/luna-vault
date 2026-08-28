@@ -1,21 +1,26 @@
 import Foundation
+#if canImport(Vision)
 import Vision
+#endif
 
 public enum TOTPQRCodeError: Error, Equatable, CustomStringConvertible {
     case imageTooLarge
     case noQRCode
     case invalidPayload
+    case unsupportedPlatform
 
     public var description: String {
         switch self {
         case .imageTooLarge: return "QR image is too large"
         case .noQRCode: return "no QR code found in the image"
         case .invalidPayload: return "QR code does not contain a valid authenticator setup"
+        case .unsupportedPlatform: return "QR decoding requires Vision (macOS)"
         }
     }
 }
 
 public enum TOTPQRCodeDecoder {
+#if canImport(Vision)
     public static func payloads(in imageURL: URL) throws -> [String] {
         let values = try imageURL.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
         guard values.isRegularFile == true else { throw TOTPQRCodeError.noQRCode }
@@ -54,4 +59,13 @@ public enum TOTPQRCodeDecoder {
         }
         return payloads
     }
+#else
+    public static func payloads(in imageURL: URL) throws -> [String] {
+        throw TOTPQRCodeError.unsupportedPlatform
+    }
+
+    public static func payloads(in imageData: Data) throws -> [String] {
+        throw TOTPQRCodeError.unsupportedPlatform
+    }
+#endif
 }

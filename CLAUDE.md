@@ -25,13 +25,13 @@ Solo developer or small team using AI coding tools (Cursor, Claude Code, Devin) 
 
 ## Architecture constraints
 
-- **Platform**: macOS 14 Sonoma minimum. No iOS, no Linux, no Windows in v0.1.
-- **Stack**: Native SwiftUI (App), Swift CLI (`vibevault`), shared `VaultCore` SwiftPM framework.
-- **No third-party dependencies** in VaultCore except `swift-argument-parser` (CLI only) and system frameworks (Security, LocalAuthentication, sqlite3, Foundation).
-- **Keychain service**: `kSecAttrService = "dev.vibevault"` (master key + prefs; legacy secret migration).
-- **Vault files**: `~/Library/Application Support/vibe-vault/secrets.vault` (AES-GCM ciphertext).
-- **Audit DB**: `~/Library/Application Support/vibe-vault/audit.db` (SQLite via system sqlite3).
-- **App Group**: `group.dev.vibevault` for App↔CLI Keychain sharing.
+- **Platform**: macOS 14 Sonoma minimum for the SwiftUI app. CLI, MCP, and `VibeVaultDesktop` (SwiftCrossUI) also target Linux and Windows (WSL2 / experimental Swift). See `docs/WINDOWS_AND_LINUX.md`.
+- **Stack**: Native SwiftUI (`VibeVaultApp`, macOS), SwiftCrossUI desktop (`VibeVaultDesktop`), Swift CLI (`vibevault`), shared `VaultCore` SwiftPM framework.
+- **Dependencies in VaultCore**: system frameworks on Apple; `swift-crypto` for CryptoKit-compatible crypto on Linux/Windows; `swift-argument-parser` for CLI only.
+- **Key storage**: Keychain on macOS (`kSecAttrService = "dev.vibevault"`). Mode-`0600` master-key files on Linux/Windows (DPAPI/keyring planned).
+- **Vault files**: platform data dir `/vibe-vault/secrets.vault` (AES-GCM ciphertext). Override with `VIBEVAULT_VAULT_DIR`.
+- **Audit DB**: same data dir `/audit.db` (SQLite via system sqlite3).
+- **App Group**: `group.dev.vibevault` for App↔CLI Keychain sharing (macOS).
 - **File size cap**: 200 LOC per Swift file (non-blank, non-comment). Enforced by `scripts/check-loc.sh` in CI.
 - **No network calls** in solo tier. Team tier (later) opt-in only.
 

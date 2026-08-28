@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vibe Vault | Secure credential access for AI coding agents</title>
-  <meta name="description" content="Give AI coding agents secure access to credentials without exposing raw API keys. Local-first macOS vault, Touch ID approval, per-agent audit, and no cloud account." />
+  <meta name="description" content="Give AI coding agents secure access to credentials without exposing raw API keys. Local-first vault on macOS, Linux, and Windows (WSL2), with approval gates, per-agent audit, and no cloud account." />
   <meta property="og:title" content="Vibe Vault" />
   <meta property="og:description" content="Secure credential access for AI coding agents. Your AI gets the access it needs; your secrets stay protected." />
   <meta property="og:url" content="https://vibevault.lunaos.ai/" />
@@ -1066,9 +1066,10 @@
         <p class="hero-claim">Stop AI coding agents from exposing your API keys.</p>
         <p class="lede">
           Give Cursor, Claude Code, Devin, and VS Code secure access to credentials through
-          a local macOS vault, with Touch ID approval, per-agent audit logs, and no cloud account.
+          a local vault: native Mac app, plus CLI, MCP, and desktop shells on Linux and Windows (WSL2).
+          Approval gates, per-agent audit logs, and no cloud account.
         </p>
-        <p class="trust-line">Free for solo developers · macOS 14+ · Local-first · No account required</p>
+        <p class="trust-line">Free for solo developers · macOS · Linux · Windows (WSL2) · Local-first · No account required</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="/download">Install CLI</a>
           <a class="btn btn-secondary" href="#workflow">Watch Demo</a>
@@ -1377,18 +1378,20 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
         <div class="section-head reveal">
           <div>
             <p class="section-label">Expansion path</p>
-            <h2>macOS first, then agent identity and broader runtime governance.</h2>
+            <h2>Mac-native first, now shipping Linux and Windows workflows.</h2>
           </div>
           <p class="section-copy">
-            Vibe Vault starts where the workflow is local and high-risk: Mac developers using
-            AI agents. The larger category is identity and access management for AI coding agents.
+            Vibe Vault starts where the workflow is local and high-risk: developers using AI agents
+            on their machines. The Mac app remains the primary desktop; CLI, MCP, and Gtk desktop
+            shells cover Linux and Windows via WSL2. The larger category is identity and access
+            management for AI coding agents.
           </p>
         </div>
 
         <div class="pipeline reveal" aria-label="AI credential infrastructure roadmap">
           <div class="pipe-step"><span>Available</span><strong>macOS local vault</strong></div>
           <div class="pipe-step"><span>Available</span><strong>Agent audit and provider sync</strong></div>
-          <div class="pipe-step"><span>Planned</span><strong>Linux and Windows workflows</strong></div>
+          <div class="pipe-step"><span>Available</span><strong>Linux and Windows (WSL2)</strong></div>
           <div class="pipe-step"><span>Planned</span><strong>Repository-level policies</strong></div>
           <div class="pipe-step"><span>Research</span><strong>Remote dev environments</strong></div>
           <div class="pipe-step"><span>Later</span><strong>Agent identity governance</strong></div>
@@ -1412,7 +1415,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           <div class="security-list reveal">
             <div class="security-row">
               <strong>Storage model</strong>
-              <span>Credentials live in local encrypted storage with the master key held in macOS Keychain.</span>
+              <span>Credentials live in local encrypted storage. On macOS the master key is in Keychain; on Linux and Windows it uses a mode-0600 file store (DPAPI planned).</span>
             </div>
             <div class="security-row">
               <strong>Access model</strong>
@@ -1581,11 +1584,11 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           </details>
           <details>
             <summary>Can local malware read my secrets?</summary>
-            <p>No local secret manager can defend against complete device compromise. Vibe Vault relies on macOS Keychain, local approval, and reduced copy-paste exposure; it is not an anti-malware boundary.</p>
+            <p>No local secret manager can defend against complete device compromise. Vibe Vault relies on platform key storage (Keychain on Mac, protected file store on Linux/Windows), local approval, and reduced copy-paste exposure; it is not an anti-malware boundary.</p>
           </details>
           <details>
             <summary>Where do secrets live?</summary>
-            <p>Secrets are encrypted locally. The vault ciphertext lives on disk and the master key is held in macOS Keychain.</p>
+            <p>Secrets are encrypted locally. The vault ciphertext lives on disk. On macOS the master key is held in Keychain; on Linux and Windows it uses a protected local file store.</p>
           </details>
           <details>
             <summary>Does Team phone home?</summary>
@@ -1609,7 +1612,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
           </details>
           <details>
             <summary>Is Windows or Linux supported?</summary>
-            <p>Not yet. Vibe Vault is macOS-first because it uses local developer machines and native Keychain security. Linux, Windows, and remote development environments are on the expansion path.</p>
+            <p>Yes. The native SwiftUI app is macOS-first. CLI, MCP, and a cross-platform desktop shell ship for Linux and for Windows via WSL2. Unlock with <code>vibevault session unlock</code> where Touch ID is unavailable. See the <a href="/install/#windows">install page</a> and docs for build steps.</p>
           </details>
         </div>
       </div>
@@ -1630,7 +1633,7 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
 
   <div class="shell">
     <footer>
-      <div>(c) LunaOS | macOS 14+</div>
+      <div>(c) LunaOS | macOS · Linux · Windows (WSL2)</div>
       <div>
         <a href="https://lunaos.ai">lunaos.ai</a> |
         <a href="https://github.com/lunaos-ai/luna-vault">GitHub</a> |

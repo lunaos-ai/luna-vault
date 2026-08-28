@@ -262,7 +262,10 @@ Supported current provider pages are limited to host permissions declared in the
 
 Implemented assets and scripts:
 
-- Swift package builds CLI, MCP server, browser host, and app.
+- Swift package builds CLI, MCP server, browser host, and macOS app.
+- Linux CLI/MCP CI job and `scripts/build-linux.sh` (Docker Swift image).
+- Linux/Windows desktop shell (`apps/VibeVaultDesktop`, SwiftCrossUI) with Gtk 4 CI (`linux-desktop` job).
+- Windows support via WSL2 today; native Swift/Windows + DPAPI planned (`docs/WINDOWS_AND_LINUX.md`).
 - App bundle script.
 - DMG creation script.
 - Homebrew formula under `dist/homebrew`.
@@ -395,6 +398,7 @@ Work still needed:
 ### Near-Term
 
 - Publish this capability matrix as part of repo docs and keep it updated for every release.
+- Ship Linux CLI packages; document Windows WSL2 and native DPAPI path (`docs/WINDOWS_AND_LINUX.md`).
 - Keep the dedicated cloud sync/backup guide current as sync behavior changes.
 - Improve browser extension onboarding and supported-provider docs.
 - Keep recovery guidance current as backup behavior changes.

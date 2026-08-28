@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vibe Vault for AI Agents | Local credential access for Cursor and Claude Code</title>
-  <meta name="description" content="Give Cursor, Claude Code, Devin, VS Code, and terminal agents permissioned credential access through a local macOS vault with audit, scanner, and MCP setup." />
+  <meta name="description" content="Give Cursor, Claude Code, Devin, VS Code, and terminal agents permissioned credential access through a local vault (macOS, Linux, Windows via WSL2) with audit, scanner, and MCP setup." />
   <link rel="canonical" href="https://vibevault.lunaos.ai/agents" />
   <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
   <style>
@@ -346,8 +346,8 @@
         <h1>Give agents access without handing them your vault.</h1>
         <p class="lede">
           Vibe Vault lets Cursor, Claude Code, Devin, VS Code, and terminal agents
-          request credentials through a local macOS boundary with explicit approval,
-          MCP setup, repo scanning, and per-agent audit.
+          request credentials through a local boundary with explicit approval,
+          MCP setup, repo scanning, and per-agent audit. macOS, Linux, and Windows (WSL2).
         </p>
         <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
 cd luna-vault &amp;&amp; swift build -c release --product vibevault

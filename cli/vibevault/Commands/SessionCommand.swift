@@ -19,7 +19,7 @@ struct SessionStatusCommand: ParsableCommand {
             return
         }
         let remaining = Int(ceil(status.remainingSeconds() / 60))
-        print("unlocked for \(remaining) more minute(s), until \(status.expiresAt.formatted(date: .omitted, time: .standard))")
+        print("unlocked for \(remaining) more minute(s), until \(PlatformDateFormat.timeOnly(status.expiresAt))")
     }
 }
 
@@ -36,7 +36,7 @@ struct SessionUnlockCommand: AsyncParsableCommand {
         let gate = BiometricGate(sharedSessionURL: nil)
         try await gate.authenticate(reason: "Unlock all VibeVault clients for \(minutes) minutes")
         let status = try SharedUnlockSession.unlock(for: TimeInterval(minutes * 60))
-        print("unlocked until \(status.expiresAt.formatted(date: .omitted, time: .standard))")
+        print("unlocked until \(PlatformDateFormat.timeOnly(status.expiresAt))")
     }
 }
 

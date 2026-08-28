@@ -388,8 +388,10 @@ async function routeRequest(request: Request, env: Env, ctx: ExecutionContext): 
 
     const assetPath = CLEAN_STATIC_ROUTES[path];
     if (assetPath) {
-      const staticURL = new URL(assetPath, url);
-      return env.ASSETS.fetch(new Request(staticURL, request));
+      // Serve directory index via trailing-slash URL. Fetching index.html directly
+      // makes the assets binding 307 to /path/, which loops with run_worker_first.
+      const dirURL = new URL(`${path}/`, url);
+      return env.ASSETS.fetch(new Request(dirURL, request));
     }
   }
 
@@ -483,7 +485,7 @@ function alternativesHTML(): string {
         </div>
         <aside class="quick-card">
           <span>Positioning</span>
-          <strong>Local credential boundary for AI coding agents on macOS.</strong>
+          <strong>Local credential boundary for AI coding agents on macOS, Linux, and Windows (WSL2).</strong>
           <p>Use Vibe Vault to scan a repo, move secrets out of plaintext files, prepare MCP/Cursor, import newly generated provider keys, and audit agent access.</p>
         </aside>
       </div>
@@ -666,7 +668,7 @@ function comparisonNav(): string {
 function comparisonFooter(): string {
   return `<footer>
     <div class="shell footer-inner">
-      <span>(c) LunaOS | macOS 14+</span>
+      <span>(c) LunaOS | macOS · Linux · Windows (WSL2)</span>
       <span><a href="https://github.com/lunaos-ai/luna-vault">GitHub</a> | <a href="/security">Security</a> | <a href="/download">Install</a></span>
     </div>
   </footer>`;

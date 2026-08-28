@@ -33,12 +33,14 @@ public struct VercelParser: SecretFileParser {
         let pattern = "@([A-Za-z_][A-Za-z0-9_-]+)"
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
         let ns = raw as NSString
+        var found = Set<String>()
         regex.enumerateMatches(in: raw, range: NSRange(location: 0, length: ns.length)) { m, _, _ in
             guard let m = m, m.numberOfRanges > 1 else { return }
             let name = ns.substring(with: m.range(at: 1))
                 .replacingOccurrences(of: "-", with: "_")
                 .uppercased()
-            out.insert(name)
+            found.insert(name)
         }
+        out.formUnion(found)
     }
 }

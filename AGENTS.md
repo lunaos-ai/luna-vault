@@ -12,3 +12,12 @@ Policy version: 1.2.0
 - For real secrets, prefer Vibe Vault over creating plaintext `.env` files. If a secret is missing, ask the user to import it into Vibe Vault instead of pasting it in chat.
 
 <!-- /vibe-vault -->
+
+
+<claude-mem-context>
+# Memory Context
+
+# [luna-vault] recent context, 2026-08-27 4:18pm GMT+3
+
+No previous sessions found.
+</claude-mem-context>

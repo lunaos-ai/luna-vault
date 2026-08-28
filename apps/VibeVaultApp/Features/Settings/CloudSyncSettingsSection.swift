@@ -122,7 +122,7 @@ struct CloudSyncSettingsSection: View {
         } header: {
             Text("Encrypted sync and backups")
         } footer: {
-            Text("Manual passphrases are not saved. Scheduled-backup credentials and an enabled recovery key stay in this Mac's Keychain. Backups run while the app is open and the vault is unlocked.")
+            Text("Sync to iCloud shares one encrypted bundle between Macs. Export backup saves a portable file anywhere. Enable schedule stores the passphrase in Keychain for automatic iCloud snapshots while the app stays open.")
         }
         .onAppear { refreshStatus() }
         .onChange(of: passphrase) { _, _ in

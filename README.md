@@ -1,8 +1,10 @@
 # vibe-vault
 
-Secure credential access for AI coding agents on macOS. Lives in your menu bar.
+Secure credential access for AI coding agents. Native macOS SwiftUI app; CLI, MCP, and desktop UI on Linux and Windows (WSL2).
 
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)](https://vibevault.lunaos.ai/)
+[![Linux](https://img.shields.io/badge/Linux-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
+[![Windows WSL2](https://img.shields.io/badge/Windows-WSL2%20CLI%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.4-indigo)](CHANGELOG.md)
 
@@ -15,9 +17,27 @@ npm run dev
 vibevault run -- npm run dev
 ```
 
-Secrets live in an encrypted local vault with the master key held in macOS Keychain. Every read is audited per AI agent (Claude Code, Cursor, Devin). One command syncs to Cloudflare, Vercel, PushCI.
+Secrets live in an encrypted local vault. On macOS the master key is in Keychain; on Linux/Windows it uses a mode-`0600` file store (see `docs/WINDOWS_AND_LINUX.md`). Every read is audited per AI agent (Claude Code, Cursor, Devin). One command syncs to Cloudflare, Vercel, PushCI.
 
 ## Install
+
+**macOS**
+
+```bash
+brew install finsavvyai/tap/vibevault
+# or download the DMG from https://vibevault.lunaos.ai/install
+```
+
+**Linux / Windows (WSL2)** — CLI + MCP + desktop
+
+```bash
+bash scripts/build-linux.sh
+# binary: .build/release/vibevault
+
+bash scripts/build-desktop-linux.sh
+# binary: apps/VibeVaultDesktop/.build/release/VibeVaultDesktop
+# details: docs/WINDOWS_AND_LINUX.md
+```
 
 **Install**
 
@@ -156,6 +176,7 @@ vibevault license status
 - Launch copy: `docs/launch/LAUNCH_PACK.md`
 - Threat model: `docs/security/THREAT_MODEL.md`
 - Capabilities and roadmap: `docs/CAPABILITIES_AND_ROADMAP.md`
+- Team purchase and Cloud Sync setup: `docs/TEAM_AND_CLOUD_SYNC.md`
 - GTM plan: `.luna/vibe-vault/gtm/plan.md`
 - Team licensing: `dist/lemonsqueezy/WEBHOOK.md`
 

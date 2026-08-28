@@ -6,7 +6,7 @@
   <title>Vibe Vault Security Architecture</title>
   <meta name="description" content="How Vibe Vault stores credentials locally, gates AI-agent reads, records audit events, and where its security boundary ends." />
   <link rel="canonical" href="https://vibevault.lunaos.ai/security" />
-  <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
+  <link rel="icon" href="/assets/vibe-vaulta-app-icon.png" type="image/png" />
   <style>
     :root {
       color-scheme: dark;
@@ -311,15 +311,15 @@
 <body>
   <div class="shell">
     <nav class="topbar" aria-label="Primary">
-      <a class="brand" href="/">
+      <a class="brand" href="https://vibevault.lunaos.ai/">
         <img src="../assets/vibe-vaulta-app-icon.png" width="30" height="30" alt="" />
         Vibe Vault
       </a>
       <div class="nav">
-        <a href="/">Product</a>
-        <a href="/scan">Scanner</a>
+        <a href="https://vibevault.lunaos.ai/">Product</a>
+        <a href="https://vibevault.lunaos.ai/scan">Scanner</a>
         <a href="/#pricing">Pricing</a>
-        <a class="btn" href="/download">Install</a>
+        <a class="btn" href="https://vibevault.lunaos.ai/download">Install</a>
       </div>
     </nav>
   </div>
@@ -335,7 +335,7 @@
           tamper-proof compliance system.
         </p>
         <div class="cta-row">
-          <a class="btn" href="/download">Install CLI</a>
+          <a class="btn" href="https://vibevault.lunaos.ai/download">Install CLI</a>
           <a class="btn secondary" href="https://github.com/lunaos-ai/luna-vault/blob/main/docs/security/THREAT_MODEL.md">Read Threat Model</a>
         </div>
       </div>
@@ -358,7 +358,7 @@
         <div class="grid">
           <article class="card">
             <strong>Storage</strong>
-            <p>Secret values live in encrypted local vault storage. The master key is held in macOS Keychain.</p>
+            <p>Secret values live in encrypted local vault storage. On macOS the master key is in Keychain; on Linux and Windows it uses a mode-0600 file store (DPAPI planned).</p>
           </article>
           <article class="card">
             <strong>Access</strong>
@@ -392,7 +392,7 @@
           </div>
           <div class="step">
             <span>02</span>
-            <div><strong>Encrypt and store</strong><p>The encrypted vault lives on disk; the master key is protected by macOS Keychain.</p></div>
+            <div><strong>Encrypt and store</strong><p>The encrypted vault lives on disk. On macOS the master key is in Keychain; on Linux and Windows it uses a protected local file store.</p></div>
             <div class="tag">encrypted</div>
           </div>
           <div class="step">
@@ -507,7 +507,7 @@
         <div class="cta-row">
           <a class="btn" href="https://github.com/lunaos-ai/luna-vault">View Repository</a>
           <a class="btn secondary" href="https://github.com/lunaos-ai/luna-vault/blob/main/docs/security/THREAT_MODEL.md">Threat Model</a>
-          <a class="btn secondary" href="/scan">Run Scanner First</a>
+          <a class="btn secondary" href="https://vibevault.lunaos.ai/scan">Run Scanner First</a>
         </div>
       </div>
     </section>

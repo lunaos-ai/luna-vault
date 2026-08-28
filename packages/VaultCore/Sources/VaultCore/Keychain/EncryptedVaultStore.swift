@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// Encrypted secret vault on disk; master key in Keychain (not beside ciphertext).

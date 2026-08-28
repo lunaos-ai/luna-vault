@@ -1,6 +1,7 @@
 import Foundation
-import CryptoKit
+#if canImport(LocalAuthentication)
 import LocalAuthentication
+#endif
 
 public protocol BiometricGating: Sendable {
     func authenticate(reason: String) async throws
@@ -41,6 +42,7 @@ public final class BiometricGate: BiometricGating, @unchecked Sendable {
 
     public func authenticate(reason: String) async throws {
         if isSessionValid() { return }
+        #if canImport(LocalAuthentication)
         let context = LAContext()
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
@@ -52,10 +54,16 @@ public final class BiometricGate: BiometricGating, @unchecked Sendable {
         } catch {
             throw SecretError.biometricDenied
         }
+        #else
+        throw SecretError.biometricDenied
+        #endif
     }
 
     public func resetSession() {
         queue.sync { lastSuccess = nil }
+        #if !canImport(LocalAuthentication)
+        SharedUnlockSession.lock(url: sharedSessionURL ?? SharedUnlockSession.defaultURL())
+        #endif
     }
 
     private func isSessionValid() -> Bool {

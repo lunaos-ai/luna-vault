@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// AES-GCM helpers for the on-disk vault ciphertext.

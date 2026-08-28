@@ -172,7 +172,7 @@ enum MCPTools {
         let events = try context.service.audit.query(filter)
             .filter { allowedNames.contains($0.secretName) }
         let lines = events.map { e in
-            "\(e.timestamp.formatted(date: .abbreviated, time: .shortened)) · \(e.action.rawValue) · \(e.secretName) · \(e.agent) (\(e.agentConfidence.rawValue))"
+            "\(PlatformDateFormat.logTimestamp(e.timestamp)) · \(e.action.rawValue) · \(e.secretName) · \(e.agent) (\(e.agentConfidence.rawValue))"
         }
         return textResult(lines.isEmpty ? "(no events)" : lines.joined(separator: "\n"))
     }

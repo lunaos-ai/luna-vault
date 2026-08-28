@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vibe Vault for AI Agents | Local credential access for Cursor and Claude Code</title>
-  <meta name="description" content="Give Cursor, Claude Code, Devin, VS Code, and terminal agents permissioned credential access through a local macOS vault with audit, scanner, and MCP setup." />
+  <meta name="description" content="Give Cursor, Claude Code, Devin, VS Code, and terminal agents permissioned credential access through a local vault (macOS, Linux, Windows via WSL2) with audit, scanner, and MCP setup." />
   <link rel="canonical" href="https://vibevault.lunaos.ai/agents" />
   <link rel="icon" href="../assets/vibe-vaulta-app-icon.png" type="image/png" />
   <style>
@@ -326,15 +326,15 @@
 <body>
   <div class="shell">
     <nav class="topbar" aria-label="Primary">
-      <a class="brand" href="/">
+      <a class="brand" href="https://vibevault.lunaos.ai/">
         <img src="../assets/vibe-vaulta-app-icon.png" width="30" height="30" alt="" />
         Vibe Vault
       </a>
       <div class="nav">
-        <a href="/">Product</a>
-        <a href="/scan">Scanner</a>
-        <a href="/security">Security</a>
-        <a class="btn" href="/download">Install</a>
+        <a href="https://vibevault.lunaos.ai/">Product</a>
+        <a href="https://vibevault.lunaos.ai/scan">Scanner</a>
+        <a href="https://vibevault.lunaos.ai/security">Security</a>
+        <a class="btn" href="https://vibevault.lunaos.ai/download">Install</a>
       </div>
     </nav>
   </div>
@@ -346,15 +346,15 @@
         <h1>Give agents access without handing them your vault.</h1>
         <p class="lede">
           Vibe Vault lets Cursor, Claude Code, Devin, VS Code, and terminal agents
-          request credentials through a local macOS boundary with explicit approval,
-          MCP setup, repo scanning, and per-agent audit.
+          request credentials through a local boundary with explicit approval,
+          MCP setup, repo scanning, and per-agent audit. macOS, Linux, and Windows (WSL2).
         </p>
         <pre class="command" tabindex="0">git clone https://github.com/lunaos-ai/luna-vault
 cd luna-vault &amp;&amp; swift build -c release --product vibevault
 .build/release/vibevault cursor prepare</pre>
         <div class="cta-row">
-          <a class="btn" href="/download">Install CLI</a>
-          <a class="btn secondary" href="/security">Security model</a>
+          <a class="btn" href="https://vibevault.lunaos.ai/download">Install CLI</a>
+          <a class="btn secondary" href="https://vibevault.lunaos.ai/security">Security model</a>
         </div>
       </div>
     </div>
@@ -520,8 +520,8 @@ cd luna-vault &amp;&amp; swift build -c release --product vibevault
         </div>
 
         <div class="cta-row">
-          <a class="btn" href="/download">Install CLI</a>
-          <a class="btn secondary" href="/scan">Run the scanner first</a>
+          <a class="btn" href="https://vibevault.lunaos.ai/download">Install CLI</a>
+          <a class="btn secondary" href="https://vibevault.lunaos.ai/scan">Run the scanner first</a>
         </div>
       </div>
     </section>

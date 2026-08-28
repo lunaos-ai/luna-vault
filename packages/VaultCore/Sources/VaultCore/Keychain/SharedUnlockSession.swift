@@ -1,5 +1,8 @@
+#if canImport(Darwin)
 import Darwin
-import CryptoKit
+#elseif canImport(Glibc)
+import Glibc
+#endif
 import Foundation
 
 public struct SharedUnlockSessionStatus: Equatable, Sendable {

@@ -46,6 +46,8 @@ struct CloudSyncView: View {
                 Text("Apple Account sign-in is managed by macOS. Vibe Vault never receives your Apple password or Apple Account credentials.")
             }
 
+            setupChecklist
+
             CloudSyncSettingsSection(onStatusChange: refresh)
         }
         .formStyle(.grouped)
@@ -142,5 +144,50 @@ struct CloudSyncView: View {
 
     private func refresh() {
         status = env.cloudSyncStatus()
+    }
+
+    private var setupChecklist: some View {
+        Section {
+            checklistRow(
+                done: status?.iCloudAvailable == true,
+                title: "Apple Account and iCloud Drive",
+                detail: "Sign in through System Settings, then Refresh here."
+            )
+            checklistRow(
+                done: env.cachedHasBackupRecoveryKey,
+                title: "Recovery key (recommended)",
+                detail: "Unlock backups if you forget the sync passphrase."
+            )
+            checklistRow(
+                done: status?.bundleExists == true,
+                title: "First sync to iCloud",
+                detail: "Enter a 12+ character passphrase, confirm it, then Sync to iCloud."
+            )
+            checklistRow(
+                done: env.automaticBackupsEnabled,
+                title: "Scheduled backups (optional)",
+                detail: "Enable schedule below. Runs while the app is open and the vault is unlocked."
+            )
+        } header: {
+            Text("Setup checklist")
+        } footer: {
+            Text("iCloud sync moves secrets between Macs. Export backup creates a portable file. Managed history keeps timestamped copies in iCloud Drive.")
+        }
+    }
+
+    private func checklistRow(done: Bool, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: Tokens.Space.sm) {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(done ? Tokens.Status.success : Tokens.Text.secondary)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.callout.weight(.medium))
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }

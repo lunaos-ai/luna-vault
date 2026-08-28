@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 public enum SecretValueFormat: String, CaseIterable, Identifiable, Sendable {
     case hex
@@ -63,7 +62,7 @@ public enum SecretValueFormat: String, CaseIterable, Identifiable, Sendable {
 }
 
 public enum SecretValueGeneratorError: Error, Equatable, LocalizedError {
-    case randomBytesUnavailable(OSStatus)
+    case randomBytesUnavailable(Int32)
 
     public var errorDescription: String? {
         switch self {
@@ -147,15 +146,6 @@ public enum SecretValueGenerator {
     }
 
     private static func randomBytes(count: Int) throws -> [UInt8] {
-        var bytes = [UInt8](repeating: 0, count: count)
-        let status = bytes.withUnsafeMutableBytes { buffer in
-            SecRandomCopyBytes(kSecRandomDefault, count, buffer.baseAddress!)
-        }
-
-        guard status == errSecSuccess else {
-            throw SecretValueGeneratorError.randomBytesUnavailable(status)
-        }
-
-        return bytes
+        try PlatformRandom.bytes(count: count)
     }
 }

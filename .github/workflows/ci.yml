@@ -46,3 +46,51 @@ jobs:
           fi
           # Placeholder: integrate `swift-deps-audit` or equivalent when available.
           echo "dep audit placeholder OK"
+
+  linux-cli:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: swift:5.10-jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build Linux CLI + MCP
+        run: |
+          git config --global --add safe.directory '*'
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libsqlite3-dev
+          swift build -c release --product vibevault --product vibevault-mcp
+
+      - name: Smoke CLI help
+        run: |
+          .build/release/vibevault --help
+          .build/release/vibevault-mcp --help || true
+
+  linux-desktop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      # SwiftCrossUI 0.9 needs Swift 6 (body macros / BitwiseCopyable).
+      image: swift:6.0-jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Gtk 4
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            libgtk-4-dev libglib2.0-dev libsqlite3-dev pkg-config clang
+
+      - name: Build VibeVaultDesktop
+        working-directory: apps/VibeVaultDesktop
+        run: |
+          git config --global --add safe.directory '*'
+          rm -f Package.resolved
+          swift build -c release --product VibeVaultDesktop
+
+      - name: Smoke binary exists
+        run: test -x apps/VibeVaultDesktop/.build/release/VibeVaultDesktop

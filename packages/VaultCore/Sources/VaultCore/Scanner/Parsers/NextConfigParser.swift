@@ -15,10 +15,12 @@ public struct NextConfigParser: SecretFileParser {
         let pattern = "process\\.env\\.([A-Z_][A-Z0-9_]+)"
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
         let ns = text as NSString
+        var found = Set<String>()
         regex.enumerateMatches(in: text, range: NSRange(location: 0, length: ns.length)) { m, _, _ in
             guard let m = m, m.numberOfRanges > 1 else { return }
-            out.insert(ns.substring(with: m.range(at: 1)))
+            found.insert(ns.substring(with: m.range(at: 1)))
         }
+        out.formUnion(found)
     }
 
     private func extractEnvBlock(_ text: String, into out: inout Set<String>) {
@@ -43,9 +45,11 @@ public struct NextConfigParser: SecretFileParser {
         let pattern = "([A-Z_][A-Z0-9_]+)\\s*:"
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
         let ns = block as NSString
+        var found = Set<String>()
         regex.enumerateMatches(in: block, range: NSRange(location: 0, length: ns.length)) { m, _, _ in
             guard let m = m, m.numberOfRanges > 1 else { return }
-            out.insert(ns.substring(with: m.range(at: 1)))
+            found.insert(ns.substring(with: m.range(at: 1)))
         }
+        out.formUnion(found)
     }
 }

@@ -1,5 +1,9 @@
 import ArgumentParser
+#if canImport(Darwin)
 import Darwin
+#else
+import Glibc
+#endif
 import Foundation
 import VaultCore
 
@@ -125,7 +129,11 @@ enum SyncPassphrase {
             throw ValidationError("could not configure terminal input")
         }
         var hidden = original
+        #if os(Linux)
+        hidden.c_lflag &= ~UInt32(ECHO)
+        #else
         hidden.c_lflag &= ~UInt(ECHO)
+        #endif
         tcsetattr(STDIN_FILENO, TCSANOW, &hidden)
         defer {
             tcsetattr(STDIN_FILENO, TCSANOW, &original)
