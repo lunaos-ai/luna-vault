@@ -70,7 +70,7 @@ Phase 1: individual developer value.
 
 Phase 1b: cross-platform CLI.
 
-- Linux CLI packages and CI
+- Linux CLI/desktop tarball packaging + CI artifacts (AppImage/deb/MSI next)
 - Windows via WSL2, then native Credential Manager / DPAPI
 - encrypted export/import for Mac ↔ Linux/Windows vault moves
 - SwiftCrossUI desktop shell (`VibeVaultDesktop`) on Linux/Windows; SwiftUI app stays macOS-first

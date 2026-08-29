@@ -34,6 +34,9 @@ jobs:
       - name: DMG packaging smoke test
         run: bash scripts/tests/create-dmg-smoke.sh
 
+      - name: Linux package scripts smoke test
+        run: bash scripts/tests/package-linux-smoke.sh
+
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -70,6 +73,19 @@ jobs:
           .build/release/vibevault --help
           .build/release/vibevault-mcp --help || true
 
+      - name: Package Linux CLI tarball
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tar gzip
+          bash scripts/package-linux-cli.sh
+
+      - name: Upload Linux CLI package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibevault-linux-cli
+          path: build/vibevault-linux-*.tar.gz
+          if-no-files-found: error
+
   linux-desktop:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -94,3 +110,16 @@ jobs:
 
       - name: Smoke binary exists
         run: test -x apps/VibeVaultDesktop/.build/release/VibeVaultDesktop
+
+      - name: Package Linux desktop tarball
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tar gzip
+          bash scripts/package-linux-desktop.sh
+
+      - name: Upload Linux desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibevault-linux-desktop
+          path: build/VibeVaultDesktop-linux-*.tar.gz
+          if-no-files-found: error

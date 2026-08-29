@@ -405,11 +405,11 @@ vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfb
         <div class="section-head">
           <div>
             <p class="eyebrow">Linux</p>
-            <h2>Build CLI, MCP, and Gtk desktop from source.</h2>
+            <h2>Build or install CLI, MCP, and Gtk desktop.</h2>
           </div>
           <p class="section-copy">
             Linux uses the same VaultCore as macOS. Unlock with a session lease instead of Touch ID.
-            Desktop builds need Swift 6+ and Gtk 4.
+            Desktop builds need Swift 6+ and Gtk 4. CI publishes tarball artifacts on every main push.
           </p>
         </div>
         <div class="steps">
@@ -418,8 +418,10 @@ vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfb
             <div>
               <strong>CLI and MCP (Docker)</strong>
               <pre class="command" tabindex="0">bash scripts/build-linux.sh
-# .build/release/vibevault
-# .build/release/vibevault-mcp</pre>
+bash scripts/package-linux-cli.sh
+# build/vibevault-linux-&lt;arch&gt;.tar.gz
+tar -xzf build/vibevault-linux-*.tar.gz
+cd vibevault-linux-* && ./install.sh</pre>
             </div>
           </div>
           <div class="step">
@@ -427,7 +429,8 @@ vibevault browser install --browser chrome --extension-id nfeigikipagiccmhlolgfb
             <div>
               <strong>Desktop shell (Gtk 4)</strong>
               <pre class="command" tabindex="0">bash scripts/build-desktop-linux.sh
-# apps/VibeVaultDesktop/.build/release/VibeVaultDesktop</pre>
+bash scripts/package-linux-desktop.sh
+# build/VibeVaultDesktop-linux-&lt;arch&gt;.tar.gz</pre>
             </div>
           </div>
           <div class="step">

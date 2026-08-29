@@ -8,6 +8,15 @@ public enum PlatformSupport {
         case unknown
     }
 
+    /// Where the vault master key is stored for this build.
+    public enum MasterKeyBackend: String, Sendable {
+        case appleKeychain
+        /// Mode-0600 file beside the vault (Linux / Windows today).
+        case fileSecureStore
+        /// Planned: Windows Credential Manager / DPAPI.
+        case windowsDPAPI
+    }
+
     public static var host: Host {
         #if os(macOS)
         return .macOS
@@ -20,7 +29,7 @@ public enum PlatformSupport {
         #endif
     }
 
-    /// Native GUI: SwiftUI on macOS (`VibeVaultApp`); SwiftCrossUI desktop on all platforms.
+    /// Native GUI: SwiftUI on macOS (`VibeVaultApp`); SwiftCrossUI desktop elsewhere.
     public static var hasNativeApp: Bool {
         true
     }
@@ -31,6 +40,16 @@ public enum PlatformSupport {
         return true
         #else
         return false
+        #endif
+    }
+
+    public static var masterKeyBackend: MasterKeyBackend {
+        if hasAppleKeychain { return .appleKeychain }
+        #if os(Windows)
+        // FileSecureStore until CryptProtectData / Credential Manager lands.
+        return .fileSecureStore
+        #else
+        return .fileSecureStore
         #endif
     }
 

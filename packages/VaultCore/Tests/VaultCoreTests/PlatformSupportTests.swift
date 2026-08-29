@@ -7,13 +7,16 @@ final class PlatformSupportTests: XCTestCase {
         XCTAssertEqual(PlatformSupport.host, .macOS)
         XCTAssertTrue(PlatformSupport.hasNativeApp)
         XCTAssertTrue(PlatformSupport.hasAppleKeychain)
+        XCTAssertEqual(PlatformSupport.masterKeyBackend, .appleKeychain)
         #elseif os(Linux)
         XCTAssertEqual(PlatformSupport.host, .linux)
-        XCTAssertFalse(PlatformSupport.hasNativeApp)
+        XCTAssertTrue(PlatformSupport.hasNativeApp)
         XCTAssertFalse(PlatformSupport.hasAppleKeychain)
+        XCTAssertEqual(PlatformSupport.masterKeyBackend, .fileSecureStore)
         #elseif os(Windows)
         XCTAssertEqual(PlatformSupport.host, .windows)
-        XCTAssertFalse(PlatformSupport.hasNativeApp)
+        XCTAssertTrue(PlatformSupport.hasNativeApp)
+        XCTAssertEqual(PlatformSupport.masterKeyBackend, .fileSecureStore)
         #endif
     }
 

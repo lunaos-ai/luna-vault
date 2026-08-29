@@ -38,13 +38,26 @@ Requires Docker with the official Swift image, or a local Swift 5.10+ toolchain:
 ```bash
 bash scripts/build-linux.sh
 # binary: .build/release/vibevault
+bash scripts/package-linux-cli.sh
+# archive: build/vibevault-linux-<arch>.tar.gz
 ```
 
 Or native:
 
 ```bash
 swift build -c release --product vibevault --product vibevault-mcp
+bash scripts/package-linux-cli.sh
 ```
+
+Install from the tarball:
+
+```bash
+tar -xzf vibevault-linux-*.tar.gz
+cd vibevault-linux-*
+./install.sh   # installs to ~/.local/bin
+```
+
+CI uploads these tarballs as workflow artifacts on every `main` push (`vibevault-linux-cli`).
 
 ## Linux desktop app
 
@@ -53,6 +66,8 @@ Needs **Swift 6+** (SwiftCrossUI 0.9 uses body macros) and Gtk 4 headers (`libgt
 ```bash
 bash scripts/build-desktop-linux.sh
 # binary: apps/VibeVaultDesktop/.build/release/VibeVaultDesktop
+bash scripts/package-linux-desktop.sh
+# archive: build/VibeVaultDesktop-linux-<arch>.tar.gz
 ```
 
 Native (Swift 6+ toolchain + Gtk 4):
@@ -61,6 +76,8 @@ Native (Swift 6+ toolchain + Gtk 4):
 cd apps/VibeVaultDesktop
 swift build -c release --product VibeVaultDesktop
 ```
+
+Install from the tarball (`./install.sh`) after installing Gtk 4 runtime libs (`libgtk-4-1` on Debian/Ubuntu). CI uploads `vibevault-linux-desktop` artifacts on `main`.
 
 Unlock from the **Unlock** tab (or `vibevault session unlock`) before revealing secrets.
 
@@ -84,7 +101,7 @@ cd apps/VibeVaultDesktop
 swift build -c release --product VibeVaultDesktop
 ```
 
-There is no native Windows CI yet; DPAPI master-key storage is planned.
+There is no native Windows CI yet. Master key uses `FileSecureStore` (`PlatformSupport.masterKeyBackend == .fileSecureStore`); Credential Manager / DPAPI is planned (`MasterKeyBackend.windowsDPAPI`).
 
 ## Unlock on Linux / Windows
 
@@ -116,7 +133,8 @@ vibevault sync import --path ./vault.vvsync --overwrite
 
 ## Roadmap
 
-1. Linux CLI + MCP packages (deb/rpm or static binary) — in progress.
-2. Packaged `VibeVaultDesktop` (AppImage / deb, MSI) via Swift Bundler.
+1. ~~Linux CLI + MCP tarball packaging~~ — `scripts/package-linux-cli.sh` + CI artifacts.
+2. ~~Packaged `VibeVaultDesktop` tarball~~ — `scripts/package-linux-desktop.sh` + CI artifacts (AppImage / deb / MSI via Swift Bundler next).
 3. Windows native CLI with Credential Manager / DPAPI master-key storage.
-4. Keep Solo local-first; no hosted cloud vault required.
+4. Linux OS keyring (libsecret) for master key instead of mode-0600 file.
+5. Keep Solo local-first; no hosted cloud vault required.

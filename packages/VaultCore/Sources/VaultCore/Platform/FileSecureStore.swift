@@ -1,7 +1,9 @@
 import Foundation
 
 /// Master-key and prefs storage for Linux/Windows when Keychain/DPAPI are unavailable.
-/// Files are mode `0600` under the vault data directory. Prefer OS keyrings in a later release.
+/// Files are mode `0600` under the vault data directory.
+/// Windows: replace with Credential Manager / DPAPI (`MasterKeyBackend.windowsDPAPI`).
+/// Linux: replace with libsecret / Secret Service when available.
 enum FileSecureStore {
     private static let masterPrefix = "master."
     private static let prefsFileName = "prefs.json"

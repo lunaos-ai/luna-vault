@@ -31,12 +31,13 @@ brew install finsavvyai/tap/vibevault
 **Linux / Windows (WSL2)** — CLI + MCP + desktop
 
 ```bash
-bash scripts/build-linux.sh
-# binary: .build/release/vibevault
+bash scripts/build-linux.sh && bash scripts/package-linux-cli.sh
+# archive: build/vibevault-linux-<arch>.tar.gz  →  ./install.sh
 
-bash scripts/build-desktop-linux.sh
-# binary: apps/VibeVaultDesktop/.build/release/VibeVaultDesktop
+bash scripts/build-desktop-linux.sh && bash scripts/package-linux-desktop.sh
+# archive: build/VibeVaultDesktop-linux-<arch>.tar.gz
 # details: docs/WINDOWS_AND_LINUX.md
+# CI uploads both tarballs as artifacts on main
 ```
 
 **Install**
