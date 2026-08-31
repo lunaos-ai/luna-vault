@@ -89,11 +89,9 @@ struct SyncRecoveryKeyCommand: ParsableCommand {
                 recoveryKey: key
             )
             let prefs = KeychainPrefs()
-            let encoded = Data(key.utf8)
-            prefs.set(encoded, forKey: CloudRecoveryKey.preferenceKey)
-            guard prefs.data(forKey: CloudRecoveryKey.preferenceKey) == encoded else {
-                throw ValidationError("could not store recovery key in macOS Keychain")
-            }
+            var keyring = RecoveryKeyringStore.load(from: prefs)
+            try keyring.makeActive(key, imported: false)
+            RecoveryKeyringStore.save(keyring, to: prefs)
             print("installed recovery key and protected the local vault master key")
         }
         print(key)

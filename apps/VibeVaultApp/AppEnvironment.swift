@@ -52,6 +52,7 @@ final class AppEnvironment: ObservableObject {
     @Published var cachedHasVercelToken = false
     @Published var cachedHasAutomaticBackupCredential = false
     @Published var cachedHasBackupRecoveryKey = false
+    @Published var cachedRecoveryKeys: [RecoveryKeySummary] = []
     @Published var cachedTeamLicense: TeamLicense?
 
     @Published var notificationsEnabled: Bool {
@@ -140,8 +141,9 @@ final class AppEnvironment: ObservableObject {
         self.lastManagedBackupAt = loaded.lastManagedBackupAt
         self.cachedHasAutomaticBackupCredential =
             prefs.data(forKey: Self.automaticBackupPassphraseKey) != nil
-        self.cachedHasBackupRecoveryKey =
-            prefs.data(forKey: Self.backupRecoveryKeyKey) != nil
+        let keyring = RecoveryKeyringStore.load(from: prefs)
+        self.cachedHasBackupRecoveryKey = keyring.activeCanonicalKey != nil
+        self.cachedRecoveryKeys = keyring.summaries
         service.biometric.setSessionWindow(loaded.sessionMinutes * 60)
         if let status = SharedUnlockSession.status() {
             self.trustSession = true

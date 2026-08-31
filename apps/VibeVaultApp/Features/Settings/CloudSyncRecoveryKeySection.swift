@@ -1,20 +1,25 @@
 import SwiftUI
+import VaultCore
 
 struct CloudSyncRecoveryKeySection: View {
     @EnvironmentObject var env: AppEnvironment
     @Binding var recoveryRestoreKey: String
     let canUseRecoveryKey: Bool
+    let canPreviewRecovery: Bool
     let canImportSelectedWithRecovery: Bool
     let status: AppCloudSyncStatus?
-    let selectedBackupURL: URL?
-    let preview: AppCloudSyncPreview?
-    let onShowInstalled: () async -> Void
+    let bundleInfo: CloudSyncBundleInfo?
+    let recoveryErrorText: String?
+    let onShow: (String) async -> Void
     let onCreate: () -> Void
-    let onConfirmRemove: () -> Void
+    let onStopActive: () -> Void
+    let onMakeActive: (String) -> Void
+    let onRemoveRetained: (String) -> Void
     let onPreviewICloud: () -> Void
     let onChooseBackup: () -> Void
     let onImportSelected: () async -> Void
-    let onSaveEnteredKey: () -> Void
+    let onKeepEntered: () -> Void
+    let onMakeEnteredActive: () -> Void
 
     var body: some View {
         LabeledContent(
@@ -22,68 +27,51 @@ struct CloudSyncRecoveryKeySection: View {
             value: env.cachedHasBackupRecoveryKey ? "Enabled for new backups" : "Not configured"
         )
 
-        HStack {
-            if env.cachedHasBackupRecoveryKey {
-                Button {
-                    Task { await onShowInstalled() }
-                } label: {
-                    Label("Show or export key", systemImage: "key.viewfinder")
-                }
-
-                Button {
-                    onCreate()
-                } label: {
-                    Label("Replace key", systemImage: "arrow.triangle.2.circlepath")
-                }
-
-                Button(role: .destructive) {
-                    onConfirmRemove()
-                } label: {
-                    Label("Remove", systemImage: "trash")
-                }
-            } else {
-                Button {
-                    onCreate()
-                } label: {
+        if env.cachedRecoveryKeys.isEmpty {
+            Button(action: onCreate) {
+                Label("Create recovery key", systemImage: "key.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityHint("Generate a recovery key for new encrypted backups.")
+        } else {
+            ForEach(env.cachedRecoveryKeys) { summary in
+                CloudSyncRecoveryKeyRow(
+                    summary: summary,
+                    selectedBundleID: bundleInfo?.recoveryKeyID,
+                    onShow: { Task { await onShow(summary.identifier) } },
+                    onMakeActive: { onMakeActive(summary.identifier) },
+                    onStopActive: onStopActive,
+                    onRemove: { onRemoveRetained(summary.identifier) }
+                )
+            }
+            Button(action: onCreate) {
+                if env.cachedHasBackupRecoveryKey {
+                    Label("Replace active key", systemImage: "arrow.triangle.2.circlepath")
+                } else {
                     Label("Create recovery key", systemImage: "key.fill")
                 }
-                .buttonStyle(.borderedProminent)
             }
+            .help(
+                env.cachedHasBackupRecoveryKey
+                    ? "Generate a new active key. The current key stays available for restores."
+                    : "Generate a recovery key for new encrypted backups."
+            )
         }
 
-        DisclosureGroup("Restore with recovery key") {
-            SecureField("VV-RK1 recovery key", text: $recoveryRestoreKey)
-                .font(.system(.body, design: .monospaced))
-
-            HStack {
-                Button {
-                    onPreviewICloud()
-                } label: {
-                    Label("Preview iCloud", systemImage: "doc.text.magnifyingglass")
-                }
-                .disabled(!canUseRecoveryKey || status?.bundleExists != true)
-
-                Button {
-                    onChooseBackup()
-                } label: {
-                    Label("Choose backup...", systemImage: "folder")
-                }
-                .disabled(!canUseRecoveryKey)
-
-                Button {
-                    Task { await onImportSelected() }
-                } label: {
-                    Label("Import selected", systemImage: "square.and.arrow.down")
-                }
-                .disabled(!canImportSelectedWithRecovery)
-            }
-
-            Button {
-                onSaveEnteredKey()
-            } label: {
-                Label("Use this key for future backups", systemImage: "key.icloud")
-            }
-            .disabled(!canUseRecoveryKey)
-        }
+        CloudSyncRecoveryRestoreSection(
+            recoveryRestoreKey: $recoveryRestoreKey,
+            canUseRecoveryKey: canUseRecoveryKey,
+            canPreviewRecovery: canPreviewRecovery,
+            canImportSelectedWithRecovery: canImportSelectedWithRecovery,
+            status: status,
+            hasInstalledKeys: !env.cachedRecoveryKeys.isEmpty,
+            bundleInfo: bundleInfo,
+            recoveryErrorText: recoveryErrorText,
+            onPreviewICloud: onPreviewICloud,
+            onChooseBackup: onChooseBackup,
+            onImportSelected: onImportSelected,
+            onKeepEntered: onKeepEntered,
+            onMakeEnteredActive: onMakeEnteredActive
+        )
     }
 }

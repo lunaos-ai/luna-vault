@@ -2,6 +2,16 @@
 
 All notable changes to Vibe Vault are documented here.
 
+## Unreleased
+
+### Added
+
+- Recovery-key fingerprints on new `.vvsync` bundles, a Keychain-backed recovery-key keyring, and Cloud Sync restore errors that distinguish a mismatched key from a corrupt backup.
+
+### Changed
+
+- Cloud Sync recovery-key restore no longer reports a mismatched or rotated key as bundle corruption. Rotating the active key keeps previous keys for older backups.
+
 ## [0.1.4] — 2026-08-25
 
 ### Fixed

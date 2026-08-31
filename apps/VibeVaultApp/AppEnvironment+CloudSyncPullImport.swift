@@ -4,6 +4,7 @@ import VaultCore
 private enum AppCloudSyncCredential {
     case passphrase(String)
     case recoveryKey(String)
+    case keyring
 }
 
 extension AppEnvironment {
@@ -53,6 +54,19 @@ extension AppEnvironment {
         )
     }
 
+    func pullCloudSyncUsingKeyring(
+        from url: URL,
+        policy: AppCloudSyncImportPolicy,
+        sourceName: String
+    ) async -> Bool {
+        await pullCloudSync(
+            from: url,
+            credential: .keyring,
+            policy: policy,
+            sourceName: sourceName
+        )
+    }
+
     private func pullCloudSync(
         from url: URL,
         credential: AppCloudSyncCredential,
@@ -81,17 +95,23 @@ extension AppEnvironment {
         try previewCloudSyncBundle(at: url, credential: .recoveryKey(recoveryKey))
     }
 
+    func previewCloudSyncBundleUsingKeyring(at url: URL) throws -> AppCloudSyncPreview {
+        try previewCloudSyncBundle(at: url, credential: .keyring)
+    }
+
     private func previewCloudSyncBundle(
         at url: URL,
         credential: AppCloudSyncCredential
     ) throws -> AppCloudSyncPreview {
         let data = try Data(contentsOf: url)
         let snapshot = try decryptCloudSync(data, credential: credential)
+        let info = try CloudSync.inspect(data)
         let comparison = CloudSyncInspector.compare(snapshot: snapshot, localSecrets: try service.list())
         return AppCloudSyncPreview(
             path: url.path,
             sourceHost: snapshot.sourceHost,
             exportedAtText: snapshot.exportedAt.formatted(date: .abbreviated, time: .shortened),
+            createdAtText: info.createdAt.formatted(date: .abbreviated, time: .shortened),
             secretCount: snapshot.secrets.count,
             revisionCount: snapshot.revisions.count,
             authenticatorCount: snapshot.authenticatorAccounts.count,
@@ -99,7 +119,11 @@ extension AppEnvironment {
             newCount: comparison.newNames.count,
             backupNewerCount: comparison.backupNewerNames.count,
             localNewerCount: comparison.localNewerNames.count,
-            sameTimestampCount: comparison.sameTimestampNames.count
+            sameTimestampCount: comparison.sameTimestampNames.count,
+            hasRecoveryProtection: info.hasRecoveryProtection,
+            recoveryFingerprint: info.recoveryFingerprint,
+            isLegacyRecovery: info.isLegacyRecovery,
+            matchingKeyStatus: loadedRecoveryKeyring().matchStatus(for: info)
         )
     }
     private func decryptCloudSync(
@@ -111,6 +135,8 @@ extension AppEnvironment {
             return try CloudSync.decrypt(data, passphrase: passphrase)
         case .recoveryKey(let recoveryKey):
             return try CloudSync.decrypt(data, recoveryKey: recoveryKey)
+        case .keyring:
+            return try CloudSync.decrypt(data, keyring: loadedRecoveryKeyring())
         }
     }
 
@@ -127,73 +153,5 @@ extension AppEnvironment {
             authenticatorAccounts: try await authenticatorService.accountsForEncryptedBackup(),
             authenticatorRevisions: try authenticatorService.revisionsForEncryptedBackup()
         )
-    }
-
-    private func importCloudSyncSnapshot(
-        _ snapshot: CloudSyncSnapshot,
-        policy: AppCloudSyncImportPolicy
-    ) async throws -> (imported: Int, updated: Int, skipped: Int) {
-        var imported = 0
-        var updated = 0
-        var skipped = 0
-        let localByName = Dictionary(uniqueKeysWithValues: try service.list().map { ($0.name, $0) })
-        for item in snapshot.secrets {
-            if let local = localByName[item.name] {
-                let shouldUpdate: Bool
-                switch policy {
-                case .keepLocal:
-                    shouldUpdate = false
-                case .backupNewer:
-                    shouldUpdate = item.updatedAt.timeIntervalSince(local.updatedAt) > 1
-                case .replaceAll:
-                    shouldUpdate = true
-                }
-                guard shouldUpdate else {
-                    skipped += 1
-                    continue
-                }
-                try service.update(
-                    name: item.name,
-                    value: item.value,
-                    notes: item.notes,
-                    expiresAt: item.expiresAt,
-                    rotateEveryDays: item.rotateEveryDays,
-                    lastRotatedAt: item.lastRotatedAt,
-                    mcpAllowed: item.mcpAllowed,
-                    totpAuthURL: item.totpAuthURL,
-                    createdAt: item.createdAt,
-                    updatedAt: item.updatedAt,
-                    revisionAction: .synced
-                )
-                updated += 1
-            } else {
-                try service.add(
-                    name: item.name,
-                    value: item.value,
-                    notes: item.notes,
-                    expiresAt: item.expiresAt,
-                    rotateEveryDays: item.rotateEveryDays,
-                    lastRotatedAt: item.lastRotatedAt,
-                    mcpAllowed: item.mcpAllowed,
-                    totpAuthURL: item.totpAuthURL,
-                    createdAt: item.createdAt,
-                    updatedAt: item.updatedAt,
-                    revisionAction: .synced
-                )
-                imported += 1
-            }
-        }
-        try service.mergeRevisionsFromEncryptedBackup(snapshot.revisions)
-        let authResult = try await authenticatorService.importAccounts(
-            snapshot.authenticatorAccounts,
-            duplicatePolicy: policy == .replaceAll ? .replace : .skip
-        )
-        try authenticatorService.mergeRevisionsFromEncryptedBackup(
-            snapshot.authenticatorRevisions
-        )
-        imported += authResult.imported.count
-        updated += authResult.replaced.count
-        skipped += authResult.skipped.count
-        return (imported: imported, updated: updated, skipped: skipped)
     }
 }

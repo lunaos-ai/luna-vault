@@ -19,6 +19,8 @@ public struct CloudSyncEnvelope: Codable, Equatable, Sendable {
     public let recoveryNonce: String?
     public let recoveryTag: String?
     public let recoveryWrappedKey: String?
+    public let recoveryKeyID: String?
+    public let recoveryProtectedAt: Date?
 
     public init(
         version: Int,
@@ -38,7 +40,9 @@ public struct CloudSyncEnvelope: Codable, Equatable, Sendable {
         recoverySalt: String? = nil,
         recoveryNonce: String? = nil,
         recoveryTag: String? = nil,
-        recoveryWrappedKey: String? = nil
+        recoveryWrappedKey: String? = nil,
+        recoveryKeyID: String? = nil,
+        recoveryProtectedAt: Date? = nil
     ) {
         self.version = version
         self.createdAt = createdAt
@@ -58,37 +62,7 @@ public struct CloudSyncEnvelope: Codable, Equatable, Sendable {
         self.recoveryNonce = recoveryNonce
         self.recoveryTag = recoveryTag
         self.recoveryWrappedKey = recoveryWrappedKey
-    }
-}
-
-public enum CloudSyncError: Error, Equatable, CustomStringConvertible {
-    case weakPassphrase
-    case unsupportedVersion(Int)
-    case corruptEnvelope
-    case keyDerivationFailed
-    case authenticationFailed
-    case invalidRecoveryKey
-    case recoveryUnavailable
-    case randomGenerationFailed
-
-    public var description: String {
-        switch self {
-        case .weakPassphrase:
-            return "sync passphrase must be at least 12 characters"
-        case .unsupportedVersion(let version):
-            return "unsupported sync bundle version: \(version)"
-        case .corruptEnvelope:
-            return "corrupt sync bundle"
-        case .keyDerivationFailed:
-            return "could not derive sync encryption key"
-        case .authenticationFailed:
-            return "could not decrypt sync bundle; check the passphrase or recovery key"
-        case .invalidRecoveryKey:
-            return "invalid Vibe Vault recovery key"
-        case .recoveryUnavailable:
-            return "this backup was not protected with a recovery key"
-        case .randomGenerationFailed:
-            return "could not generate secure random data"
-        }
+        self.recoveryKeyID = recoveryKeyID
+        self.recoveryProtectedAt = recoveryProtectedAt
     }
 }

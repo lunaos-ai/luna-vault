@@ -26,26 +26,6 @@ extension CloudSync {
         }
     }
 
-    public static func decrypt(_ data: Data, recoveryKey: String) throws -> CloudSyncSnapshot {
-        let envelope = try decoder.decode(CloudSyncEnvelope.self, from: data)
-        guard envelope.version == version else { throw CloudSyncError.recoveryUnavailable }
-        guard envelope.recoveryKdf == recoveryKdf,
-              let saltValue = envelope.recoverySalt,
-              let salt = Data(base64Encoded: saltValue),
-              envelope.recoveryNonce != nil,
-              envelope.recoveryTag != nil,
-              envelope.recoveryWrappedKey != nil else {
-            throw CloudSyncError.recoveryUnavailable
-        }
-        let keyMaterial = try CloudRecoveryKey.keyData(recoveryKey)
-        let dataKey = try unwrapDataKey(
-            nonce: envelope.recoveryNonce,
-            tag: envelope.recoveryTag,
-            ciphertext: envelope.recoveryWrappedKey,
-            using: deriveRecoveryKey(keyMaterial: keyMaterial, salt: salt)
-        )
-        return try decryptSnapshot(envelope, dataKey: dataKey)
-    }
 
     static func decryptLegacy(
         _ envelope: CloudSyncEnvelope,

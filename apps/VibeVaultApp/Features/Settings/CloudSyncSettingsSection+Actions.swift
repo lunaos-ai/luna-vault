@@ -7,6 +7,7 @@ extension CloudSyncSettingsSection {
     func refreshStatus() {
         status = env.cloudSyncStatus()
         backupHistory = env.managedCloudBackups()
+        env.refreshRecoveryKeyCache()
         onStatusChange()
     }
     func push() async {
@@ -54,85 +55,6 @@ extension CloudSyncSettingsSection {
             preview = nil
             env.lastError = "\(error)"
             env.showToast("Backup preview failed", feedback: .caution)
-        }
-    }
-
-    func previewRecoveryBackup(at url: URL) {
-        guard canUseRecoveryKey else { return }
-        do {
-            selectedBackupURL = url
-            selectedUnlockMethod = .recoveryKey
-            preview = try env.previewCloudSyncBundle(at: url, recoveryKey: recoveryRestoreKey)
-            env.showToast("Recovery preview ready", feedback: .tick)
-        } catch {
-            selectedBackupURL = nil
-            selectedUnlockMethod = nil
-            preview = nil
-            env.lastError = "\(error)"
-            env.showToast("Recovery preview failed", feedback: .caution)
-        }
-    }
-
-    func chooseRecoveryImportURL() {
-        guard canUseRecoveryKey else { return }
-        let panel = NSOpenPanel()
-        panel.title = "Choose encrypted Vibe Vault backup"
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        if let type = UTType(filenameExtension: "vvsync") {
-            panel.allowedContentTypes = [type]
-        }
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            previewRecoveryBackup(at: url)
-        }
-    }
-
-    func importSelectedRecoveryBackup() async {
-        guard canImportSelectedWithRecovery, let selectedBackupURL else { return }
-        isWorking = true
-        defer {
-            isWorking = false
-            refreshStatus()
-        }
-        let imported = await env.pullCloudSync(
-            from: selectedBackupURL,
-            recoveryKey: recoveryRestoreKey,
-            policy: importPolicy,
-            sourceName: "recovery backup"
-        )
-        if imported { recoveryRestoreKey = "" }
-    }
-
-    func createRecoveryKey() {
-        do {
-            recoverySheetKey = try env.generateBackupRecoveryKey()
-            recoverySheetInstallsKey = true
-            showRecoverySheet = true
-        } catch {
-            env.lastError = "\(error)"
-            env.showToast("Could not create recovery key", feedback: .caution)
-        }
-    }
-
-    func saveEnteredRecoveryKey() {
-        do {
-            try env.saveBackupRecoveryKey(recoveryRestoreKey)
-        } catch {
-            env.lastError = "\(error)"
-            env.showToast("Could not save recovery key", feedback: .caution)
-        }
-    }
-
-    func showInstalledRecoveryKey() async {
-        do {
-            recoverySheetKey = try await env.revealBackupRecoveryKey()
-            recoverySheetInstallsKey = false
-            showRecoverySheet = true
-        } catch {
-            env.lastError = "\(error)"
-            env.showToast("Could not unlock recovery key", feedback: .caution)
         }
     }
 

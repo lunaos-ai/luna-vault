@@ -85,12 +85,7 @@ enum SyncRecoveryKey {
             return try CloudRecoveryKey.canonicalize(value)
         }
         let prefs = KeychainPrefs()
-        guard let data = prefs.data(forKey: CloudRecoveryKey.preferenceKey),
-              let value = String(data: data, encoding: .utf8),
-              !value.isEmpty else {
-            return nil
-        }
-        return try CloudRecoveryKey.canonicalize(value)
+        return RecoveryKeyringStore.load(from: prefs).activeCanonicalKey
     }
 }
 
