@@ -62,6 +62,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Added
 
+- Eye toggle on New Secret and Rotate sheets to show or hide the value while typing.
 - PushCI cloud project secret onboarding: `vibevault push --to pushci --scope project_id=…`
   (JWT from `PUSHCI_TOKEN` or `~/.pushci/config.json`; optional `--allow-ci` for `ci_secret_names`)
 - Recovery-key-wrapped local master-key envelope, Time Machine eligibility, and
