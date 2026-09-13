@@ -17,6 +17,10 @@ All notable changes to Vibe Vault are documented here.
 
 - Cloud Sync recovery-key restore no longer reports a mismatched or rotated key as bundle corruption. Rotating the active key keeps previous keys for older backups.
 
+### Fixed
+
+- CI: Linux SOCK_STREAM Int32 conversion, Swift 6 concurrent HTTP response capture, Windows jobs on windows-2022 + SDK 10.0.22621.
+
 ## [0.1.4] — 2026-08-25
 
 ### Fixed

@@ -12,7 +12,7 @@ enum LoopbackSockets {
     static let invalid: LoopbackFD = -1
 
     static func startListen(port: UInt16) throws -> LoopbackFD {
-        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        let fd = socket(AF_INET, streamType, 0)
         guard fd >= 0 else { throw MCPSandboxError.listenFailed("socket") }
         var reuse: Int32 = 1
         _ = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout<Int32>.size))
@@ -67,6 +67,14 @@ enum LoopbackSockets {
 
     static func closeFD(_ fd: LoopbackFD) {
         _ = close(fd)
+    }
+
+    private static var streamType: Int32 {
+        #if canImport(Glibc)
+        Int32(SOCK_STREAM.rawValue)
+        #else
+        SOCK_STREAM
+        #endif
     }
 }
 #endif

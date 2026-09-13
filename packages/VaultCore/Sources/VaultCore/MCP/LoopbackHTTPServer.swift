@@ -43,14 +43,14 @@ public final class LoopbackHTTPServer: @unchecked Sendable {
             LoopbackSockets.sendAll(client, HTTPResponse(status: 400, reason: "Bad Request", body: Data("bad request\n".utf8)).encode())
             return
         }
+        let slot = HTTPResponseSlot()
         let lock = DispatchSemaphore(value: 0)
-        var response = HTTPResponse(status: 500, reason: "Internal Server Error")
         Task {
-            response = await handler(request)
+            slot.value = await handler(request)
             lock.signal()
         }
         lock.wait()
-        LoopbackSockets.sendAll(client, response.encode())
+        LoopbackSockets.sendAll(client, slot.value.encode())
     }
 
     private func readRequest(from fd: LoopbackFD) -> HTTPRequest? {
@@ -69,4 +69,8 @@ public final class LoopbackHTTPServer: @unchecked Sendable {
         }
         return nil
     }
+}
+
+private final class HTTPResponseSlot: @unchecked Sendable {
+    var value = HTTPResponse(status: 500, reason: "Internal Server Error")
 }
