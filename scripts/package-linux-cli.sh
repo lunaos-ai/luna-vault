@@ -5,8 +5,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-CLI="${CLI_BIN:-$ROOT/.build/release/vibevault}"
-MCP="${MCP_BIN:-$ROOT/.build/release/vibevault-mcp}"
+# shellcheck source=linux-bins.sh
+source "$ROOT/scripts/linux-bins.sh"
+CLI="$CLI_BIN"
+MCP="$MCP_BIN"
 ARCH="${TARGET_ARCH:-$(uname -m 2>/dev/null || echo unknown)}"
 if [[ -n "${VIBEVAULT_VERSION:-}" ]]; then
   VERSION="$VIBEVAULT_VERSION"

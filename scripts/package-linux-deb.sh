@@ -55,8 +55,10 @@ EOF
   mkdir -p "$data/usr/share/doc/vibevault-desktop"
   printf '%s\n' "Vibe Vault Desktop ${VERSION}" > "$data/usr/share/doc/vibevault-desktop/README"
 else
-  CLI="${CLI_BIN:-$ROOT/.build/release/vibevault}"
-  MCP="${MCP_BIN:-$ROOT/.build/release/vibevault-mcp}"
+  # shellcheck source=linux-bins.sh
+  source "$ROOT/scripts/linux-bins.sh"
+  CLI="$CLI_BIN"
+  MCP="$MCP_BIN"
   if [[ ! -x "$CLI" || ! -x "$MCP" ]]; then
     echo "missing CLI binaries. build first: bash scripts/build-linux.sh" >&2
     exit 1

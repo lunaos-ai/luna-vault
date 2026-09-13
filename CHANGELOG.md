@@ -20,6 +20,7 @@ All notable changes to Vibe Vault are documented here.
 ### Fixed
 
 - CI: Linux SOCK_STREAM Int32 conversion, Swift 6 concurrent HTTP response capture, Windows jobs on windows-2022 + SDK 10.0.22621.
+- CI: Linux CLI smoke uses `--show-bin-path`; recovery-match tests pin ISO8601 dates; Windows Swift 6.2 with updated SDK modules.
 
 ## [0.1.4] — 2026-08-25
 
