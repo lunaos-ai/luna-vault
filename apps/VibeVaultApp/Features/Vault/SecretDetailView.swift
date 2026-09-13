@@ -17,7 +17,11 @@ struct SecretDetailView: View {
                 detailSurface
                 SecretVersionHistoryView(secret: currentSecret)
                     .environmentObject(env)
-                actions
+                SecretDetailActions(
+                    secret: currentSecret,
+                    showRotateSheet: $showRotateSheet,
+                    deleteConfirm: $deleteConfirm
+                )
             }
             .padding(.horizontal, Tokens.Space.xxl)
             .padding(.top, Tokens.Space.xxl)
@@ -153,35 +157,6 @@ struct SecretDetailView: View {
         .toggleStyle(.switch)
         .padding(.horizontal, Tokens.Space.md)
         .padding(.vertical, Tokens.Space.md)
-    }
-
-    private var actions: some View {
-        HStack(spacing: Tokens.Space.sm) {
-            Button { showRotateSheet = true } label: {
-                Image(systemName: "arrow.triangle.2.circlepath")
-            }
-            .buttonStyle(.borderedProminent)
-            .help("Rotate value")
-            .accessibilityLabel("Rotate value")
-            Button { Task { await markRotated() } } label: {
-                Image(systemName: "checkmark.circle")
-            }
-            .help("Records rotation without changing the value.")
-            .accessibilityLabel("Mark rotated now")
-            Spacer()
-            Button(role: .destructive) { deleteConfirm = true } label: {
-                Image(systemName: "trash")
-            }
-            .help("Delete secret")
-            .accessibilityLabel("Delete secret")
-        }
-    }
-
-    private func markRotated() async {
-        do {
-            try await env.service.rotate(name: currentSecret.name, newValue: nil)
-            env.refresh()
-        } catch { env.lastError = "\(error)" }
     }
 
     private func unlockTOTP(openManager: Bool) async {

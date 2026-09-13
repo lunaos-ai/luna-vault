@@ -11,6 +11,7 @@ struct CLICommandsReference: View {
         ("vibevault agents prepare", "Install Codex, Claude, Gemini, Cursor policy"),
         ("vibevault cursor prepare", "Rules, skill, MCP, and .env guard"),
         ("vibevault mcp install --client cursor", "Wire vibe-vault into Cursor"),
+        ("vibevault mcp sandbox start --client cursor", "Passkey-gated loopback MCP for sandboxes"),
         ("vibevault mcp test", "Smoke-test the MCP server"),
         ("vibevault license status", "Show Team license state"),
         ("vibevault guard install", "Block accidental .env commits"),

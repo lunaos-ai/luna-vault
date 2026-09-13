@@ -1,5 +1,11 @@
-import CommonCrypto
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+import Crypto
+#endif
+#if canImport(CommonCrypto)
+import CommonCrypto
+#endif
 import XCTest
 @testable import VaultCore
 

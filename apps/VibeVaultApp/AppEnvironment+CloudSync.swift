@@ -16,6 +16,7 @@ struct AppCloudSyncPreview: Equatable {
     let path: String
     let sourceHost: String
     let exportedAtText: String
+    let createdAtText: String
     let secretCount: Int
     let revisionCount: Int
     let authenticatorCount: Int
@@ -24,6 +25,10 @@ struct AppCloudSyncPreview: Equatable {
     let backupNewerCount: Int
     let localNewerCount: Int
     let sameTimestampCount: Int
+    let hasRecoveryProtection: Bool
+    let recoveryFingerprint: String?
+    let isLegacyRecovery: Bool
+    let matchingKeyStatus: RecoveryKeyMatchStatus
 }
 
 enum AppCloudSyncImportPolicy: String, CaseIterable, Identifiable {

@@ -1,8 +1,3 @@
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
 import Foundation
 
 public struct SharedUnlockSessionStatus: Equatable, Sendable {
@@ -16,7 +11,7 @@ public struct SharedUnlockSessionStatus: Equatable, Sendable {
 }
 
 /// An explicit, time-bounded authentication lease shared by VibeVault clients
-/// running as the current macOS user. The lease never contains vault secrets.
+/// running as the current user. The lease never contains vault secrets.
 public enum SharedUnlockSession {
     public static let minimumDuration: TimeInterval = 5 * 60
     public static let maximumDuration: TimeInterval = 8 * 60 * 60
@@ -68,10 +63,7 @@ public enum SharedUnlockSession {
         )
         let encoder = JSONEncoder()
         try encoder.encode(payload).write(to: url, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600],
-            ofItemAtPath: url.path
-        )
+        PlatformFilePermissions.restrictToOwner(url)
         VaultPaths.excludeFromBackup(url)
         return status(at: date, url: url, authenticationKey: key)!
     }
@@ -81,7 +73,7 @@ public enum SharedUnlockSession {
         url: URL = defaultURL(),
         authenticationKey: SymmetricKey? = nil
     ) -> SharedUnlockSessionStatus? {
-        guard isPrivateRegularFile(url) else { return nil }
+        guard PlatformFilePermissions.isOwnerPrivateRegularFile(url) else { return nil }
         guard let data = try? Data(contentsOf: url),
               let payload = try? JSONDecoder().decode(Payload.self, from: data) else {
             lock(url: url)
@@ -132,20 +124,6 @@ public enum SharedUnlockSession {
 
     public static func lock(url: URL = defaultURL()) {
         try? FileManager.default.removeItem(at: url)
-    }
-
-    private static func isPrivateRegularFile(_ url: URL) -> Bool {
-        guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
-              values.isRegularFile == true,
-              values.isSymbolicLink != true,
-              let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let owner = attributes[.ownerAccountID] as? NSNumber,
-              owner.uint32Value == geteuid(),
-              let permissions = attributes[.posixPermissions] as? NSNumber,
-              permissions.intValue & 0o077 == 0 else {
-            return false
-        }
-        return true
     }
 
     private static func authenticationMessage(

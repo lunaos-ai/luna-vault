@@ -25,6 +25,13 @@ struct VibeVaultMCP {
         )
         let server = MCPServer(context: context, agentDetector: detector)
         CoordinationRegistry.default.register()
+        if let port = MCPHTTPLaunchArgs.portIfHTTP(
+            arguments: CommandLine.arguments,
+            environment: ProcessInfo.processInfo.environment
+        ) {
+            await MCPHTTPTransport.run(server: server, port: port)
+            return
+        }
         await server.run()
     }
 }

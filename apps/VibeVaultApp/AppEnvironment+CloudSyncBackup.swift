@@ -28,18 +28,7 @@ extension AppEnvironment {
     }
 
     func saveBackupRecoveryKey(_ recoveryKey: String) throws {
-        let canonical = try CloudRecoveryKey.canonicalize(recoveryKey)
-        try LocalVaultRecovery.protect(
-            directory: EncryptedVaultStore.defaultDirectory(),
-            recoveryKey: canonical
-        )
-        let encoded = Data(canonical.utf8)
-        prefs.set(encoded, forKey: Self.backupRecoveryKeyKey)
-        guard prefs.data(forKey: Self.backupRecoveryKeyKey) == encoded else {
-            throw SecretError.vaultIO("could not store recovery key in macOS Keychain")
-        }
-        cachedHasBackupRecoveryKey = true
-        showToast("Recovery protection enabled")
+        try makeRecoveryKeyActive(recoveryKey, imported: false)
     }
 
     func ensureLocalRecoveryProtection() {
@@ -57,17 +46,18 @@ extension AppEnvironment {
     }
 
     func revealBackupRecoveryKey() async throws -> String {
-        try await service.biometric.authenticate(reason: "Show the Vibe Vault recovery key")
-        guard let key = backupRecoveryKey() else {
+        guard let active = loadedRecoveryKeyring().active else {
             throw CloudSyncError.recoveryUnavailable
         }
-        return key
+        return try await revealRecoveryKey(identifier: active.identifier)
     }
 
     func removeBackupRecoveryKey() {
-        prefs.set(nil, forKey: Self.backupRecoveryKeyKey)
-        cachedHasBackupRecoveryKey = false
-        showToast("Recovery protection removed from future backups", feedback: .tick)
+        stopUsingActiveRecoveryKey()
+    }
+
+    func backupRecoveryKey() -> String? {
+        loadedRecoveryKeyring().activeCanonicalKey
     }
 
     func disableAutomaticCloudBackups() {
@@ -155,15 +145,6 @@ extension AppEnvironment {
 
     private func automaticCloudBackupPassphrase() -> String? {
         guard let data = prefs.data(forKey: Self.automaticBackupPassphraseKey),
-              let value = String(data: data, encoding: .utf8),
-              !value.isEmpty else {
-            return nil
-        }
-        return value
-    }
-
-    func backupRecoveryKey() -> String? {
-        guard let data = prefs.data(forKey: Self.backupRecoveryKeyKey),
               let value = String(data: data, encoding: .utf8),
               !value.isEmpty else {
             return nil

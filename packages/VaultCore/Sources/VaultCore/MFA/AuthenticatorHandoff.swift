@@ -20,7 +20,7 @@ public enum AuthenticatorHandoff {
         let blob = try VaultFileCrypto.seal(Data(input.utf8), key: masterKey(for: directory))
         let url = pendingURL(in: directory)
         try blob.write(to: url, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        PlatformFilePermissions.restrictToOwner(url)
         VaultPaths.excludeFromBackup(url)
     }
 

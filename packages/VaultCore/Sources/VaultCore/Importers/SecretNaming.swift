@@ -30,4 +30,15 @@ public enum SecretNaming {
         guard value.count > 8 else { return String(repeating: "•", count: max(value.count, 4)) }
         return "\(value.prefix(3))…\(value.suffix(4))"
     }
+
+    /// Vault names cannot contain spaces, so Finder-style " - copy" becomes `-copy`.
+    public static func copyName(of name: String, taken: Set<String>) -> String {
+        let candidate = "\(name)-copy"
+        if !taken.contains(candidate) { return candidate }
+        var index = 2
+        while taken.contains("\(name)-copy-\(index)") {
+            index += 1
+        }
+        return "\(name)-copy-\(index)"
+    }
 }

@@ -57,6 +57,9 @@ struct SecretValueRow: View {
                     await flashCopied()
                 }
             }
+            Button("Duplicate") {
+                Task { await env.duplicateSecret(name: secret.name) }
+            }
             Divider()
             Button("Clear clipboard") {
                 env.clearClipboard()

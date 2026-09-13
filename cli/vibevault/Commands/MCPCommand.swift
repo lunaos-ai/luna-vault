@@ -6,7 +6,14 @@ struct MCPCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "mcp",
         abstract: "Install and test the Vibe Vault MCP server for AI clients.",
-        subcommands: [MCPStatusCommand.self, MCPInstallCommand.self, MCPTestCommand.self]
+        subcommands: [
+            MCPStatusCommand.self,
+            MCPInstallCommand.self,
+            MCPTestCommand.self,
+            MCPPasskeyCommand.self,
+            MCPServeCommand.self,
+            MCPSandboxCommand.self
+        ]
     )
 }
 

@@ -14,15 +14,35 @@ printf '#!/bin/sh\necho desktop-smoke\n' > "$FAKE_DESKTOP"
 chmod 755 "$FAKE_CLI" "$FAKE_MCP" "$FAKE_DESKTOP"
 
 CLI_BIN="$ROOT/$FAKE_CLI" MCP_BIN="$ROOT/$FAKE_MCP" \
-  TARGET_ARCH=smoke VIBEVAULT_VERSION=smoke \
+  TARGET_ARCH=smoke VIBEVAULT_VERSION=0.0.0+smoke \
   bash scripts/package-linux-cli.sh
 
 DESKTOP_BIN="$ROOT/$FAKE_DESKTOP" \
-  TARGET_ARCH=smoke VIBEVAULT_VERSION=smoke \
+  TARGET_ARCH=smoke VIBEVAULT_VERSION=0.0.0+smoke \
   bash scripts/package-linux-desktop.sh
+
+CLI_BIN="$ROOT/$FAKE_CLI" MCP_BIN="$ROOT/$FAKE_MCP" \
+  TARGET_ARCH=smoke VIBEVAULT_VERSION=0.0.0+smoke KIND=cli \
+  bash scripts/package-linux-deb.sh
+
+DESKTOP_BIN="$ROOT/$FAKE_DESKTOP" \
+  TARGET_ARCH=smoke VIBEVAULT_VERSION=0.0.0+smoke KIND=desktop \
+  bash scripts/package-linux-deb.sh
+
+DESKTOP_BIN="$ROOT/$FAKE_DESKTOP" \
+  TARGET_ARCH=smoke VIBEVAULT_VERSION=0.0.0+smoke \
+  bash scripts/package-linux-appimage.sh
 
 test -f build/vibevault-linux-smoke.tar.gz
 test -f build/VibeVaultDesktop-linux-smoke.tar.gz
+test -f build/vibevault_0.0.0+smoke_all.deb
+test -f build/vibevault-desktop_0.0.0+smoke_all.deb
+test -f build/VibeVaultDesktop-smoke.AppDir.tar.gz
 tar -tzf build/vibevault-linux-smoke.tar.gz | grep -q 'bin/vibevault'
 tar -tzf build/VibeVaultDesktop-linux-smoke.tar.gz | grep -q 'bin/VibeVaultDesktop'
+python3 - <<'PY'
+import pathlib
+deb = pathlib.Path("build/vibevault_0.0.0+smoke_all.deb").read_bytes()
+assert deb.startswith(b"!<arch>\n"), deb[:16]
+PY
 echo "package-linux-smoke OK"

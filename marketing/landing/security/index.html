@@ -358,7 +358,7 @@
         <div class="grid">
           <article class="card">
             <strong>Storage</strong>
-            <p>Secret values live in encrypted local vault storage. On macOS the master key is in Keychain; on Linux and Windows it uses a mode-0600 file store (DPAPI planned).</p>
+            <p>Secret values live in encrypted local vault storage. On macOS the master key is in Keychain; on Linux it uses libsecret (mode-0600 file fallback); on Windows it uses DPAPI.</p>
           </article>
           <article class="card">
             <strong>Access</strong>
@@ -392,7 +392,7 @@
           </div>
           <div class="step">
             <span>02</span>
-            <div><strong>Encrypt and store</strong><p>The encrypted vault lives on disk. On macOS the master key is in Keychain; on Linux and Windows it uses a protected local file store.</p></div>
+            <div><strong>Encrypt and store</strong><p>The encrypted vault lives on disk. On macOS the master key is in Keychain; on Linux it uses libsecret with a file fallback; on Windows it uses DPAPI.</p></div>
             <div class="tag">encrypted</div>
           </div>
           <div class="step">

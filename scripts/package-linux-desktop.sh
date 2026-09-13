@@ -75,6 +75,7 @@ sudo apt-get install -y libgtk-4-1 libglib2.0-0
 ## Notes
 
 - Same vault as the CLI under \`\${XDG_DATA_HOME:-~/.local/share}/vibe-vault\`
+- Master key uses libsecret when available, otherwise a mode-0600 file
 - No Touch ID — use the Unlock tab or \`vibevault session unlock\`
 - Full docs: https://github.com/lunaos-ai/luna-vault/blob/main/docs/WINDOWS_AND_LINUX.md
 EOF

@@ -65,16 +65,29 @@ public final class AgentDetector: AgentDetecting, @unchecked Sendable {
     }
 
     public static func lookupParentProcess() -> String? {
-        #if canImport(Darwin)
+        #if os(Windows)
+        return lookupWindowsParentProcess()
+        #elseif canImport(Darwin)
         let ppid = getppid()
         var buffer = [CChar](repeating: 0, count: 4096)
         let size = proc_pidpath(ppid, &buffer, UInt32(buffer.count))
         guard size > 0 else { return nil }
         return String(cString: buffer)
         #else
-        return nil
+        return linuxParentProcessName()
         #endif
     }
+
+    #if os(Linux)
+    private static func linuxParentProcessName() -> String? {
+        guard let stat = try? String(contentsOfFile: "/proc/self/stat", encoding: .utf8) else { return nil }
+        let parts = stat.split(separator: " ")
+        guard parts.count > 3, let ppid = Int(parts[3]) else { return nil }
+        let comm = "/proc/\(ppid)/comm"
+        let raw = try? String(contentsOfFile: comm, encoding: .utf8)
+        return raw?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    #endif
 }
 
 #if canImport(Darwin)

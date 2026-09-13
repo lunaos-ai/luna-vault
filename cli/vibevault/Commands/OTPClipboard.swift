@@ -1,17 +1,17 @@
 import ArgumentParser
 import Foundation
+import VaultCore
 #if canImport(AppKit)
 import AppKit
 #endif
 
 enum OTPClipboard {
     static func copy(_ value: String, expiresAfter seconds: Int) throws {
-        #if canImport(AppKit)
-        let board = NSPasteboard.general
-        board.clearContents()
-        guard board.setString(value, forType: .string) else {
+        guard PlatformClipboard.copy(value) else {
             throw ValidationError("could not write to clipboard")
         }
+        #if canImport(AppKit)
+        let board = NSPasteboard.general
         let process = Process()
         process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
         process.arguments = [
@@ -22,9 +22,7 @@ enum OTPClipboard {
         process.standardError = FileHandle.nullDevice
         try process.run()
         #else
-        _ = value
         _ = seconds
-        throw ValidationError("clipboard copy requires macOS; omit --copy to print the code")
         #endif
     }
 }

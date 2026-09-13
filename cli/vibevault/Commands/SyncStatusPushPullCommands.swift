@@ -15,7 +15,7 @@ struct SyncStatusCommand: AsyncParsableCommand {
         print("local secrets: \(localCount)")
         print("icloud drive: \(CloudSync.isICloudDriveAvailable() ? "available" : "unavailable")")
         print("icloud path: \(cloudURL.path)")
-        let recoveryConfigured = KeychainPrefs().data(forKey: CloudRecoveryKey.preferenceKey) != nil
+        let recoveryConfigured = RecoveryKeyringStore.load(from: KeychainPrefs()).activeCanonicalKey != nil
         print("recovery protection: \(recoveryConfigured ? "configured" : "not configured")")
         guard FileManager.default.fileExists(atPath: cloudURL.path) else {
             print("icloud bundle: missing")

@@ -60,14 +60,14 @@ public enum CloudSync {
 
         var recoverySalt: Data?
         var recoveryWrap: AES.GCM.SealedBox?
+        var recoveryKeyID: String?
+        var recoveryProtectedAt: Date?
         if let recoveryKey {
-            let keyMaterial = try CloudRecoveryKey.keyData(recoveryKey)
-            let generatedSalt = try secureRandomData(count: 32)
-            recoverySalt = generatedSalt
-            recoveryWrap = try AES.GCM.seal(
-                dataKeyBytes,
-                using: deriveRecoveryKey(keyMaterial: keyMaterial, salt: generatedSalt)
-            )
+            let wrap = try wrapRecovery(dataKeyBytes: dataKeyBytes, recoveryKey: recoveryKey)
+            recoverySalt = wrap.salt
+            recoveryWrap = wrap.box
+            recoveryKeyID = wrap.keyID
+            recoveryProtectedAt = wrap.protectedAt
         }
 
         let envelope = CloudSyncEnvelope(
@@ -88,7 +88,9 @@ public enum CloudSync {
             recoverySalt: recoverySalt?.base64EncodedString(),
             recoveryNonce: recoveryWrap.map(encodedNonce),
             recoveryTag: recoveryWrap?.tag.base64EncodedString(),
-            recoveryWrappedKey: recoveryWrap?.ciphertext.base64EncodedString()
+            recoveryWrappedKey: recoveryWrap?.ciphertext.base64EncodedString(),
+            recoveryKeyID: recoveryKeyID,
+            recoveryProtectedAt: recoveryProtectedAt
         )
         return try encoder.encode(envelope)
     }
@@ -99,7 +101,7 @@ public enum CloudSync {
             withIntermediateDirectories: true
         )
         try data.write(to: url, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        PlatformFilePermissions.restrictToOwner(url)
     }
 
     static func validatePassphrase(_ passphrase: String) throws {

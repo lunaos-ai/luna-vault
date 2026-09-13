@@ -50,12 +50,7 @@ public enum MCPClientInstaller {
             "env": agentEnv(for: client)
         ]
         setServersDict(in: &root, value: servers)
-        do {
-            let data = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
-            try data.write(to: url, options: .atomic)
-        } catch {
-            throw MCPInstallerError.ioFailed("\(error)")
-        }
+        try saveRoot(root, to: url)
     }
 
     public static func uninstall(client: MCPClientID) throws {
@@ -67,21 +62,41 @@ public enum MCPClientInstaller {
         else { return }
         servers.removeValue(forKey: serverKey)
         setServersDict(in: &root, value: servers)
-        let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
-        try out.write(to: url, options: .atomic)
+        try saveRoot(root, to: url)
     }
 
     public static func agentEnv(for client: MCPClientID) -> [String: String] {
         ["LUNA_AGENT": client.lunaAgent, "LUNA_SESSION": SessionID.current()]
     }
 
-    private static func serversDict(in root: [String: Any]) -> [String: Any]? {
+    static func loadRoot(from url: URL) -> [String: Any] {
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        return json
+    }
+
+    static func saveRoot(_ root: [String: Any], to url: URL) throws {
+        do {
+            let parent = url.deletingLastPathComponent()
+            if !FileManager.default.fileExists(atPath: parent.path) {
+                try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+            }
+            let data = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: url, options: .atomic)
+        } catch {
+            throw MCPInstallerError.ioFailed("\(error)")
+        }
+    }
+
+    static func serversDict(in root: [String: Any]) -> [String: Any]? {
         if let s = root["mcpServers"] as? [String: Any] { return s }
         if let s = root["servers"] as? [String: Any] { return s }
         return nil
     }
 
-    private static func setServersDict(in root: inout [String: Any], value: [String: Any]) {
+    static func setServersDict(in root: inout [String: Any], value: [String: Any]) {
         if root["servers"] != nil { root["servers"] = value; return }
         root["mcpServers"] = value
     }

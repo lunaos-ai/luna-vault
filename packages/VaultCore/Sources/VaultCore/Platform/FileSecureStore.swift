@@ -1,9 +1,8 @@
 import Foundation
 
-/// Master-key and prefs storage for Linux/Windows when Keychain/DPAPI are unavailable.
-/// Files are mode `0600` under the vault data directory.
-/// Windows: replace with Credential Manager / DPAPI (`MasterKeyBackend.windowsDPAPI`).
-/// Linux: replace with libsecret / Secret Service when available.
+/// Master-key and prefs storage when Keychain/DPAPI/libsecret are unavailable.
+/// Unix: mode `0600` under the vault data directory.
+/// Windows master key uses `WindowsDPAPIKeyStore`; Linux prefers `LinuxMasterKeyStore`.
 enum FileSecureStore {
     private static let masterPrefix = "master."
     private static let prefsFileName = "prefs.json"
@@ -26,7 +25,7 @@ enum FileSecureStore {
         let url = masterKeyURL(account: account, directory: directory)
         let data = key.withUnsafeBytes { Data($0) }
         try data.write(to: url, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        PlatformFilePermissions.restrictToOwner(url)
         VaultPaths.excludeFromBackup(url)
     }
 
@@ -57,7 +56,7 @@ enum FileSecureStore {
         let url = prefsURL(directory: directory)
         let data = try JSONEncoder().encode(values)
         try data.write(to: url, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        PlatformFilePermissions.restrictToOwner(url)
         VaultPaths.excludeFromBackup(url)
     }
 }

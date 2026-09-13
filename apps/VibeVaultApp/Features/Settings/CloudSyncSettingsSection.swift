@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 import VaultCore
@@ -17,11 +16,22 @@ struct CloudSyncSettingsSection: View {
     @State var backupHistory: [CloudBackupFile] = []
     @State var recoveryRestoreKey = ""
     @State var recoverySheetKey = ""
+    @State var recoverySheetFingerprint = ""
+    @State var recoverySheetCreatedAt = Date()
     @State var recoverySheetInstallsKey = false
+    @State var recoverySheetCurrentFingerprint: String?
     @State var showExportBackupSheet = false
     @State var showImportBackupSheet = false
     @State var showRecoverySheet = false
-    @State var confirmRemoveRecoveryKey = false
+    @State var confirmStopActive = false
+    @State var confirmReplaceActive = false
+    @State var confirmRemoveRetained = false
+    @State var pendingEnteredActiveKey = ""
+    @State var pendingPromoteIdentifier: String?
+    @State var pendingRemoveIdentifier: String?
+    @State var removeRetainedMessageText = ""
+    @State var bundleInfo: CloudSyncBundleInfo?
+    @State var recoveryErrorText: String?
 
     var canEncrypt: Bool {
         passphrase.count >= 12 && passphrase == confirmation && !isWorking
@@ -43,8 +53,14 @@ struct CloudSyncSettingsSection: View {
         (try? CloudRecoveryKey.canonicalize(recoveryRestoreKey)) != nil && !isWorking
     }
 
+    var canPreviewRecovery: Bool {
+        !isWorking
+            && status?.bundleExists == true
+            && (canUseRecoveryKey || !env.cachedRecoveryKeys.isEmpty)
+    }
+
     var canImportSelectedWithRecovery: Bool {
-        canUseRecoveryKey
+        !isWorking
             && selectedBackupURL != nil
             && preview != nil
             && selectedUnlockMethod == .recoveryKey
@@ -56,7 +72,15 @@ struct CloudSyncSettingsSection: View {
             && (canEncrypt || env.automaticBackupCredentialAvailable())
     }
 
+    var canChooseRecoveryBackup: Bool {
+        !isWorking && (canUseRecoveryKey || !env.cachedRecoveryKeys.isEmpty)
+    }
+
     var body: some View {
+        applyCloudSyncChrome(syncSection)
+    }
+
+    private var syncSection: some View {
         Section {
             if let status {
                 LabeledContent("Local secrets", value: "\(status.localCount)")
@@ -64,13 +88,11 @@ struct CloudSyncSettingsSection: View {
                 LabeledContent("Updated", value: status.modifiedText)
                 LabeledContent("Size", value: status.sizeText)
             }
-
             CloudSyncPassphraseSection(
                 passphrase: $passphrase,
                 confirmation: $confirmation,
                 importPolicy: $importPolicy
             )
-
             CloudSyncActionButtons(
                 canSyncToICloud: canSyncToICloud,
                 canPull: canPull,
@@ -80,7 +102,6 @@ struct CloudSyncSettingsSection: View {
                 onPreview: previewICloud,
                 onRefresh: refreshStatus
             )
-
             CloudSyncBackupSection(
                 showExportBackupSheet: $showExportBackupSheet,
                 showImportBackupSheet: $showImportBackupSheet,
@@ -103,86 +124,45 @@ struct CloudSyncSettingsSection: View {
                     refreshStatus()
                 }
             )
-
-            CloudSyncRecoveryKeySection(
-                recoveryRestoreKey: $recoveryRestoreKey,
-                canUseRecoveryKey: canUseRecoveryKey,
-                canImportSelectedWithRecovery: canImportSelectedWithRecovery,
-                status: status,
-                selectedBackupURL: selectedBackupURL,
-                preview: preview,
-                onShowInstalled: showInstalledRecoveryKey,
-                onCreate: createRecoveryKey,
-                onConfirmRemove: { confirmRemoveRecoveryKey = true },
-                onPreviewICloud: { previewRecoveryBackup(at: CloudSync.defaultICloudURL()) },
-                onChooseBackup: chooseRecoveryImportURL,
-                onImportSelected: importSelectedRecoveryBackup,
-                onSaveEnteredKey: saveEnteredRecoveryKey
-            )
+            recoverySection
         } header: {
             Text("Encrypted sync and backups")
         } footer: {
             Text("Sync to iCloud shares one encrypted bundle between Macs. Export backup saves a portable file anywhere. Enable schedule stores the passphrase in Keychain for automatic iCloud snapshots while the app stays open.")
         }
-        .onAppear { refreshStatus() }
-        .onChange(of: passphrase) { _, _ in
-            preview = nil
-            selectedBackupURL = nil
-            selectedUnlockMethod = nil
-        }
-        .onChange(of: recoveryRestoreKey) { _, _ in
-            preview = nil
-            selectedBackupURL = nil
-            selectedUnlockMethod = nil
-        }
-        .sheet(isPresented: $showExportBackupSheet) {
-            ExportBackupSheet(
-                recoveryProtectionEnabled: env.cachedHasBackupRecoveryKey,
-                onExport: { url, exportPassphrase in
-                    await exportBackup(to: url, passphrase: exportPassphrase)
+    }
+
+    private var recoverySection: some View {
+        CloudSyncRecoveryKeySection(
+            recoveryRestoreKey: $recoveryRestoreKey,
+            canUseRecoveryKey: canUseRecoveryKey,
+            canPreviewRecovery: canPreviewRecovery,
+            canImportSelectedWithRecovery: canImportSelectedWithRecovery,
+            status: status,
+            bundleInfo: bundleInfo,
+            recoveryErrorText: recoveryErrorText,
+            onShow: showRecoveryKey,
+            onCreate: createRecoveryKey,
+            onStopActive: { confirmStopActive = true },
+            onMakeActive: {
+                pendingPromoteIdentifier = $0
+                pendingEnteredActiveKey = ""
+                if env.cachedHasBackupRecoveryKey {
+                    confirmReplaceActive = true
+                } else {
+                    applyPendingActiveReplacement()
                 }
-            )
-        }
-        .sheet(isPresented: $showImportBackupSheet) {
-            ImportBackupSheet(
-                initialPolicy: importPolicy,
-                onImport: { url, importPassphrase, policy in
-                    importPolicy = policy
-                    return await importBackup(
-                        from: url,
-                        passphrase: importPassphrase,
-                        policy: policy
-                    )
-                }
-            )
-            .environmentObject(env)
-        }
-        .sheet(isPresented: $showRecoverySheet) {
-            RecoveryKeySheet(
-                recoveryKey: recoverySheetKey,
-                installsKey: recoverySheetInstallsKey,
-                onInstall: {
-                    do {
-                        try env.saveBackupRecoveryKey(recoverySheetKey)
-                        showRecoverySheet = false
-                    } catch {
-                        env.lastError = "\(error)"
-                    }
-                }
-            )
-        }
-        .onChange(of: showRecoverySheet) { _, isPresented in
-            if !isPresented { recoverySheetKey = "" }
-        }
-        .confirmationDialog(
-            "Remove recovery protection from future backups?",
-            isPresented: $confirmRemoveRecoveryKey,
-            titleVisibility: .visible
-        ) {
-            Button("Remove", role: .destructive) { env.removeBackupRecoveryKey() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Existing protected backups still require this recovery key. New backups will use only the sync passphrase.")
-        }
+            },
+            onRemoveRetained: {
+                pendingRemoveIdentifier = $0
+                removeRetainedMessageText = removeRetainedMessage
+                confirmRemoveRetained = true
+            },
+            onPreviewICloud: { previewRecoveryBackup(at: CloudSync.defaultICloudURL()) },
+            onChooseBackup: chooseRecoveryImportURL,
+            onImportSelected: importSelectedRecoveryBackup,
+            onKeepEntered: keepEnteredRecoveryKey,
+            onMakeEnteredActive: confirmMakeEnteredActive
+        )
     }
 }

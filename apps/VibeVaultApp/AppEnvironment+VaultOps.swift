@@ -186,6 +186,22 @@ extension AppEnvironment {
         catch { lastError = "\(error)" }
     }
 
+    @MainActor
+    @discardableResult
+    func duplicateSecret(name: String) async -> String? {
+        do {
+            let copyName = try await service.duplicate(name: name)
+            refresh()
+            focusVault(secretName: copyName)
+            showToast("Duplicated as \(copyName)")
+            return copyName
+        } catch {
+            lastError = "\(error)"
+            showToast("Could not duplicate secret", feedback: .caution)
+            return nil
+        }
+    }
+
     func projectPrefix(for url: URL) -> String {
         let path = url.standardizedFileURL.path
         if let saved = settings.projectPrefixes[path], !saved.isEmpty { return saved }

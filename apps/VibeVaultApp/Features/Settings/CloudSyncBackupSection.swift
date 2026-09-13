@@ -125,6 +125,7 @@ struct CloudSyncBackupSection: View {
                 LabeledContent("Selected bundle", value: preview.path)
                 LabeledContent("Source Mac", value: preview.sourceHost)
                 LabeledContent("Exported", value: preview.exportedAtText)
+                LabeledContent("Bundle created", value: preview.createdAtText)
                 LabeledContent("Secrets", value: "\(preview.secretCount)")
                 LabeledContent("Saved versions", value: "\(preview.revisionCount)")
                 LabeledContent("Authenticators", value: "\(preview.authenticatorCount)")
@@ -133,6 +134,21 @@ struct CloudSyncBackupSection: View {
                 LabeledContent("Backup is newer", value: "\(preview.backupNewerCount)")
                 LabeledContent("Local is newer", value: "\(preview.localNewerCount)")
                 LabeledContent("Same timestamp", value: "\(preview.sameTimestampCount)")
+                LabeledContent(
+                    "Recovery protection",
+                    value: preview.hasRecoveryProtection ? "Present" : "None"
+                )
+                if let fingerprint = preview.recoveryFingerprint {
+                    LabeledContent("Required recovery key", value: fingerprint)
+                }
+                LabeledContent(
+                    "Installed key",
+                    value: CloudSyncRecoveryAccess.matchLabel(preview.matchingKeyStatus)
+                )
+                if preview.isLegacyRecovery {
+                    Text(CloudSyncRecoveryCopy.legacyIdentityUnavailable)
+                        .foregroundStyle(Tokens.Status.warning)
+                }
             }
             .font(.caption)
             .textSelection(.enabled)

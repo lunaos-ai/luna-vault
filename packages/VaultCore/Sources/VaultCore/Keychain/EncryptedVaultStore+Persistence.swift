@@ -52,9 +52,7 @@ extension EncryptedVaultStore {
             .appendingPathComponent(filename)
         guard !FileManager.default.fileExists(atPath: backupURL.path) else { return }
         try blob.write(to: backupURL, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600], ofItemAtPath: backupURL.path
-        )
+        PlatformFilePermissions.restrictToOwner(backupURL)
         VaultPaths.includeInBackup(backupURL)
     }
 
@@ -64,9 +62,7 @@ extension EncryptedVaultStore {
         let plain = try enc.encode(document)
         let blob = try VaultFileCrypto.seal(plain, key: masterKey())
         try blob.write(to: fileURL, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600], ofItemAtPath: fileURL.path
-        )
+        PlatformFilePermissions.restrictToOwner(fileURL)
         VaultPaths.includeInBackup(fileURL)
     }
 

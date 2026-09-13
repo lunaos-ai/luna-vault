@@ -1,3 +1,4 @@
+#if canImport(AppKit)
 import AppKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
@@ -48,3 +49,4 @@ final class TOTPQRCodeDecoderTests: XCTestCase {
         return data
     }
 }
+#endif

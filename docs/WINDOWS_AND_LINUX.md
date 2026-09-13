@@ -12,14 +12,18 @@ Vibe Vault ships a **native macOS SwiftUI app**, plus **CLI, MCP, and a cross-pl
 
 | Capability | macOS | Linux | Windows |
 |------------|-------|-------|---------|
-| Encrypted local vault | Yes | Yes | Yes via WSL2 / experimental Swift |
-| Master key storage | Keychain | `0600` file under data dir | Same file store (DPAPI planned) |
-| Unlock / biometrics | Touch ID / password | Session unlock lease | Same as Linux |
-| CLI (`vibevault`) | Yes | Yes | WSL2 recommended |
-| MCP server | Yes | Yes | WSL2 recommended |
-| Native GUI app | Yes (SwiftUI) | Yes (`VibeVaultDesktop`) | Yes (`VibeVaultDesktop` / WSL) |
-| iCloud Drive sync | Yes | No (export/import `.vvsync`) | No (export/import) |
+| Encrypted local vault | Yes | Yes | Yes (native Swift) |
+| Master key storage | Keychain | libsecret, else `0600` file | DPAPI (`CryptProtectData`, current user) |
+| Unlock / biometrics | Touch ID / password | Session unlock lease | Session unlock lease |
+| CLI (`vibevault`) | Yes | Yes | Native (`scripts/build-windows.ps1`) |
+| MCP server | Yes | Yes | Native |
+| Native GUI app | Yes (SwiftUI) | Yes (`VibeVaultDesktop`) | Yes (`VibeVaultDesktop` / WinUI) |
+| Duplicate / copy / AI toggle | Yes | Desktop | Desktop |
+| Encrypted `.vvsync` export/import | Yes | CLI + desktop Sync tab | CLI + desktop Sync tab |
+| iCloud Drive sync | Yes | No (use `.vvsync`) | No (use `.vvsync`) |
 | Vision QR import | Yes | Unsupported | Unsupported |
+
+WSL2 remains a supported fallback if you prefer a Linux toolchain on Windows.
 
 ## Data directories
 
@@ -29,7 +33,7 @@ Vibe Vault ships a **native macOS SwiftUI app**, plus **CLI, MCP, and a cross-pl
 
 Override with `VIBEVAULT_VAULT_DIR`.
 
-On Linux/Windows the vault master key is stored as a mode-`0600` file next to the ciphertext (not in Keychain). Protect the home directory and disk encryption the same way you would for SSH keys. OS keyring / DPAPI backends are planned.
+On Linux the vault master key is stored in the session keyring via Secret Service (`libsecret`) when a keyring daemon is running. If libsecret is missing or the session has no keyring, Vibe Vault falls back to a mode-`0600` file and migrates that file into the keyring on the next successful store. On Windows the master key is a DPAPI blob (`master.vault.master.dpapi`) bound to the current user. A leftover plaintext `master.*.key` file is migrated on first load, then deleted.
 
 ## Linux CLI
 
@@ -40,68 +44,55 @@ bash scripts/build-linux.sh
 # binary: .build/release/vibevault
 bash scripts/package-linux-cli.sh
 # archive: build/vibevault-linux-<arch>.tar.gz
-```
-
-Or native:
-
-```bash
-swift build -c release --product vibevault --product vibevault-mcp
-bash scripts/package-linux-cli.sh
-```
-
-Install from the tarball:
-
-```bash
-tar -xzf vibevault-linux-*.tar.gz
-cd vibevault-linux-*
-./install.sh   # installs to ~/.local/bin
+KIND=cli bash scripts/package-linux-deb.sh
+# deb: build/vibevault_<version>_<arch>.deb
 ```
 
 CI uploads these tarballs as workflow artifacts on every `main` push (`vibevault-linux-cli`).
 
 ## Linux desktop app
 
-Needs **Swift 6+** (SwiftCrossUI 0.9 uses body macros) and Gtk 4 headers (`libgtk-4-dev` on Debian/Ubuntu). Docker build uses `swift:6.0-jammy` by default (`SWIFT_DESKTOP_LINUX_IMAGE` to override):
+Needs **Swift 6+** (SwiftCrossUI 0.9 uses body macros) and Gtk 4 headers (`libgtk-4-dev` on Debian/Ubuntu):
 
 ```bash
 bash scripts/build-desktop-linux.sh
-# binary: apps/VibeVaultDesktop/.build/release/VibeVaultDesktop
 bash scripts/package-linux-desktop.sh
-# archive: build/VibeVaultDesktop-linux-<arch>.tar.gz
+KIND=desktop bash scripts/package-linux-deb.sh
+DOWNLOAD_APPIMAGETOOL=1 bash scripts/package-linux-appimage.sh
 ```
-
-Native (Swift 6+ toolchain + Gtk 4):
-
-```bash
-cd apps/VibeVaultDesktop
-swift build -c release --product VibeVaultDesktop
-```
-
-Install from the tarball (`./install.sh`) after installing Gtk 4 runtime libs (`libgtk-4-1` on Debian/Ubuntu). CI uploads `vibevault-linux-desktop` artifacts on `main`.
 
 Unlock from the **Unlock** tab (or `vibevault session unlock`) before revealing secrets.
 
-## Windows
+## Windows (native)
 
-**Supported path today:** [WSL2](https://learn.microsoft.com/windows/wsl/) with Ubuntu.
-
-```bash
-# inside WSL
-bash scripts/build-wsl.sh
-# CLI: .build/release/vibevault
-# desktop (Gtk): apps/VibeVaultDesktop/.build/release/VibeVaultDesktop
-```
-
-Vault data lives in the Linux home unless you set `VIBEVAULT_VAULT_DIR` (for example to a Windows path under `/mnt/c/...`). Desktop UI needs a WSLg-capable distro (Windows 11) or an X server.
-
-**Native Windows Swift** is experimental. With a Swift Windows toolchain and Windows App SDK:
+Install [Swift for Windows](https://www.swift.org/install/windows/), then:
 
 ```powershell
-cd apps/VibeVaultDesktop
-swift build -c release --product VibeVaultDesktop
+powershell -File scripts/build-windows.ps1
+# CLI: .build\release\vibevault.exe
+# MCP: .build\release\vibevault-mcp.exe
+powershell -File scripts/package-windows-cli.ps1
+# zip: build\vibevault-windows-<arch>.zip
+powershell -File scripts/package-windows-msi.ps1
+# msi: build\vibevault-windows-<version>.msi
 ```
 
-There is no native Windows CI yet. Master key uses `FileSecureStore` (`PlatformSupport.masterKeyBackend == .fileSecureStore`); Credential Manager / DPAPI is planned (`MasterKeyBackend.windowsDPAPI`).
+`build-windows.ps1` downloads the SQLite amalgamation into `packages/CSQLite` (gitignored) on first run.
+
+Desktop (WinUI / Windows App SDK):
+
+```powershell
+powershell -File scripts/build-windows.ps1 -Desktop
+powershell -File scripts/package-windows-desktop.ps1
+```
+
+CI builds the Windows CLI + MCP on `windows-latest` (`vibevault-windows-cli` zip + MSI). Desktop WinUI is built in the `windows-desktop` job (`vibevault-windows-desktop` zip).
+
+**WSL2 fallback:**
+
+```bash
+bash scripts/build-wsl.sh
+```
 
 ## Unlock on Linux / Windows
 
@@ -114,6 +105,33 @@ vibevault session lock
 ```
 
 The desktop **Unlock** tab writes the same shared lease.
+
+## Sandbox MCP (passkey-gated HTTP)
+
+Sandboxed AI clients cannot spawn `vibevault-mcp` over stdio or read Keychain. Keep Solo local-first: the host listens on **127.0.0.1 only**. The user enrolls a passkey; each session mints a short-lived bearer token. `mcpAllowed` still applies on every tool. Agents cannot enable MCP.
+
+```bash
+vibevault mcp passkey set
+vibevault mcp sandbox start --client cursor --minutes 30
+```
+
+This writes HTTP MCP config (Cursor example):
+
+```json
+{
+  "mcpServers": {
+    "vibe-vault": {
+      "type": "http",
+      "url": "http://127.0.0.1:17832/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
+    }
+  }
+}
+```
+
+The sandbox may also send `Authorization: Passkey <enrolled-passkey>` instead of the bearer token. Do not put the long-lived passkey in `mcp.json`. `GET /health` is unauthenticated on loopback. Default port is 17832.
+
+On Linux and Windows, use the desktop **Sandbox** tab or the CLI above. **Audit** shows recent vault reads.
 
 ## Team license
 
@@ -131,10 +149,14 @@ vibevault sync export --path ./vault.vvsync
 vibevault sync import --path ./vault.vvsync --overwrite
 ```
 
+Or the desktop **Sync** tab.
+
 ## Roadmap
 
 1. ~~Linux CLI + MCP tarball packaging~~ — `scripts/package-linux-cli.sh` + CI artifacts.
-2. ~~Packaged `VibeVaultDesktop` tarball~~ — `scripts/package-linux-desktop.sh` + CI artifacts (AppImage / deb / MSI via Swift Bundler next).
-3. Windows native CLI with Credential Manager / DPAPI master-key storage.
-4. Linux OS keyring (libsecret) for master key instead of mode-0600 file.
-5. Keep Solo local-first; no hosted cloud vault required.
+2. ~~Packaged `VibeVaultDesktop` tarball~~ — `scripts/package-linux-desktop.sh` + CI artifacts.
+3. ~~Windows native CLI with DPAPI master-key storage~~ — `scripts/build-windows.ps1` + CI.
+4. ~~Linux OS keyring (libsecret)~~ — Secret Service via `dlopen`, file fallback + migration.
+5. ~~Windows desktop CI (WinUI) and MSI~~ — `windows-desktop` job, `scripts/package-windows-msi.ps1`.
+6. ~~Linux AppImage / deb~~ — `scripts/package-linux-appimage.sh`, `scripts/package-linux-deb.sh`.
+7. Keep Solo local-first; no hosted cloud vault required.
