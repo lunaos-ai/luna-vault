@@ -134,10 +134,15 @@ jobs:
           if-no-files-found: error
 
   windows-cli:
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v5
+        with:
+          winsdk: "10.0.22621.0"
 
       - name: Setup Swift
         uses: SwiftyLab/setup-swift@v1.12.0
@@ -177,13 +182,15 @@ jobs:
           if-no-files-found: error
 
   windows-desktop:
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup VS Dev Environment
         uses: seanmiddleditch/gha-setup-vsdevenv@v5
+        with:
+          winsdk: "10.0.22621.0"
 
       - name: Setup Swift
         uses: SwiftyLab/setup-swift@v1.12.0
