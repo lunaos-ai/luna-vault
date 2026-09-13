@@ -15,7 +15,7 @@ struct RotateSheetView: View {
     var body: some View {
         Form {
             Section {
-                SecureField("New value", text: $newValue)
+                RevealableSecureField(title: "New value", text: $newValue)
             } header: {
                 Text("Rotate \(secret.name)")
             } footer: {

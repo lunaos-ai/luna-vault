@@ -49,6 +49,12 @@ struct DesktopRootView: View {
             VaultPane(model: $model, onRefresh: refreshAll)
         case .unlock:
             UnlockPane(model: $model, onRefresh: refreshUnlock)
+        case .sync:
+            SyncPane(model: $model, onRefresh: refreshAll)
+        case .sandbox:
+            SandboxPane(model: $model, onRefresh: refreshSandbox)
+        case .audit:
+            AuditPane(model: $model, onRefresh: refreshAudit)
         case .license:
             LicensePane(model: $model, onRefresh: refreshLicense)
         }
@@ -58,15 +64,45 @@ struct DesktopRootView: View {
         refreshSecrets()
         refreshUnlock()
         refreshLicense()
+        refreshSandbox()
+        refreshAudit()
+    }
+
+    private func refreshSandbox() {
+        let enrolled = DesktopSandbox.isEnrolled()
+        if DesktopSandbox.isRunning() {
+            model.sandboxStatus = "Running · \(MCPSandboxSettings.endpoint())"
+        } else if enrolled {
+            model.sandboxStatus = "Passkey enrolled · not listening"
+        } else {
+            model.sandboxStatus = "No passkey · enroll to start"
+        }
+    }
+
+    private func refreshAudit() {
+        do {
+            let events = try AuditDB().query(AuditFilter(limit: 40))
+            model.auditLines = events.map { event in
+                let time = PlatformDateFormat.logTimestamp(event.timestamp)
+                return "\(time)  \(event.action.rawValue)  \(event.secretName)  \(event.agent)"
+            }
+        } catch {
+            model.auditLines = []
+        }
     }
 
     private func refreshSecrets() {
         do {
             model.secretNames = try DesktopVault.service().list().map(\.name).sorted()
             if let selected = model.selectedName,
+               let secret = try DesktopVault.service().list().first(where: { $0.name == selected }) {
+                model.selectedNotes = secret.notes
+                model.selectedMCPAllowed = secret.mcpAllowed
+            } else if let selected = model.selectedName,
                !model.secretNames.contains(selected) {
                 model.selectedName = nil
                 model.revealedValue = nil
+                model.selectedNotes = nil
             }
             model.errorMessage = nil
         } catch {
@@ -81,7 +117,7 @@ struct DesktopRootView: View {
         } else if PlatformSupport.hasAppleKeychain {
             model.unlockRemaining = "Touch ID / session gate"
         } else {
-            model.unlockRemaining = "Locked — unlock for CLI and reads"
+            model.unlockRemaining = "Locked - unlock for CLI and reads"
         }
     }
 

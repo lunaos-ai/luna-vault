@@ -1,10 +1,10 @@
 # vibe-vault
 
-Secure credential access for AI coding agents. Native macOS SwiftUI app; CLI, MCP, and desktop UI on Linux and Windows (WSL2).
+Secure credential access for AI coding agents. Native macOS SwiftUI app; CLI, MCP, and desktop UI on Linux and Windows.
 
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)](https://vibevault.lunaos.ai/)
 [![Linux](https://img.shields.io/badge/Linux-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
-[![Windows WSL2](https://img.shields.io/badge/Windows-WSL2%20CLI%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
+[![Windows](https://img.shields.io/badge/Windows-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.4-indigo)](CHANGELOG.md)
 
@@ -17,7 +17,7 @@ npm run dev
 vibevault run -- npm run dev
 ```
 
-Secrets live in an encrypted local vault. On macOS the master key is in Keychain; on Linux/Windows it uses a mode-`0600` file store (see `docs/WINDOWS_AND_LINUX.md`). Every read is audited per AI agent (Claude Code, Cursor, Devin). One command syncs to Cloudflare, Vercel, PushCI.
+Secrets live in an encrypted local vault. On macOS the master key is in Keychain; on Linux it uses libsecret (mode-`0600` file fallback); on Windows it uses DPAPI (see `docs/WINDOWS_AND_LINUX.md`). Every read is audited per AI agent (Claude Code, Cursor, Devin). One command syncs to Cloudflare, Vercel, PushCI.
 
 ## Install
 
@@ -28,16 +28,27 @@ brew install finsavvyai/tap/vibevault
 # or download the DMG from https://vibevault.lunaos.ai/install
 ```
 
-**Linux / Windows (WSL2)** — CLI + MCP + desktop
+**Linux** — CLI + MCP + desktop
 
 ```bash
 bash scripts/build-linux.sh && bash scripts/package-linux-cli.sh
 # archive: build/vibevault-linux-<arch>.tar.gz  →  ./install.sh
+KIND=cli bash scripts/package-linux-deb.sh
 
 bash scripts/build-desktop-linux.sh && bash scripts/package-linux-desktop.sh
-# archive: build/VibeVaultDesktop-linux-<arch>.tar.gz
+KIND=desktop bash scripts/package-linux-deb.sh
+DOWNLOAD_APPIMAGETOOL=1 bash scripts/package-linux-appimage.sh
 # details: docs/WINDOWS_AND_LINUX.md
-# CI uploads both tarballs as artifacts on main
+```
+
+**Windows** — native CLI + MCP + desktop (WSL2 optional)
+
+```powershell
+powershell -File scripts/build-windows.ps1
+powershell -File scripts/package-windows-cli.ps1
+powershell -File scripts/package-windows-msi.ps1
+powershell -File scripts/build-windows.ps1 -Desktop
+powershell -File scripts/package-windows-desktop.ps1
 ```
 
 **Install**
@@ -162,6 +173,8 @@ vibe-vault/
 
 ```bash
 vibevault mcp install --client all
+vibevault mcp passkey set
+vibevault mcp sandbox start --client cursor
 vibevault skill install
 vibevault agents prepare --target all
 vibevault cursor prepare

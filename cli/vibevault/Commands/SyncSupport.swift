@@ -1,7 +1,10 @@
 import ArgumentParser
 #if canImport(Darwin)
 import Darwin
-#else
+#elseif os(Windows)
+import WinSDK
+import ucrt
+#elseif canImport(Glibc)
 import Glibc
 #endif
 import Foundation
@@ -119,6 +122,32 @@ enum SyncPassphrase {
             throw ValidationError("use --passphrase-stdin or --passphrase-env in non-interactive shells")
         }
         FileHandle.standardError.write(Data(prompt.utf8))
+        #if os(Windows)
+        return try readHiddenLineWindows()
+        #else
+        return try readHiddenLineUnix()
+        #endif
+    }
+
+    #if os(Windows)
+    private static func readHiddenLineWindows() throws -> String {
+        let handle = GetStdHandle(DWORD(STD_INPUT_HANDLE))
+        var mode: DWORD = 0
+        guard GetConsoleMode(handle, &mode) else {
+            throw ValidationError("could not configure terminal input")
+        }
+        _ = SetConsoleMode(handle, mode & ~DWORD(ENABLE_ECHO_INPUT))
+        defer {
+            _ = SetConsoleMode(handle, mode)
+            FileHandle.standardError.write(Data("\n".utf8))
+        }
+        guard let line = readLine(), !line.isEmpty else {
+            throw ValidationError("empty sync passphrase")
+        }
+        return line
+    }
+    #else
+    private static func readHiddenLineUnix() throws -> String {
         var original = termios()
         guard tcgetattr(STDIN_FILENO, &original) == 0 else {
             throw ValidationError("could not configure terminal input")
@@ -139,4 +168,5 @@ enum SyncPassphrase {
         }
         return line
     }
+    #endif
 }

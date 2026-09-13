@@ -78,12 +78,15 @@ jobs:
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tar gzip
           bash scripts/package-linux-cli.sh
+          KIND=cli bash scripts/package-linux-deb.sh
 
       - name: Upload Linux CLI package
         uses: actions/upload-artifact@v4
         with:
           name: vibevault-linux-cli
-          path: build/vibevault-linux-*.tar.gz
+          path: |
+            build/vibevault-linux-*.tar.gz
+            build/vibevault_*.deb
           if-no-files-found: error
 
   linux-desktop:
@@ -114,12 +117,97 @@ jobs:
       - name: Package Linux desktop tarball
         run: |
           apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tar gzip
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tar gzip curl python3
           bash scripts/package-linux-desktop.sh
+          KIND=desktop bash scripts/package-linux-deb.sh
+          DOWNLOAD_APPIMAGETOOL=1 bash scripts/package-linux-appimage.sh
 
       - name: Upload Linux desktop package
         uses: actions/upload-artifact@v4
         with:
           name: vibevault-linux-desktop
-          path: build/VibeVaultDesktop-linux-*.tar.gz
+          path: |
+            build/VibeVaultDesktop-linux-*.tar.gz
+            build/VibeVaultDesktop-*.AppDir.tar.gz
+            build/VibeVaultDesktop-*.AppImage
+            build/vibevault-desktop_*.deb
+          if-no-files-found: error
+
+  windows-cli:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1.12.0
+        with:
+          swift-version: "6.0.3"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Fetch SQLite amalgamation
+        run: powershell -File scripts/ensure-sqlite-windows.ps1
+
+      - name: Build Windows CLI + MCP
+        run: swift build -c release --product vibevault --product vibevault-mcp
+
+      - name: Smoke CLI help
+        run: |
+          .build\release\vibevault.exe --help
+          .build\release\vibevault-mcp.exe --help
+
+      - name: Test VaultCore
+        run: swift test --filter VaultCoreTests
+
+      - name: Package Windows CLI zip
+        run: powershell -File scripts/package-windows-cli.ps1
+
+      - name: Package Windows CLI MSI
+        run: powershell -File scripts/package-windows-msi.ps1
+
+      - name: Upload Windows CLI package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibevault-windows-cli
+          path: |
+            build/vibevault-windows-*.zip
+            build/vibevault-windows-*.msi
+          if-no-files-found: error
+
+  windows-desktop:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v5
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1.12.0
+        with:
+          swift-version: "6.0.3"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Fetch SQLite amalgamation
+        run: powershell -File scripts/ensure-sqlite-windows.ps1
+
+      - name: Build VibeVaultDesktop
+        working-directory: apps/VibeVaultDesktop
+        run: |
+          if (Test-Path Package.resolved) { Remove-Item Package.resolved }
+          swift build -c release --product VibeVaultDesktop
+
+      - name: Package Windows desktop zip
+        run: powershell -File scripts/package-windows-desktop.ps1
+
+      - name: Upload Windows desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibevault-windows-desktop
+          path: build/VibeVaultDesktop-windows-*.zip
           if-no-files-found: error

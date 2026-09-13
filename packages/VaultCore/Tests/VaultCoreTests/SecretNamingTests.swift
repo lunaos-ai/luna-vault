@@ -25,6 +25,19 @@ final class SecretNamingTests: XCTestCase {
         XCTAssertEqual(SecretNaming.applyPrefix("", to: "CF_API_TOKEN"), "CF_API_TOKEN")
     }
 
+    func test_copy_name_appends_copy_suffix() {
+        XCTAssertEqual(SecretNaming.copyName(of: "CF_API_TOKEN", taken: []), "CF_API_TOKEN-copy")
+    }
+
+    func test_copy_name_increments_when_taken() {
+        let taken: Set<String> = ["CF_API_TOKEN", "CF_API_TOKEN-copy"]
+        XCTAssertEqual(SecretNaming.copyName(of: "CF_API_TOKEN", taken: taken), "CF_API_TOKEN-copy-2")
+        XCTAssertEqual(
+            SecretNaming.copyName(of: "CF_API_TOKEN", taken: taken.union(["CF_API_TOKEN-copy-2"])),
+            "CF_API_TOKEN-copy-3"
+        )
+    }
+
     func test_project_import_applies_prefix() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("vv-prefix-\(UUID().uuidString)")

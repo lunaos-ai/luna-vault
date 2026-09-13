@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+import Crypto
+#endif
 @testable import VaultCore
 
 final class LicenseCodecTests: XCTestCase {

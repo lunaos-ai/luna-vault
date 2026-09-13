@@ -11,10 +11,12 @@ public enum PlatformSupport {
     /// Where the vault master key is stored for this build.
     public enum MasterKeyBackend: String, Sendable {
         case appleKeychain
-        /// Mode-0600 file beside the vault (Linux / Windows today).
+        /// Mode-0600 file fallback when no OS keyring is present.
         case fileSecureStore
-        /// Planned: Windows Credential Manager / DPAPI.
+        /// Windows DPAPI blob bound to the current user.
         case windowsDPAPI
+        /// Linux Secret Service (libsecret) with file fallback.
+        case linuxSecretService
     }
 
     public static var host: Host {
@@ -46,8 +48,9 @@ public enum PlatformSupport {
     public static var masterKeyBackend: MasterKeyBackend {
         if hasAppleKeychain { return .appleKeychain }
         #if os(Windows)
-        // FileSecureStore until CryptProtectData / Credential Manager lands.
-        return .fileSecureStore
+        return .windowsDPAPI
+        #elseif os(Linux)
+        return .linuxSecretService
         #else
         return .fileSecureStore
         #endif

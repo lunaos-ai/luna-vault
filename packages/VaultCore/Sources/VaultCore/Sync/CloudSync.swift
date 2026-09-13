@@ -101,7 +101,7 @@ public enum CloudSync {
             withIntermediateDirectories: true
         )
         try data.write(to: url, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        PlatformFilePermissions.restrictToOwner(url)
     }
 
     static func validatePassphrase(_ passphrase: String) throws {

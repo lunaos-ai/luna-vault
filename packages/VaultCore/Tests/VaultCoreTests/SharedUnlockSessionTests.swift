@@ -1,4 +1,8 @@
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+import Crypto
+#endif
 import XCTest
 @testable import VaultCore
 
@@ -27,7 +31,11 @@ final class SharedUnlockSessionTests: XCTestCase {
             at: now.addingTimeInterval(60), url: url, authenticationKey: key
         ))
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        #if os(Windows)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        #else
         XCTAssertEqual((attributes[.posixPermissions] as? NSNumber)?.intValue, 0o600)
+        #endif
     }
 
     func test_expired_session_is_removed() throws {
@@ -56,10 +64,14 @@ final class SharedUnlockSessionTests: XCTestCase {
     }
 
     func test_insecure_permissions_are_rejected() throws {
+        #if os(Windows)
+        throw XCTSkip("POSIX permission bits are not enforced on Windows")
+        #else
         _ = try SharedUnlockSession.unlock(for: 900, url: url, authenticationKey: key)
         try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
 
         XCTAssertNil(SharedUnlockSession.status(url: url, authenticationKey: key))
+        #endif
     }
 
     func test_lock_revokes_session_immediately() throws {

@@ -33,9 +33,7 @@ public enum LocalVaultRecovery {
         )
         let url = directory.appendingPathComponent(fileName)
         try JSONEncoder().encode(envelope).write(to: url, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600], ofItemAtPath: url.path
-        )
+        PlatformFilePermissions.restrictToOwner(url)
         VaultPaths.includeInBackup(directory)
         if vaultExists { VaultPaths.includeInBackup(vaultURL) }
         VaultPaths.includeInBackup(url)

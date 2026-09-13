@@ -46,8 +46,13 @@ enum KeychainMasterKey {
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+        #elseif os(Windows)
+        return WindowsDPAPIKeyStore.masterKeyExists(account: account)
         #else
-        return FileSecureStore.masterKeyExists(account: account, directory: VaultPaths.defaultDirectory())
+        return LinuxMasterKeyStore.masterKeyExists(
+            account: account,
+            directory: VaultPaths.defaultDirectory()
+        )
         #endif
     }
 
@@ -75,8 +80,13 @@ enum KeychainMasterKey {
             throw LocalVaultRecoveryError.masterKeyUnavailable
         }
         return SymmetricKey(data: data)
+        #elseif os(Windows)
+        return try WindowsDPAPIKeyStore.loadMasterKey(account: account)
         #else
-        return try FileSecureStore.loadMasterKey(account: account, directory: VaultPaths.defaultDirectory())
+        return try LinuxMasterKeyStore.loadMasterKey(
+            account: account,
+            directory: VaultPaths.defaultDirectory()
+        )
         #endif
     }
 
@@ -129,8 +139,10 @@ enum KeychainMasterKey {
         ].merging(attributes) { _, new in new }
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else { throw SecretError.keychainStatus(status) }
+        #elseif os(Windows)
+        try WindowsDPAPIKeyStore.storeMasterKey(SymmetricKey(data: data), account: account)
         #else
-        try FileSecureStore.storeMasterKey(
+        try LinuxMasterKeyStore.storeMasterKey(
             SymmetricKey(data: data),
             account: account,
             directory: VaultPaths.defaultDirectory()
@@ -148,8 +160,13 @@ enum KeychainMasterKey {
             kSecAttrAccount as String: account
         ]
         SecItemDelete(del as CFDictionary)
+        #elseif os(Windows)
+        WindowsDPAPIKeyStore.deleteMasterKey(account: account)
         #else
-        FileSecureStore.deleteMasterKey(account: account, directory: VaultPaths.defaultDirectory())
+        LinuxMasterKeyStore.deleteMasterKey(
+            account: account,
+            directory: VaultPaths.defaultDirectory()
+        )
         #endif
     }
 }

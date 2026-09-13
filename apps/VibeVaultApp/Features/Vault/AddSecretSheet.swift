@@ -20,7 +20,7 @@ struct AddSecretSheet: View {
             Section {
                 TextField("NAME", text: $name, prompt: Text("CF_API_TOKEN"))
                     .font(.system(.body, design: .monospaced))
-                SecureField("Value", text: $value)
+                RevealableSecureField(title: "Value", text: $value)
                 TextField("Notes", text: $notes, prompt: Text("Optional"))
             } header: {
                 Text("Secret")

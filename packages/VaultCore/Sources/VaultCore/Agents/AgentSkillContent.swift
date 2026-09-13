@@ -61,6 +61,8 @@ public enum AgentSkillContent {
     vibevault run -- npm run dev
     vibevault push --to cloudflare|vercel|pushci --scope …
     vibevault mcp install --client cursor
+    vibevault mcp passkey set
+    vibevault mcp sandbox start --client cursor
     vibevault skill install
     vibevault cursor prepare --path .
     ```

@@ -64,7 +64,7 @@ vibevault mcp install --client all
 \`\`\`
 
 Data dir: \`\${XDG_DATA_HOME:-~/.local/share}/vibe-vault\`
-Master key: mode-0600 file (OS keyring planned). See docs/WINDOWS_AND_LINUX.md.
+Master key: OS keyring (libsecret) when a session keyring is present, otherwise a mode-0600 file. See docs/WINDOWS_AND_LINUX.md.
 EOF
 
 cp -f "$STAGE/README.md" "$STAGE/share/doc/vibevault/README.md"

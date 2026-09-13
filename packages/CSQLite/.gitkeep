@@ -1,0 +1,2 @@
+# Requires sqlite amalgamation (sqlite3.c + include/sqlite3.h) from
+# scripts/ensure-sqlite-windows.ps1 before a Windows `swift build`.

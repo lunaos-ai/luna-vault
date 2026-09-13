@@ -53,6 +53,9 @@ struct SecretRow: View {
             Button("Copy KEY=value") {
                 Task { await env.copyDotenvLine(name: secret.name) }
             }
+            Button("Duplicate") {
+                Task { await env.duplicateSecret(name: secret.name) }
+            }
             Divider()
             Button("Clear clipboard") { env.clearClipboard() }
         }

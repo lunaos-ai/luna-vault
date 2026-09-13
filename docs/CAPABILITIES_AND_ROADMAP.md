@@ -49,7 +49,7 @@ The `vibevault` CLI currently exposes these command groups:
 - `run`: run a command with selected vault secrets injected into the environment.
 - `push`: push selected secrets to Cloudflare, Vercel, or PushCI.
 - `pull`: pull remote provider secret names and import values where the provider supports values.
-- `mcp`: install and test the MCP server for AI clients.
+- `mcp`: install stdio MCP, enroll a sandbox passkey, and serve loopback HTTP MCP for AI sandboxes.
 - `browser`: install and inspect browser native messaging host manifests.
 - `sync`: encrypted cloud/file sync and backup commands.
 - `skill`: install the Vibe Vault agent skill.
@@ -264,9 +264,10 @@ Implemented assets and scripts:
 
 - Swift package builds CLI, MCP server, browser host, and macOS app.
 - Linux CLI/MCP CI job and `scripts/build-linux.sh` (Docker Swift image).
-- Linux CLI + desktop tarball packaging (`scripts/package-linux-*.sh`) with CI artifacts.
-- Linux/Windows desktop shell (`apps/VibeVaultDesktop`, SwiftCrossUI) with Gtk 4 CI (`linux-desktop` job).
-- Windows support via WSL2 today; native Swift/Windows + DPAPI planned (`docs/WINDOWS_AND_LINUX.md`).
+- Linux CLI + desktop tarball, `.deb`, and AppImage/AppDir packaging (`scripts/package-linux-*.sh`) with CI artifacts.
+- Linux/Windows desktop shell (`apps/VibeVaultDesktop`, SwiftCrossUI) with Gtk 4 CI (`linux-desktop` job) and WinUI CI (`windows-desktop` job).
+- Windows native CLI/MCP with DPAPI master-key storage (`scripts/build-windows.ps1`, `windows-cli` CI zip + MSI); WSL2 remains a fallback (`docs/WINDOWS_AND_LINUX.md`).
+- Linux master key in Secret Service (libsecret) with mode-0600 file fallback.
 - App bundle script.
 - DMG creation script.
 - Homebrew formula under `dist/homebrew`.
@@ -399,7 +400,7 @@ Work still needed:
 ### Near-Term
 
 - Publish this capability matrix as part of repo docs and keep it updated for every release.
-- Ship Linux CLI/desktop tarballs (CI artifacts); next AppImage/deb/MSI; document Windows WSL2 and native DPAPI path (`docs/WINDOWS_AND_LINUX.md`).
+- Ship Linux CLI/desktop tarballs, `.deb`, and AppImage/AppDir (CI artifacts); Windows CLI zip + MSI (`vibevault-windows-cli`) and desktop zip (`vibevault-windows-desktop`).
 - Keep the dedicated cloud sync/backup guide current as sync behavior changes.
 - Improve browser extension onboarding and supported-provider docs.
 - Keep recovery guidance current as backup behavior changes.

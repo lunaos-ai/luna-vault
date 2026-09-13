@@ -1,5 +1,7 @@
-import Security
 import XCTest
+#if canImport(Security)
+import Security
+#endif
 @testable import VaultCore
 
 final class LocalVaultRecoveryFailureTests: XCTestCase {
@@ -77,6 +79,7 @@ final class LocalVaultRecoveryFailureTests: XCTestCase {
     }
 
     func testMalformedKeychainItemIsReportedAsRecoverable() throws {
+        #if canImport(Security)
         try EncryptedVaultStore(directory: directory).add(Secret(name: "TOKEN", value: "value"))
         KeychainMasterKey.deleteForTests(account: account)
         let query: [String: Any] = [
@@ -90,6 +93,9 @@ final class LocalVaultRecoveryFailureTests: XCTestCase {
         XCTAssertThrowsError(try EncryptedVaultStore(directory: directory).list()) {
             XCTAssertEqual($0 as? LocalVaultRecoveryError, .masterKeyUnavailable)
         }
+        #else
+        throw XCTSkip("Keychain malformed-item path is Apple-only")
+        #endif
     }
 
     private func editEnvelope(

@@ -1,4 +1,8 @@
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+import Crypto
+#endif
 import XCTest
 @testable import VaultCore
 
@@ -179,8 +183,10 @@ final class EncryptedVaultStoreTests: XCTestCase {
 
         let backupURL = dir.appendingPathComponent(EncryptedVaultStore.legacyMigrationBackupFilename)
         XCTAssertEqual(try Data(contentsOf: backupURL), originalBlob)
+        #if !os(Windows)
         let permissions = try FileManager.default.attributesOfItem(atPath: backupURL.path)[.posixPermissions] as? NSNumber
         XCTAssertEqual(permissions?.intValue, 0o600)
+        #endif
     }
 
     private struct LegacyRecord: Codable {

@@ -103,6 +103,30 @@ final class VaultServiceTests: XCTestCase {
         XCTAssertEqual(secret.createdAt, createdAt)
         XCTAssertEqual(secret.updatedAt, updatedAt)
     }
+
+    func test_duplicate_copies_value_under_copy_name() async throws {
+        try service.add(
+            name: "TOKEN",
+            value: "secret-v",
+            notes: "prod",
+            mcpAllowed: true
+        )
+        let copyName = try await service.duplicate(name: "TOKEN")
+        XCTAssertEqual(copyName, "TOKEN-copy")
+        let copy = try store.read(name: "TOKEN-copy")
+        XCTAssertEqual(copy.value, "secret-v")
+        XCTAssertEqual(copy.notes, "prod")
+        XCTAssertFalse(copy.mcpAllowed)
+        XCTAssertEqual(try store.read(name: "TOKEN").value, "secret-v")
+    }
+
+    func test_duplicate_increments_when_copy_exists() async throws {
+        try service.add(name: "TOKEN", value: "v")
+        try service.add(name: "TOKEN-copy", value: "other")
+        let copyName = try await service.duplicate(name: "TOKEN")
+        XCTAssertEqual(copyName, "TOKEN-copy-2")
+        XCTAssertEqual(try store.read(name: "TOKEN-copy-2").value, "v")
+    }
 }
 
 private final class InMemoryStore: KeychainStoring, @unchecked Sendable {

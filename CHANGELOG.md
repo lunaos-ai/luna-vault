@@ -6,7 +6,12 @@ All notable changes to Vibe Vault are documented here.
 
 ### Added
 
+- Eye toggle on New Secret and Rotate sheets to show or hide the value while typing.
 - Recovery-key fingerprints on new `.vvsync` bundles, a Keychain-backed recovery-key keyring, and Cloud Sync restore errors that distinguish a mismatched key from a corrupt backup.
+- Passkey-gated loopback HTTP MCP for AI sandboxes (`vibevault mcp passkey`, `mcp serve --http`, `mcp sandbox start`). Binds 127.0.0.1 only; bearer token or `Authorization: Passkey`.
+- Linux libsecret master-key storage (Secret Service via `dlopen`, mode-0600 file fallback and migration).
+- Linux `.deb` and AppImage/AppDir packaging; Windows CLI MSI and desktop zip.
+- Desktop Sandbox and Audit tabs (Linux / Windows).
 
 ### Changed
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build vibevault CLI for Linux (Docker). Native Windows builds use WSL or Swift for Windows.
+# Build vibevault CLI for Linux (Docker). Native Windows: scripts/build-windows.ps1.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IMAGE="${SWIFT_LINUX_IMAGE:-swift:5.10-jammy}"
