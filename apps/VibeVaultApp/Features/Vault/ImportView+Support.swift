@@ -15,7 +15,7 @@ extension ImportView {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Bring secrets into the vault")
                     .font(.headline)
-                Text("Clipboard, screenshots, dotenv, shell env, or 1Password CLI.")
+                Text("Clipboard, screenshots, dotenv, JSON, shell env, or 1Password CLI.")
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.secondary)
             }

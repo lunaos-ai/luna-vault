@@ -105,6 +105,7 @@ enum MCPTools {
         }
         let lines = allowed.map { secret -> String in
             var bits = [secret.name]
+            if secret.valueKind == .json { bits.append("[json]") }
             if secret.isExpired { bits.append("[expired]") }
             if secret.isRotationDue { bits.append("[rotate-due]") }
             return bits.joined(separator: " ")

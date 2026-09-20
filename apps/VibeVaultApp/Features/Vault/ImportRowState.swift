@@ -10,6 +10,7 @@ struct ImportRowState: Identifiable {
     let sourceFile: String?
     let notes: String?
     let totpAuthURL: String?
+    let valueKind: SecretValueKind
     var enabled = true
 
     init(
@@ -18,6 +19,7 @@ struct ImportRowState: Identifiable {
         sourceFile: String? = nil,
         notes: String? = nil,
         totpAuthURL: String? = nil,
+        valueKind: SecretValueKind = .text,
         enabled: Bool = true
     ) {
         self.sourceName = sourceName
@@ -26,6 +28,7 @@ struct ImportRowState: Identifiable {
         self.sourceFile = sourceFile
         self.notes = notes
         self.totpAuthURL = totpAuthURL
+        self.valueKind = valueKind
         self.enabled = enabled
     }
 
@@ -43,7 +46,8 @@ struct ImportRowState: Identifiable {
                 value: $0.value,
                 sourceFile: sourceFile,
                 notes: $0.notes,
-                totpAuthURL: $0.totpAuthURL
+                totpAuthURL: $0.totpAuthURL,
+                valueKind: $0.valueKind
             )
         }
     }

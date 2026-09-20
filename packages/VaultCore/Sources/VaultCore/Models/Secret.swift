@@ -12,6 +12,7 @@ public struct Secret: Codable, Equatable, Hashable, Sendable {
     public let mcpAllowed: Bool
     public let hasTOTP: Bool
     public let totpAuthURL: String?
+    public let valueKind: SecretValueKind
 
     public init(
         name: String,
@@ -24,7 +25,8 @@ public struct Secret: Codable, Equatable, Hashable, Sendable {
         lastRotatedAt: Date? = nil,
         mcpAllowed: Bool = false,
         hasTOTP: Bool? = nil,
-        totpAuthURL: String? = nil
+        totpAuthURL: String? = nil,
+        valueKind: SecretValueKind = .text
     ) {
         self.name = name
         self.value = value
@@ -37,13 +39,36 @@ public struct Secret: Codable, Equatable, Hashable, Sendable {
         self.mcpAllowed = mcpAllowed
         self.hasTOTP = hasTOTP ?? (totpAuthURL != nil)
         self.totpAuthURL = totpAuthURL
+        self.valueKind = valueKind
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        value = try c.decode(String.self, forKey: .value)
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? updatedAt
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        expiresAt = try c.decodeIfPresent(Date.self, forKey: .expiresAt)
+        rotateEveryDays = try c.decodeIfPresent(Int.self, forKey: .rotateEveryDays)
+        lastRotatedAt = try c.decodeIfPresent(Date.self, forKey: .lastRotatedAt)
+        mcpAllowed = try c.decodeIfPresent(Bool.self, forKey: .mcpAllowed) ?? false
+        totpAuthURL = try c.decodeIfPresent(String.self, forKey: .totpAuthURL)
+        hasTOTP = try c.decodeIfPresent(Bool.self, forKey: .hasTOTP) ?? (totpAuthURL != nil)
+        valueKind = try c.decodeIfPresent(SecretValueKind.self, forKey: .valueKind) ?? .text
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name, value, createdAt, updatedAt, notes, expiresAt
+        case rotateEveryDays, lastRotatedAt, mcpAllowed, hasTOTP, totpAuthURL, valueKind
     }
 
     public var maskedValue: String {
+        if valueKind == .json {
+            return value.isEmpty ? "{…}" : SecretJSON.maskedSummary(value)
+        }
         guard value.count > 8 else { return String(repeating: "•", count: max(value.count, 4)) }
-        let prefix = value.prefix(3)
-        let suffix = value.suffix(4)
-        return "\(prefix)…\(suffix)"
+        return "\(value.prefix(3))…\(value.suffix(4))"
     }
 
     public var isExpired: Bool {
@@ -70,6 +95,8 @@ public enum SecretError: Error, Equatable {
     case biometricDenied
     case invalidName(String)
     case vaultIO(String)
+    case invalidJSON(String)
+    case mcpDenied(name: String)
 }
 
 extension SecretError: CustomStringConvertible {
@@ -81,6 +108,9 @@ extension SecretError: CustomStringConvertible {
         case .biometricDenied: return "biometric authentication denied"
         case .invalidName(let n): return "invalid secret name: \(n)"
         case .vaultIO(let m): return "vault error: \(m)"
+        case .invalidJSON(let m): return "invalid JSON: \(m)"
+        case .mcpDenied(let n):
+            return "secret '\(n)' is not allowed for AI agents. Enable AI access in the Vibe Vault app."
         }
     }
 }
@@ -94,6 +124,7 @@ struct SecretMetadata: Codable {
     var lastRotatedAt: Date?
     var mcpAllowed: Bool?
     var totpAuthURL: String?
+    var valueKind: SecretValueKind?
 
     static let empty = SecretMetadata()
 
@@ -105,7 +136,7 @@ struct SecretMetadata: Codable {
 
     func encode() -> String? {
         if notes == nil, createdAt == nil, expiresAt == nil, rotateEveryDays == nil,
-           lastRotatedAt == nil, mcpAllowed == nil, totpAuthURL == nil { return nil }
+           lastRotatedAt == nil, mcpAllowed == nil, totpAuthURL == nil, valueKind == nil { return nil }
         guard let data = try? JSONEncoder.luna.encode(self),
               let s = String(data: data, encoding: .utf8) else { return nil }
         return s

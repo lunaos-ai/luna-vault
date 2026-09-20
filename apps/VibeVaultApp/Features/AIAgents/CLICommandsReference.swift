@@ -15,7 +15,8 @@ struct CLICommandsReference: View {
         ("vibevault mcp test", "Smoke-test the MCP server"),
         ("vibevault license status", "Show Team license state"),
         ("vibevault guard install", "Block accidental .env commits"),
-        ("vibevault run -- <cmd>", "Run a command with vault secrets injected"),
+        ("vibevault duplicate <NAME>", "Copy a secret to NAME-copy"),
+        ("vibevault run -- <cmd>", "Inject secrets; AI agents only get Allow-AI secrets"),
     ]
 
     var body: some View {

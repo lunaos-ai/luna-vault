@@ -14,7 +14,7 @@ if [[ -n "${VIBEVAULT_VERSION:-}" ]]; then
   VERSION="$VIBEVAULT_VERSION"
 else
   VERSION="$(GIT_TERMINAL_PROMPT=0 git -c safe.directory=* describe --tags --always 2>/dev/null || true)"
-  VERSION="${VERSION:-0.1.0}"
+  VERSION="${VERSION:-0.2.0}"
 fi
 STAGE="$ROOT/build/vibevault-linux-${ARCH}"
 OUT="$ROOT/build/vibevault-linux-${ARCH}.tar.gz"

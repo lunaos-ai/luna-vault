@@ -4,9 +4,15 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+## [0.2.0] — 2026-09-20
+
 ### Added
 
+- `vibevault duplicate NAME` to copy a secret (AI access starts off on the copy).
 - Eye toggle on New Secret and Rotate sheets to show or hide the value while typing.
+- JSON secret values: store a pretty-printed object or array, reveal it as formatted JSON, import `.json` maps or documents, and add via `vibevault add --format json --file`.
+- macOS UI for JSON secrets: multiline editor (add, edit, rotate), formatted detail reveal, Text/JSON format switch, and import-review format labels.
+- New Secret prefills name and value when the clipboard holds a single `KEY=value` line (or one JSON document). Pasting that line into the name field splits it the same way.
 - Recovery-key fingerprints on new `.vvsync` bundles, a Keychain-backed recovery-key keyring, and Cloud Sync restore errors that distinguish a mismatched key from a corrupt backup.
 - Passkey-gated loopback HTTP MCP for AI sandboxes (`vibevault mcp passkey`, `mcp serve --http`, `mcp sandbox start`). Binds 127.0.0.1 only; bearer token or `Authorization: Passkey`.
 - Linux libsecret master-key storage (Secret Service via `dlopen`, mode-0600 file fallback and migration).
@@ -15,6 +21,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Changed
 
+- CLI reads used by AI agents (`vibevault run`, and any `VaultService.read` from Cursor Agent, Claude Code, and similar) now honor Allow AI agents. Human terminals still inject every secret. Copies made with Duplicate start with AI access off.
 - Cloud Sync recovery-key restore no longer reports a mismatched or rotated key as bundle corruption. Rotating the active key keeps previous keys for older backups.
 
 ### Fixed
@@ -100,6 +107,7 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.2.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.0
 [0.1.4]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.4
 [0.1.3]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.3
 [0.1.2]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.2

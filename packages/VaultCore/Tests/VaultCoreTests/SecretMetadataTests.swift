@@ -54,4 +54,12 @@ final class SecretMetadataTests: XCTestCase {
         let meta = SecretMetadata.empty
         XCTAssertNil(meta.encode())
     }
+
+    func test_valueKind_json_roundtrips_in_metadata() {
+        var meta = SecretMetadata.empty
+        meta.valueKind = .json
+        let encoded = meta.encode()
+        XCTAssertNotNil(encoded)
+        XCTAssertEqual(SecretMetadata.decode(encoded).valueKind, .json)
+    }
 }

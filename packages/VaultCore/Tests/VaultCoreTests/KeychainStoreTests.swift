@@ -61,4 +61,15 @@ final class KeychainStoreTests: XCTestCase {
         let s = Secret(name: "X", value: "supersecrettoken12345")
         XCTAssertEqual(s.maskedValue, "sup…2345")
     }
+
+    func test_json_kind_roundtrip() throws {
+        let payload = try SecretJSON.prettyPrinted(#"{"type":"service_account"}"#)
+        let secret = Secret(name: "SA_JSON", value: payload, notes: "gcp", valueKind: .json)
+        try store.add(secret)
+        let read = try store.read(name: "SA_JSON")
+        XCTAssertEqual(read.valueKind, .json)
+        XCTAssertEqual(read.value, payload)
+        XCTAssertEqual(read.notes, "gcp")
+        try store.delete(name: "SA_JSON")
+    }
 }

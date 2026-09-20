@@ -28,6 +28,19 @@ final class EncryptedVaultStoreTests: XCTestCase {
         try store.add(Secret(name: "API_KEY", value: "secret-value"))
         let read = try store.read(name: "API_KEY")
         XCTAssertEqual(read.value, "secret-value")
+        XCTAssertEqual(read.valueKind, .text)
+    }
+
+    func test_json_secret_roundTrip_and_list_preserves_kind() throws {
+        let payload = try SecretJSON.prettyPrinted(#"{"type":"service_account","client_email":"a@b.c"}"#)
+        try store.add(Secret(name: "GOOGLE_SA", value: payload, valueKind: .json))
+        let read = try store.read(name: "GOOGLE_SA")
+        XCTAssertEqual(read.valueKind, .json)
+        XCTAssertEqual(read.value, payload)
+        let listed = try store.list()
+        XCTAssertEqual(listed.first?.valueKind, .json)
+        XCTAssertEqual(listed.first?.value, "")
+        XCTAssertEqual(listed.first?.maskedValue, "{…}")
     }
 
     func test_list_masks_values() throws {

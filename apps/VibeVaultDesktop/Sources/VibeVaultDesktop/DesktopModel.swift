@@ -17,6 +17,7 @@ struct DesktopModel {
     var selectedName: String?
     var revealedValue: String?
     var selectedNotes: String?
+    var selectedIsJSON = false
     var selectedMCPAllowed = false
     var search = ""
     var statusMessage = ""
@@ -28,6 +29,7 @@ struct DesktopModel {
     var draftName = ""
     var draftValue = ""
     var draftNotes = ""
+    var draftIsJSON = false
     var showAddForm = false
     var syncPath = ""
     var syncPassphrase = ""
