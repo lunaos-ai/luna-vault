@@ -14,19 +14,18 @@ struct AddSecretSheet: View {
     @State private var mcpAllowed = false
     @State private var hasMFA = false
     @State private var totpSetup = ""
+    @State private var valueKind: SecretValueKind = .text
+    @State private var filledFromClipboard = false
 
     var body: some View {
         Form {
-            Section {
-                TextField("NAME", text: $name, prompt: Text("CF_API_TOKEN"))
-                    .font(.system(.body, design: .monospaced))
-                RevealableSecureField(title: "Value", text: $value)
-                TextField("Notes", text: $notes, prompt: Text("Optional"))
-            } header: {
-                Text("Secret")
-            }
-
-            SecretValueGeneratorSection(value: $value)
+            AddSecretValueFields(
+                name: $name,
+                value: $value,
+                notes: $notes,
+                valueKind: $valueKind,
+                clipboardNote: filledFromClipboard ? "Filled from clipboard." : nil
+            )
 
             Section {
                 Toggle("Set expiry", isOn: $hasExpiry)
@@ -76,7 +75,8 @@ struct AddSecretSheet: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 480, minHeight: 480)
+        .navigationTitle("New secret")
+        .frame(minWidth: 560, minHeight: valueKind == .json ? 680 : 480)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
@@ -90,14 +90,19 @@ struct AddSecretSheet: View {
                         expiresAt: hasExpiry ? expiresAt : nil,
                         rotateEveryDays: rotateEnabled ? rotateDays : nil,
                         mcpAllowed: mcpAllowed,
-                        totpAuthURL: hasMFA ? normalizedTOTP : nil
+                        totpAuthURL: hasMFA ? normalizedTOTP : nil,
+                        valueKind: valueKind
                     )
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(name.isEmpty || value.isEmpty || !mfaInputValid)
+                .disabled(name.isEmpty || value.isEmpty || !mfaInputValid || !jsonInputValid)
             }
         }
+        .onChange(of: name) { _, newName in
+            splitPastedName(newName)
+        }
+        .task { prefillFromClipboard() }
     }
 
     private var normalizedTOTP: String? {
@@ -107,5 +112,27 @@ struct AddSecretSheet: View {
     private var mfaInputValid: Bool {
         guard hasMFA else { return true }
         return normalizedTOTP != nil
+    }
+
+    private var jsonInputValid: Bool {
+        guard valueKind == .json else { return true }
+        return (try? SecretJSON.prettyPrinted(value)) != nil
+    }
+
+    private func prefillFromClipboard() {
+        guard name.isEmpty, value.isEmpty, let draft = ClipboardSecretDraft.fromPasteboard() else { return }
+        apply(draft)
+    }
+
+    private func splitPastedName(_ pasted: String) {
+        guard let draft = ClipboardSecretDraft.fromPastedName(pasted, valueIsEmpty: value.isEmpty) else { return }
+        apply(draft)
+    }
+
+    private func apply(_ draft: ClipboardSecretDraft) {
+        name = draft.name
+        value = draft.value
+        valueKind = draft.valueKind
+        filledFromClipboard = true
     }
 }

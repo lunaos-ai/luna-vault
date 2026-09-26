@@ -5,10 +5,16 @@ struct SecretDetailActions: View {
     @EnvironmentObject var env: AppEnvironment
     let secret: Secret
     @Binding var showRotateSheet: Bool
+    @Binding var showEditValue: Bool
     @Binding var deleteConfirm: Bool
 
     var body: some View {
         HStack(spacing: Tokens.Space.sm) {
+            Button { showEditValue = true } label: {
+                Image(systemName: "pencil")
+            }
+            .help(secret.valueKind == .json ? "Edit JSON" : "Edit value")
+            .accessibilityLabel(secret.valueKind == .json ? "Edit JSON" : "Edit value")
             Button { showRotateSheet = true } label: {
                 Image(systemName: "arrow.triangle.2.circlepath")
             }

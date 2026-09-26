@@ -26,6 +26,7 @@ Local-first secret manager on macOS Keychain. Every read is audited per agent.
 3. **No `.env` in git.** Suggest import via Vibe Vault; use `vibevault guard install`.
 4. **Push.** MCP `push_secrets` or Providers UI (Cloudflare, Vercel, PushCI).
 5. **Audit.** Use `get_audit_log` when asked which agent read a key.
+6. **CLI.** `vibevault run` from an agent only injects Allow-AI secrets. Ask the user to enable AI access in the app if a needed secret is blocked.
 
 ## MCP tools
 

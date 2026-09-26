@@ -18,7 +18,7 @@ if [[ -n "${VIBEVAULT_VERSION:-}" ]]; then
   RAW_VERSION="$VIBEVAULT_VERSION"
 else
   RAW_VERSION="$(GIT_TERMINAL_PROMPT=0 git -c safe.directory=* describe --tags --always 2>/dev/null || true)"
-  RAW_VERSION="${RAW_VERSION:-0.1.0}"
+  RAW_VERSION="${RAW_VERSION:-0.2.0}"
 fi
 VERSION="${RAW_VERSION#v}"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+.~-].*)?$ ]]; then
@@ -55,8 +55,10 @@ EOF
   mkdir -p "$data/usr/share/doc/vibevault-desktop"
   printf '%s\n' "Vibe Vault Desktop ${VERSION}" > "$data/usr/share/doc/vibevault-desktop/README"
 else
-  CLI="${CLI_BIN:-$ROOT/.build/release/vibevault}"
-  MCP="${MCP_BIN:-$ROOT/.build/release/vibevault-mcp}"
+  # shellcheck source=linux-bins.sh
+  source "$ROOT/scripts/linux-bins.sh"
+  CLI="$CLI_BIN"
+  MCP="$MCP_BIN"
   if [[ ! -x "$CLI" || ! -x "$MCP" ]]; then
     echo "missing CLI binaries. build first: bash scripts/build-linux.sh" >&2
     exit 1

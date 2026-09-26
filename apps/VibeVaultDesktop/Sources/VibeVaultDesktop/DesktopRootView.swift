@@ -98,6 +98,7 @@ struct DesktopRootView: View {
                let secret = try DesktopVault.service().list().first(where: { $0.name == selected }) {
                 model.selectedNotes = secret.notes
                 model.selectedMCPAllowed = secret.mcpAllowed
+                model.selectedIsJSON = secret.valueKind == .json
             } else if let selected = model.selectedName,
                !model.secretNames.contains(selected) {
                 model.selectedName = nil

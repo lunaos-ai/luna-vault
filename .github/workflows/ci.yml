@@ -70,8 +70,12 @@ jobs:
 
       - name: Smoke CLI help
         run: |
-          .build/release/vibevault --help
-          .build/release/vibevault-mcp --help || true
+          BIN="$(swift build -c release --show-bin-path)"
+          test -x "$BIN/vibevault"
+          "$BIN/vibevault" --help
+          "$BIN/vibevault-mcp" --help || true
+          echo "CLI_BIN=$BIN/vibevault" >> "$GITHUB_ENV"
+          echo "MCP_BIN=$BIN/vibevault-mcp" >> "$GITHUB_ENV"
 
       - name: Package Linux CLI tarball
         run: |
@@ -145,9 +149,10 @@ jobs:
           winsdk: "10.0.22621.0"
 
       - name: Setup Swift
-        uses: SwiftyLab/setup-swift@v1.12.0
+        uses: SwiftyLab/setup-swift@v1.13.0
         with:
-          swift-version: "6.0.3"
+          swift-version: "6.2"
+          update-sdk-modules: true
 
       - name: Swift version
         run: swift --version
@@ -193,9 +198,10 @@ jobs:
           winsdk: "10.0.22621.0"
 
       - name: Setup Swift
-        uses: SwiftyLab/setup-swift@v1.12.0
+        uses: SwiftyLab/setup-swift@v1.13.0
         with:
-          swift-version: "6.0.3"
+          swift-version: "6.2"
+          update-sdk-modules: true
 
       - name: Swift version
         run: swift --version

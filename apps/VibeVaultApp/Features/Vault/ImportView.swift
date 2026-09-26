@@ -123,7 +123,13 @@ struct ImportView: View {
                             Spacer()
                             Button("Choose…") { pickDotenv() }
                         }
-                        Text("Comments and export prefixes handled.")
+                        HStack(spacing: Tokens.Space.md) {
+                            Text("JSON file")
+                                .font(.subheadline.weight(.medium))
+                            Spacer()
+                            Button("Choose…") { pickJSON() }
+                        }
+                        Text("Dotenv KEY=VALUE files, JSON maps of strings, or a nested JSON document.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

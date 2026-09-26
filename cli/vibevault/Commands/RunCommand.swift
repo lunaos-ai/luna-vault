@@ -25,11 +25,26 @@ struct RunCommand: AsyncParsableCommand {
             throw ExitCode(64)
         }
         let service = try VaultService.live()
-        let names = try service.list().map(\.name)
+        let listed = try service.list()
+        let names = listed.map(\.name)
         let onlySet = Set(only)
         let excludeSet = Set(exclude)
-        let selected = names.filter { name in
+        var selected = names.filter { name in
             (onlySet.isEmpty || onlySet.contains(name)) && !excludeSet.contains(name)
+        }
+        let agent = AgentDetector().detect()
+        let blocked = MCPAllowlist.blockedNames(selected, secrets: listed, agent: agent)
+        if !blocked.isEmpty {
+            if !only.isEmpty {
+                FileHandle.standardError.write(Data(
+                    "error: not AI-allowed: \(blocked.sorted().joined(separator: ", ")). Enable AI access in the Vibe Vault app.\n".utf8
+                ))
+                throw ExitCode(2)
+            }
+            FileHandle.standardError.write(Data(
+                "skipping secrets not allowed for AI agents: \(blocked.sorted().joined(separator: ", "))\n".utf8
+            ))
+            selected = selected.filter { !Set(blocked).contains($0) }
         }
         var env = ProcessInfo.processInfo.environment
         for name in selected {

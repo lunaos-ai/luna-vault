@@ -143,7 +143,8 @@ public final class EncryptedVaultStore: VersionedSecretStoring, @unchecked Senda
                 rotateEveryDays: source.rotateEveryDays,
                 lastRotatedAt: source.lastRotatedAt,
                 mcpAllowed: source.mcpAllowed,
-                totpAuthURL: source.totpAuthURL
+                totpAuthURL: source.totpAuthURL,
+                valueKind: source.valueKind
             )
             document.records[restored.name] = Record(restored)
             appendRevision(restored, action: .restored, to: &document)

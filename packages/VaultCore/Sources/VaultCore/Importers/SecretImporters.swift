@@ -85,7 +85,9 @@ public enum ClipboardImporter {
     public static func read() -> [VaultService.ImportItem] {
         #if canImport(AppKit)
         guard let content = NSPasteboard.general.string(forType: .string), !content.isEmpty else { return [] }
-        return DotenvImporter.parse(content)
+        let dotenv = DotenvImporter.parse(content)
+        if !dotenv.isEmpty { return dotenv }
+        return (try? JSONSecretsImporter.parse(content, defaultName: "CLIPBOARD_JSON")) ?? []
         #else
         return []
         #endif

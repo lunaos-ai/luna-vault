@@ -38,6 +38,7 @@ final class AppEnvironment: ObservableObject {
     @Published var openAddSecret = false
     @Published var focusVaultSearch = false
     @Published var copySelectedSecret = false
+    @Published var duplicateSelectedSecret = false
     @Published var pendingAuthenticatorInput: String?
     @Published var toastMessage: String?
     @Published var uiSoundsEnabled: Bool = true {

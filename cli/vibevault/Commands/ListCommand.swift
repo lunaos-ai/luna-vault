@@ -11,7 +11,17 @@ struct ListCommand: AsyncParsableCommand {
         let service = try VaultService.live()
         let secrets = try service.list().sorted { $0.name < $1.name }
         if json {
-            let payload = secrets.map { ["name": $0.name, "updated": ISO8601DateFormatter().string(from: $0.updatedAt)] }
+            let payload = secrets.map { secret -> [String: String] in
+                var row = [
+                    "name": secret.name,
+                    "updated": ISO8601DateFormatter().string(from: secret.updatedAt),
+                    "format": secret.valueKind.rawValue,
+                    "ai": secret.mcpAllowed ? "allowed" : "blocked"
+                ]
+                if secret.isExpired { row["status"] = "expired" }
+                else if secret.isRotationDue { row["status"] = "rotate due" }
+                return row
+            }
             let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted])
             print(String(data: data, encoding: .utf8) ?? "[]")
         } else if secrets.isEmpty {
@@ -41,6 +51,8 @@ struct ListCommand: AsyncParsableCommand {
             parts.append("expires in \(days)d")
         }
         if s.isRotationDue { parts.append("rotate due") }
+        if s.valueKind == .json { parts.append("json") }
+        if s.mcpAllowed { parts.append("ai") }
         return parts.isEmpty ? "ok" : parts.joined(separator: ", ")
     }
 }

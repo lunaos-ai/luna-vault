@@ -31,5 +31,33 @@ extension AgentDetector {
         } while Process32Next(snap, &entry)
         return nil
     }
+
+    static func lookupWindowsAncestorProcesses(limit: Int = 8) -> [String] {
+        let snap = CreateToolhelp32Snapshot(DWORD(TH32CS_SNAPPROCESS), 0)
+        guard snap != INVALID_HANDLE_VALUE else { return [] }
+        defer { CloseHandle(snap) }
+        var byID: [DWORD: (parent: DWORD, name: String)] = [:]
+        var entry = PROCESSENTRY32()
+        entry.dwSize = DWORD(MemoryLayout<PROCESSENTRY32>.stride)
+        guard Process32First(snap, &entry) else { return [] }
+        repeat {
+            let name = withUnsafePointer(to: &entry.szExeFile) { ptr in
+                ptr.withMemoryRebound(to: WCHAR.self, capacity: Int(MAX_PATH)) { wstr in
+                    String(decodingCString: wstr, as: UTF16.self)
+                }
+            }
+            byID[entry.th32ProcessID] = (entry.th32ParentProcessID, name)
+        } while Process32Next(snap, &entry)
+        var pid = GetCurrentProcessId()
+        var paths: [String] = []
+        var seen = Set<DWORD>()
+        for _ in 0..<limit {
+            guard let info = byID[pid], seen.insert(pid).inserted else { break }
+            paths.append(info.name)
+            pid = info.parent
+            if pid == 0 { break }
+        }
+        return Array(paths.dropFirst())
+    }
 }
 #endif

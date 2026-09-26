@@ -88,6 +88,12 @@ struct MenuBarScene: View {
             ForEach(filtered) { secret in
                 Button { Task { await copy(secret.name) } } label: {
                     HStack {
+                        if secret.valueKind == .json {
+                            Image(systemName: "curlybraces")
+                                .font(.caption)
+                                .foregroundStyle(Tokens.Text.tertiary)
+                                .accessibilityLabel("JSON secret")
+                        }
                         Text(secret.name)
                             .font(.system(.callout, design: .monospaced))
                             .lineLimit(1)
@@ -106,6 +112,12 @@ struct MenuBarScene: View {
                 .buttonStyle(.borderless)
                 .help("Copy \(secret.name) (Touch ID)")
                 .accessibilityLabel("Copy \(secret.name)")
+                .contextMenu {
+                    Button("Copy value") { Task { await copy(secret.name) } }
+                    Button("Duplicate") {
+                        Task { _ = await env.duplicateSecret(name: secret.name) }
+                    }
+                }
             }
             if query.isEmpty, env.secrets.count > 8 {
                 Text("+ \(env.secrets.count - 8) more. Type to search")

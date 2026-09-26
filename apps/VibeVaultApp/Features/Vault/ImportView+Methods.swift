@@ -18,6 +18,19 @@ extension ImportView {
         }
     }
 
+    func pickJSON() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.json]
+        panel.treatsFilePackagesAsDirectories = true
+        panel.begin { resp in
+            if resp == .OK, let url = panel.url {
+                openJSONReview(url)
+            }
+        }
+    }
+
     func pickPasswordExport(profile: PasswordManagerImportProfile) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
@@ -47,6 +60,23 @@ extension ImportView {
     func openDotenvReview(_ url: URL) {
         do {
             let items = try DotenvImporter.parseFile(at: url)
+            guard !items.isEmpty else {
+                env.importStatus = "No secrets found in \(url.lastPathComponent)"
+                return
+            }
+            reviewSheet = ImportReviewPayload(
+                subtitle: url.path,
+                rows: ImportRowState.from(items, sourceFile: url.lastPathComponent),
+                notes: "imported from \(url.lastPathComponent)"
+            )
+        } catch {
+            env.importStatus = "error: \(error)"
+        }
+    }
+
+    func openJSONReview(_ url: URL) {
+        do {
+            let items = try JSONSecretsImporter.parseFile(at: url)
             guard !items.isEmpty else {
                 env.importStatus = "No secrets found in \(url.lastPathComponent)"
                 return
