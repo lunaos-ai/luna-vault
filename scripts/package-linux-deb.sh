@@ -18,7 +18,7 @@ if [[ -n "${VIBEVAULT_VERSION:-}" ]]; then
   RAW_VERSION="$VIBEVAULT_VERSION"
 else
   RAW_VERSION="$(GIT_TERMINAL_PROMPT=0 git -c safe.directory=* describe --tags --always 2>/dev/null || true)"
-  RAW_VERSION="${RAW_VERSION:-0.2.0}"
+  RAW_VERSION="${RAW_VERSION:-0.2.1}"
 fi
 VERSION="${RAW_VERSION#v}"
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+.~-].*)?$ ]]; then

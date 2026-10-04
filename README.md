@@ -6,7 +6,7 @@ Secure credential access for AI coding agents. Native macOS SwiftUI app; CLI, MC
 [![Linux](https://img.shields.io/badge/Linux-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
 [![Windows](https://img.shields.io/badge/Windows-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.0-indigo)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.1-indigo)](CHANGELOG.md)
 
 ```bash
 # instead of this:
@@ -233,7 +233,7 @@ NOTARIZE=1 NOTARIZE_DMG=1 bash scripts/release.sh   # needs Apple creds
 bash scripts/publish-to-website.sh
 bash scripts/gtm-check.sh
 bash scripts/publish-all.sh --dry-run
-bash scripts/publish-all.sh --yes --tag v0.2.0
+bash scripts/publish-all.sh --yes --tag v0.2.1
 ```
 
 ### Encrypted cloud sync
@@ -280,4 +280,4 @@ MIT for CLI + VaultCore + MCP (`LICENSE`). App binary branding may remain LunaOS
 
 ## Status
 
-**v0.2.0** — see `CHANGELOG.md`.
+**v0.2.1** — see `CHANGELOG.md`.

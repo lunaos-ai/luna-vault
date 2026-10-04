@@ -4,6 +4,8 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+## [0.2.1] — 2026-10-04
+
 ### Added
 
 - Remembered project folders: Projects list in the macOS app, `vibevault projects`, and a desktop Projects tab. Scans persist missing/leak counts, restore the last project, and flag moved folders so they can be relocated.
@@ -116,6 +118,7 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.2.1]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.1
 [0.2.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.0
 [0.1.4]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.4
 [0.1.3]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.3
