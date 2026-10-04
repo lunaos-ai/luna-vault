@@ -91,6 +91,7 @@ final class CloudSyncTests: XCTestCase {
         }
     }
 
+    #if canImport(CommonCrypto)
     func test_decrypt_remains_compatible_with_v1_bundle() throws {
         let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
         let snapshot = CloudSyncSnapshot(
@@ -109,6 +110,7 @@ final class CloudSyncTests: XCTestCase {
             snapshot
         )
     }
+    #endif
 
     func test_encrypt_rejects_weak_passphrase() {
         let snapshot = CloudSyncSnapshot(secrets: [])
@@ -177,6 +179,7 @@ final class CloudSyncTests: XCTestCase {
 
 }
 
+#if canImport(CommonCrypto)
 private func makeLegacyV1Bundle(snapshot: CloudSyncSnapshot, passphrase: String) throws -> Data {
     let salt = Data(repeating: 7, count: 32)
     var stretched = Data(count: 32)
@@ -218,3 +221,4 @@ private func makeLegacyV1Bundle(snapshot: CloudSyncSnapshot, passphrase: String)
     )
     return try JSONEncoder.iso8601.encode(envelope)
 }
+#endif
