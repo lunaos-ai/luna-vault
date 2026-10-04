@@ -8,12 +8,12 @@ enum LoopbackSockets {
     static let invalid: LoopbackFD = INVALID_SOCKET
     private static let wsa: Void = {
         var data = WSADATA()
-        _ = WSAStartup(MAKEWORD(2, 2), &data)
+        _ = WSAStartup(makeWord(2, 2), &data)
     }()
 
     static func startListen(port: UInt16) throws -> LoopbackFD {
         _ = wsa
-        let fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+        let fd = socket(AF_INET, SOCK_STREAM, Int32(IPPROTO_TCP.rawValue))
         guard fd != INVALID_SOCKET else { throw MCPSandboxError.listenFailed("socket") }
         var reuse: Int32 = 1
         _ = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, Int32(MemoryLayout<Int32>.size))
@@ -68,6 +68,11 @@ enum LoopbackSockets {
 
     static func closeFD(_ fd: LoopbackFD) {
         _ = closesocket(fd)
+    }
+
+    /// Winsock's MAKEWORD macro is not imported into Swift.
+    private static func makeWord(_ low: UInt8, _ high: UInt8) -> WORD {
+        WORD(low) | (WORD(high) << 8)
     }
 }
 #endif

@@ -4,6 +4,10 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+### Fixed
+
+- Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`, and the desktop package no longer pins ArgumentParser beside SwiftCrossUI.
+
 ## [0.2.2] — 2026-10-04
 
 ### Fixed
