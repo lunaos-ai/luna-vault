@@ -172,9 +172,12 @@ jobs:
       - name: Build Windows CLI + MCP
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           # SwiftPM applies a single --product. Build each executable on its own.
           swift build -c release --product vibevault
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           swift build -c release --product vibevault-mcp
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Smoke CLI help
         shell: pwsh

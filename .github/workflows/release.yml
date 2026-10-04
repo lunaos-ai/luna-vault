@@ -61,8 +61,11 @@ jobs:
       - name: Build Windows CLI + MCP
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           swift build -c release --product vibevault
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           swift build -c release --product vibevault-mcp
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package Windows CLI zip and MSI
         run: |
