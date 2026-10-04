@@ -8,6 +8,7 @@ struct CLICommandsReference: View {
         ("vibevault session unlock --minutes 30", "Unlock app and CLI reads for 30 minutes"),
         ("vibevault session lock", "Immediately revoke the shared session"),
         ("vibevault scan", "Detect required env vars in a project"),
+        ("vibevault projects list", "Remembered project folders and scan health"),
         ("vibevault agents prepare", "Install Codex, Claude, Gemini, Cursor policy"),
         ("vibevault cursor prepare", "Rules, skill, MCP, and .env guard"),
         ("vibevault mcp install --client cursor", "Wire vibe-vault into Cursor"),

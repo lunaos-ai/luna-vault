@@ -213,6 +213,8 @@ extension AppEnvironment {
     func saveProjectPrefix(_ prefix: String, for url: URL) {
         settings.projectPrefixes[url.standardizedFileURL.path] = prefix
         persistSettings()
+        _ = try? ProjectRegistry().upsert(url: url, prefix: prefix)
+        reloadProjects()
     }
 
     func focusVault(secretName: String) {

@@ -4,6 +4,7 @@ import VaultCore
 struct DesktopModel {
     enum Tab: String, CaseIterable, Identifiable {
         case vault = "Vault"
+        case projects = "Projects"
         case unlock = "Unlock"
         case sync = "Sync"
         case sandbox = "Sandbox"
@@ -39,6 +40,8 @@ struct DesktopModel {
     var sandboxMinutes = "30"
     var sandboxStatus = "Stopped"
     var auditLines: [String] = []
+    var projectPath = ""
+    var projectLines: [String] = []
 
     var visibleSecretNames: [String] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)

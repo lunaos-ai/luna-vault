@@ -4,6 +4,15 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+### Added
+
+- Remembered project folders: Projects list in the macOS app, `vibevault projects`, and a desktop Projects tab. Scans persist missing/leak counts, restore the last project, and flag moved folders so they can be relocated.
+- Release workflow builds Windows CLI zip/MSI and desktop zip and attaches them to the GitHub release.
+
+### Changed
+
+- Project scan treats a missing folder as an error instead of an empty result. Prefixed vault names (`PROJECT_KEY`) match required `KEY` using the project's saved prefix. `vibevault scan` and MCP `scan_project` remember the folder.
+
 ## [0.2.0] — 2026-09-20
 
 ### Added

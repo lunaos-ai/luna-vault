@@ -82,6 +82,7 @@ vibevault agents prepare --target all
 vibevault add CF_API_TOKEN
 cd ~/my-cloudflare-worker
 vibevault scan
+vibevault projects list
 vibevault run -- npm run dev
 vibevault push --to cloudflare --scope account_id=… --scope script_name=…
 ```

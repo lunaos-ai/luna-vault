@@ -123,10 +123,12 @@ The scanner detects required secret names from common local project files:
 It reports:
 
 - Required secret names.
-- Missing names compared with the local vault.
+- Missing names compared with the local vault, including prefixed vault names such as `PROJECT_KEY` for required `KEY`.
 - Extra names in the vault that are not referenced by the project.
 - Source files for detected names.
 - Git-tracked secret-file leaks.
+
+Remembered project folders persist under the vault data directory (`projects.json`). The macOS Projects list, `vibevault projects`, and the Linux/Windows desktop Projects tab restore the last scan, flag moved folders, and relocate them without losing prefix or counts. A missing folder is an error, not an empty scan.
 
 ### Git Guard
 
