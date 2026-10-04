@@ -70,6 +70,7 @@ let vaultLinker: [LinkerSetting] = [
 ]
 let appleAppProducts: [Product] = [
     .executable(name: "VibeVaultApp", targets: ["VibeVaultApp"]),
+    .executable(name: "vibevault-browser-host", targets: ["vibevault-browser-host"]),
 ]
 let appleAppTargets: [Target] = [
     .testTarget(
@@ -82,6 +83,11 @@ let appleAppTargets: [Target] = [
         dependencies: ["VaultCore"],
         path: "apps/VibeVaultApp",
         exclude: ["Info.plist", "VibeVault.entitlements", "Resources"]
+    ),
+    .executableTarget(
+        name: "vibevault-browser-host",
+        dependencies: ["VaultCore"],
+        path: "cli/vibevault-browser-host"
     ),
 ]
 #endif
@@ -106,7 +112,6 @@ let package = Package(
     products: [
         .library(name: "VaultCore", targets: ["VaultCore"]),
         .executable(name: "vibevault", targets: ["vibevault"]),
-        .executable(name: "vibevault-browser-host", targets: ["vibevault-browser-host"]),
         .executable(name: "vibevault-mcp", targets: ["vibevault-mcp"]),
     ] + appleAppProducts,
     dependencies: [argumentParserPackage] + cryptoPackage,
@@ -130,11 +135,6 @@ let package = Package(
             ],
             path: "cli/vibevault",
             exclude: ["vibevault.entitlements"]
-        ),
-        .executableTarget(
-            name: "vibevault-browser-host",
-            dependencies: ["VaultCore"],
-            path: "cli/vibevault-browser-host"
         ),
         .executableTarget(
             name: "vibevault-mcp",

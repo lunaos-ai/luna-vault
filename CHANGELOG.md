@@ -6,7 +6,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Fixed
 
-- Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI and MCP are built as separate SwiftPM products. Recovery prompts use the Windows C runtime instead of Glibc. Secret scanning allowlists RFC 6238 TOTP fixtures.
+- Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI and MCP are built as separate SwiftPM products. Recovery prompts use the Windows C runtime instead of Glibc. The AppKit browser host is macOS-only, so Windows tests can build. Secret scanning allowlists RFC 6238 TOTP fixtures.
 
 ## [0.2.2] — 2026-10-04
 
