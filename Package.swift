@@ -96,10 +96,19 @@ let package = Package(
         .executable(name: "vibevault-mcp", targets: ["vibevault-mcp"]),
     ] + appleAppProducts,
     dependencies: [
+        #if os(Windows)
+        // SwiftCrossUI's WinUI path pulls swift-java, which needs ArgumentParser 1.8+.
+        .package(
+            url: "https://github.com/apple/swift-argument-parser.git",
+            "1.8.0"..<"2.0.0"
+        ),
+        #else
+        // 1.8+ needs Swift tools 6. Linux CLI CI is still Swift 5.10.
         .package(
             url: "https://github.com/apple/swift-argument-parser.git",
             "1.3.0"..<"1.8.0"
         ),
+        #endif
     ] + cryptoPackage,
     targets: sqliteTargets + secretTargets + [
         .target(

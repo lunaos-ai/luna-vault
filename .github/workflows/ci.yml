@@ -164,9 +164,10 @@ jobs:
         run: swift build -c release --product vibevault --product vibevault-mcp
 
       - name: Smoke CLI help
+        shell: pwsh
         run: |
-          .build\release\vibevault.exe --help
-          .build\release\vibevault-mcp.exe --help
+          & .\.build\release\vibevault.exe --help
+          & .\.build\release\vibevault-mcp.exe --help
 
       - name: Test VaultCore
         run: swift test --filter VaultCoreTests
