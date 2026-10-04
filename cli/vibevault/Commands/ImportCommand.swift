@@ -5,12 +5,14 @@ import VaultCore
 struct ImportCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "import",
-        abstract: "Import secrets from dotenv files, environment, password apps, images, clipboard, or system Keychain."
+        abstract: "Import secrets from dotenv files, JSON, environment, password apps, images, clipboard, or system Keychain."
     )
 
-    @Option(name: .long, help: "Source: dotenv, env, op, clipboard, keychain, password-csv, image.") var from: String
+    @Option(name: .long, help: "Source: dotenv, json, env, op, clipboard, keychain, password-csv, image.") var from: String
 
-    @Option(name: .long, help: "Path (for dotenv, password-csv, or image).") var path: String?
+    @Option(name: .long, help: "Path (for dotenv, json, password-csv, or image).") var path: String?
+
+    @Option(name: .long, help: "Name for a nested JSON document (defaults to the file stem).") var name: String?
 
     @Option(name: .long, parsing: .upToNextOption, help: "Glob patterns (for env source). Example: --pattern 'CF_*' 'STRIPE_*'") var pattern: [String] = []
 
@@ -45,6 +47,9 @@ struct ImportCommand: AsyncParsableCommand {
         case "dotenv":
             guard let p = path else { throw ValidationError("--path required for dotenv") }
             return try DotenvImporter.parseFile(at: URL(fileURLWithPath: p))
+        case "json":
+            guard let p = path else { throw ValidationError("--path required for json") }
+            return try JSONSecretsImporter.parseFile(at: URL(fileURLWithPath: p), defaultName: name)
         case "env":
             let globs = pattern.isEmpty ? ["*_TOKEN", "*_KEY", "*_SECRET", "*_PASSWORD", "*_API_KEY"] : pattern
             return EnvImporter.collect(matching: globs)
@@ -62,7 +67,7 @@ struct ImportCommand: AsyncParsableCommand {
             guard let p = path else { throw ValidationError("--path required for image") }
             return try ImageCredentialImporter.recognizeFile(at: URL(fileURLWithPath: p))
         default:
-            throw ValidationError("unknown source: \(from). Use dotenv|env|op|clipboard|keychain|password-csv|image")
+            throw ValidationError("unknown source: \(from). Use dotenv|json|env|op|clipboard|keychain|password-csv|image")
         }
     }
 }

@@ -19,6 +19,18 @@ public enum SecretNaming {
         return String(String.UnicodeScalarView(scalars))
     }
 
+    /// Vault names plus unprefixed aliases when secrets are stored as `PROJECT_KEY`.
+    public static func knownNames(vaultNames: [String], prefix: String) -> Set<String> {
+        var known = Set(vaultNames)
+        let trimmed = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return known }
+        let p = trimmed.hasSuffix("_") ? trimmed : "\(trimmed)_"
+        for name in vaultNames where name.hasPrefix(p) {
+            known.insert(String(name.dropFirst(p.count)))
+        }
+        return known
+    }
+
     public static func applyPrefix(_ prefix: String, to secretName: String) -> String {
         let p = sanitizePrefix(prefix)
         guard !p.isEmpty else { return secretName }

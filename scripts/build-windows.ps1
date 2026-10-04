@@ -18,7 +18,8 @@ if (-not (Get-Command swift -ErrorAction SilentlyContinue)) {
 
 Write-Host "==> Building CLI + MCP"
 if (Test-Path "Package.resolved") { Remove-Item "Package.resolved" }
-swift build -c release --product vibevault --product vibevault-mcp
+swift build -c release --product vibevault
+swift build -c release --product vibevault-mcp
 Get-Item .build\release\vibevault.exe, .build\release\vibevault-mcp.exe
 
 if ($Desktop) {

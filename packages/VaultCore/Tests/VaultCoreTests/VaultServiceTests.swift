@@ -127,6 +127,55 @@ final class VaultServiceTests: XCTestCase {
         XCTAssertEqual(copyName, "TOKEN-copy-2")
         XCTAssertEqual(try store.read(name: "TOKEN-copy-2").value, "v")
     }
+
+    func test_add_json_pretty_prints_and_rejects_invalid() throws {
+        try service.add(name: "SA", value: #"{"b":2,"a":1}"#, valueKind: .json)
+        let stored = try store.read(name: "SA")
+        XCTAssertEqual(stored.valueKind, .json)
+        XCTAssertEqual(stored.value, try SecretJSON.prettyPrinted(#"{"a":1,"b":2}"#))
+
+        XCTAssertThrowsError(try service.add(name: "BAD", value: "{nope", valueKind: .json)) { error in
+            XCTAssertEqual(error as? SecretError, .invalidJSON("malformed"))
+        }
+    }
+
+    func test_mcp_toggle_preserves_json_kind() async throws {
+        try service.add(name: "SA", value: #"{"k":"v"}"#, valueKind: .json)
+        try await service.setMCPAllowed(name: "SA", allowed: true)
+        let stored = try store.read(name: "SA")
+        XCTAssertEqual(stored.valueKind, .json)
+        XCTAssertTrue(stored.mcpAllowed)
+        XCTAssertTrue(stored.value.contains("\"k\""))
+    }
+
+    func test_duplicate_preserves_json_kind() async throws {
+        try service.add(name: "SA", value: #"{"k":"v"}"#, mcpAllowed: true, valueKind: .json)
+        let copyName = try await service.duplicate(name: "SA")
+        let copy = try store.read(name: copyName)
+        XCTAssertEqual(copy.valueKind, .json)
+        XCTAssertFalse(copy.mcpAllowed)
+    }
+
+    func test_updateValue_switches_text_to_json() async throws {
+        try service.add(name: "SA", value: #"{"k":"v"}"#)
+        try await service.updateValue(name: "SA", value: #"{"k":"v"}"#, valueKind: .json)
+        let stored = try store.read(name: "SA")
+        XCTAssertEqual(stored.valueKind, .json)
+        XCTAssertEqual(stored.value, try SecretJSON.prettyPrinted(#"{"k":"v"}"#))
+    }
+
+    func test_rotate_json_revalidates() async throws {
+        try service.add(name: "SA", value: #"{"k":"old"}"#, valueKind: .json)
+        try await service.rotate(name: "SA", newValue: #"{"k":"new"}"#)
+        XCTAssertEqual(try store.read(name: "SA").valueKind, .json)
+        XCTAssertTrue(try store.read(name: "SA").value.contains("new"))
+        do {
+            try await service.rotate(name: "SA", newValue: "not-json")
+            XCTFail("expected invalidJSON")
+        } catch SecretError.invalidJSON {
+            // expected
+        }
+    }
 }
 
 private final class InMemoryStore: KeychainStoring, @unchecked Sendable {

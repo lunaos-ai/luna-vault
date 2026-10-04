@@ -10,6 +10,8 @@ final class AppEnvironment: ObservableObject {
     @Published var scanResult: ScanResult?
     @Published var isScanning: Bool = false
     @Published var lastScannedURL: URL?
+    @Published var projects: [ProjectRecord] = []
+    @Published var selectedProjectID: UUID?
     @Published var auditEvents: [AuditEvent] = []
     @Published var biometricSessionMinutes: Double {
         didSet {
@@ -38,6 +40,7 @@ final class AppEnvironment: ObservableObject {
     @Published var openAddSecret = false
     @Published var focusVaultSearch = false
     @Published var copySelectedSecret = false
+    @Published var duplicateSelectedSecret = false
     @Published var pendingAuthenticatorInput: String?
     @Published var toastMessage: String?
     @Published var uiSoundsEnabled: Bool = true {
@@ -156,6 +159,7 @@ final class AppEnvironment: ObservableObject {
             self?.reloadProviderCaches()
             self?.updateSchedulerState()
             self?.updateBackupSchedulerState()
+            self?.reloadProjects(migrate: true)
         }
     }
 

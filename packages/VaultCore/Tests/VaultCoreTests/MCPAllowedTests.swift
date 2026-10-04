@@ -39,6 +39,72 @@ final class MCPAllowedTests: XCTestCase {
         try await service.setMCPAllowed(name: "T", allowed: false)
         XCTAssertFalse(try store.read(name: "T").mcpAllowed)
     }
+
+    func test_agent_read_denied_when_not_mcpAllowed() async throws {
+        let service = try makeService(
+            detector: StubAgentDetector(
+                DetectedAgent(name: "cursor", confidence: .high, source: "LUNA_AGENT")
+            )
+        )
+        try service.store.add(Secret(name: "T", value: "secret-v"))
+        do {
+            _ = try await service.read(name: "T")
+            XCTFail("expected mcpDenied")
+        } catch SecretError.mcpDenied(let name) {
+            XCTAssertEqual(name, "T")
+        }
+    }
+
+    func test_agent_read_succeeds_when_mcpAllowed() async throws {
+        let service = try makeService(
+            detector: StubAgentDetector(
+                DetectedAgent(name: "cursor", confidence: .high, source: "mcp-initialize")
+            )
+        )
+        try service.store.add(Secret(name: "T", value: "secret-v", mcpAllowed: true))
+        let secret = try await service.read(name: "T")
+        XCTAssertEqual(secret.value, "secret-v")
+    }
+
+    func test_human_cli_read_ignores_mcpAllowed() async throws {
+        let service = try makeService(
+            detector: StubAgentDetector(
+                DetectedAgent(name: "zsh", confidence: .low, source: "parent-process:zsh")
+            )
+        )
+        try service.store.add(Secret(name: "T", value: "secret-v"))
+        let secret = try await service.read(name: "T")
+        XCTAssertEqual(secret.value, "secret-v")
+    }
+
+    func test_blockedNames_only_when_agent_requires_allowlist() {
+        let secrets = [
+            Secret(name: "OPEN", value: "a", mcpAllowed: true),
+            Secret(name: "CLOSED", value: "b")
+        ]
+        let agent = DetectedAgent(name: "cursor", confidence: .high, source: "LUNA_AGENT")
+        XCTAssertEqual(
+            MCPAllowlist.blockedNames(["OPEN", "CLOSED"], secrets: secrets, agent: agent),
+            ["CLOSED"]
+        )
+        let human = DetectedAgent(name: "zsh", confidence: .low, source: "parent-process:zsh")
+        XCTAssertEqual(
+            MCPAllowlist.blockedNames(["OPEN", "CLOSED"], secrets: secrets, agent: human),
+            []
+        )
+    }
+
+    private func makeService(detector: AgentDetecting) throws -> VaultService {
+        let dbURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("mcp-read-\(UUID().uuidString).db")
+        addTeardownBlock { try? FileManager.default.removeItem(at: dbURL) }
+        return VaultService(
+            store: MemStore(),
+            audit: try AuditDB(url: dbURL),
+            detector: detector,
+            biometric: NoopBiometricGate()
+        )
+    }
 }
 
 private final class MemStore: KeychainStoring, @unchecked Sendable {

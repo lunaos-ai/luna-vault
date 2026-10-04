@@ -10,7 +10,8 @@ extension VaultService {
             notes: existing.notes, expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
             mcpAllowed: existing.mcpAllowed,
-            totpAuthURL: cleaned?.isEmpty == false ? cleaned : nil
+            totpAuthURL: cleaned?.isEmpty == false ? cleaned : nil,
+            valueKind: existing.valueKind
         )
         try updateStore(updated, action: .mfaChanged)
         invalidateCache(name: name)
@@ -78,16 +79,18 @@ extension VaultService {
                 if try store.exists(name: item.name) {
                     if overwrite {
                         let existing = try store.read(name: item.name)
+                        let prepared = try SecretJSON.prepared(raw: item.value, kind: item.valueKind)
                         try updateStore(Secret(
                             name: item.name,
-                            value: item.value,
+                            value: prepared.value,
                             createdAt: existing.createdAt,
                             notes: item.notes,
                             expiresAt: existing.expiresAt,
                             rotateEveryDays: existing.rotateEveryDays,
                             lastRotatedAt: existing.lastRotatedAt,
                             mcpAllowed: existing.mcpAllowed,
-                            totpAuthURL: item.totpAuthURL ?? existing.totpAuthURL
+                            totpAuthURL: item.totpAuthURL ?? existing.totpAuthURL,
+                            valueKind: prepared.kind
                         ), action: .imported)
                         updated.append(item.name)
                         invalidateCache(name: item.name)
@@ -96,8 +99,15 @@ extension VaultService {
                         continue
                     }
                 } else {
+                    let prepared = try SecretJSON.prepared(raw: item.value, kind: item.valueKind)
                     try addToStore(
-                        Secret(name: item.name, value: item.value, notes: item.notes, totpAuthURL: item.totpAuthURL),
+                        Secret(
+                            name: item.name,
+                            value: prepared.value,
+                            notes: item.notes,
+                            totpAuthURL: item.totpAuthURL,
+                            valueKind: prepared.kind
+                        ),
                         action: .imported
                     )
                     imported.append(item.name)

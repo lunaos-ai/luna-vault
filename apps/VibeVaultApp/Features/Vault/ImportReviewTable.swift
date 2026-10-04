@@ -43,14 +43,29 @@ struct ImportReviewTable: View {
                 }
             }
             .width(64)
+            TableColumn("Format") { row in
+                Text(row.valueKind.label)
+                    .foregroundStyle(Tokens.Text.secondary)
+            }
+            .width(56)
             TableColumn("Value") { row in
-                Text(showValues ? row.value : SecretNaming.maskedValue(row.value))
+                Text(valuePreview(row))
                     .font(.system(.caption, design: .monospaced))
                     .foregroundStyle(Tokens.Text.secondary)
                     .lineLimit(1)
+                    .help(row.valueKind == .json ? SecretJSON.maskedSummary(row.value) : row.name)
             }
         }
         .frame(maxHeight: 280)
+    }
+
+    private func valuePreview(_ row: ImportRowState) -> String {
+        if row.valueKind == .json {
+            return showValues
+                ? ((try? SecretJSON.compactPrinted(row.value)) ?? row.value)
+                : SecretJSON.maskedSummary(row.value)
+        }
+        return showValues ? row.value : SecretNaming.maskedValue(row.value)
     }
 
     private func enabledBinding(for row: ImportRowState) -> Binding<Bool> {

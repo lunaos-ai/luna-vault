@@ -105,6 +105,7 @@ enum MCPTools {
         }
         let lines = allowed.map { secret -> String in
             var bits = [secret.name]
+            if secret.valueKind == .json { bits.append("[json]") }
             if secret.isExpired { bits.append("[expired]") }
             if secret.isRotationDue { bits.append("[rotate-due]") }
             return bits.joined(separator: " ")
@@ -143,8 +144,8 @@ enum MCPTools {
     static func scanProject(args: [String: Any], context: MCPContext) throws -> [String: Any] {
         guard let path = args["path"] as? String else { return errorResult("missing 'path'") }
         let url = URL(fileURLWithPath: path)
-        let known = Set(try context.service.list().map(\.name))
-        let result = try ProjectScanner().scan(projectURL: url, knownSecrets: known)
+        let names = try context.service.list().map(\.name)
+        let result = try ProjectWorkflow.scanAndRemember(projectURL: url, vaultNames: names)
         var lines: [String] = []
         lines.append("required: \(result.required.count)")
         lines.append("missing: \(Array(result.missing).sorted().joined(separator: ", "))")

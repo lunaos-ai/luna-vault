@@ -70,6 +70,7 @@ let vaultLinker: [LinkerSetting] = [
 ]
 let appleAppProducts: [Product] = [
     .executable(name: "VibeVaultApp", targets: ["VibeVaultApp"]),
+    .executable(name: "vibevault-browser-host", targets: ["vibevault-browser-host"]),
 ]
 let appleAppTargets: [Target] = [
     .testTarget(
@@ -83,7 +84,26 @@ let appleAppTargets: [Target] = [
         path: "apps/VibeVaultApp",
         exclude: ["Info.plist", "VibeVault.entitlements", "Resources"]
     ),
+    .executableTarget(
+        name: "vibevault-browser-host",
+        dependencies: ["VaultCore"],
+        path: "cli/vibevault-browser-host"
+    ),
 ]
+#endif
+
+#if os(Windows)
+// SwiftCrossUI's WinUI path pulls swift-java, which needs ArgumentParser 1.8+.
+let argumentParserPackage: Package.Dependency = .package(
+    url: "https://github.com/apple/swift-argument-parser.git",
+    "1.8.0"..<"2.0.0"
+)
+#else
+// 1.8+ needs Swift tools 6. Linux CLI CI is still Swift 5.10.
+let argumentParserPackage: Package.Dependency = .package(
+    url: "https://github.com/apple/swift-argument-parser.git",
+    "1.3.0"..<"1.8.0"
+)
 #endif
 
 let package = Package(
@@ -92,15 +112,9 @@ let package = Package(
     products: [
         .library(name: "VaultCore", targets: ["VaultCore"]),
         .executable(name: "vibevault", targets: ["vibevault"]),
-        .executable(name: "vibevault-browser-host", targets: ["vibevault-browser-host"]),
         .executable(name: "vibevault-mcp", targets: ["vibevault-mcp"]),
     ] + appleAppProducts,
-    dependencies: [
-        .package(
-            url: "https://github.com/apple/swift-argument-parser.git",
-            "1.3.0"..<"1.8.0"
-        ),
-    ] + cryptoPackage,
+    dependencies: [argumentParserPackage] + cryptoPackage,
     targets: sqliteTargets + secretTargets + [
         .target(
             name: "VaultCore",
@@ -121,11 +135,6 @@ let package = Package(
             ],
             path: "cli/vibevault",
             exclude: ["vibevault.entitlements"]
-        ),
-        .executableTarget(
-            name: "vibevault-browser-host",
-            dependencies: ["VaultCore"],
-            path: "cli/vibevault-browser-host"
         ),
         .executableTarget(
             name: "vibevault-mcp",

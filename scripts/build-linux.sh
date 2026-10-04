@@ -13,4 +13,4 @@ docker run --rm \
 
 echo "==> Linux binaries:"
 docker run --rm -v "$ROOT:/src" -w /src "$IMAGE" \
-  bash -lc 'ls -la .build/release/vibevault .build/release/vibevault-mcp'
+  bash -lc 'BIN="$(swift build -c release --show-bin-path)"; ls -la "$BIN/vibevault" "$BIN/vibevault-mcp"'

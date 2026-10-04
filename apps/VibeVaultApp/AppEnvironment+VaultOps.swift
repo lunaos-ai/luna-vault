@@ -134,12 +134,14 @@ extension AppEnvironment {
         name: String, value: String, notes: String?,
         expiresAt: Date? = nil, rotateEveryDays: Int? = nil,
         mcpAllowed: Bool = false,
-        totpAuthURL: String? = nil
+        totpAuthURL: String? = nil,
+        valueKind: SecretValueKind = .text
     ) {
         do {
             try service.add(name: name, value: value, notes: notes,
                             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
-                            mcpAllowed: mcpAllowed, totpAuthURL: totpAuthURL)
+                            mcpAllowed: mcpAllowed, totpAuthURL: totpAuthURL,
+                            valueKind: valueKind)
             refresh()
         } catch { lastError = "\(error)" }
     }
@@ -211,6 +213,8 @@ extension AppEnvironment {
     func saveProjectPrefix(_ prefix: String, for url: URL) {
         settings.projectPrefixes[url.standardizedFileURL.path] = prefix
         persistSettings()
+        _ = try? ProjectRegistry().upsert(url: url, prefix: prefix)
+        reloadProjects()
     }
 
     func focusVault(secretName: String) {

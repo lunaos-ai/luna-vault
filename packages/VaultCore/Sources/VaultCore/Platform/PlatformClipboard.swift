@@ -19,6 +19,16 @@ public enum PlatformClipboard {
         #endif
     }
 
+    public static func readString() -> String? {
+        #if canImport(AppKit)
+        return NSPasteboard.general.string(forType: .string)
+        #elseif os(Windows)
+        return readWindows()
+        #else
+        return readUnixCommand()
+        #endif
+    }
+
     #if os(Windows)
     private static func copyWindows(_ text: String) -> Bool {
         let chars = Array(text.utf16) + [0]
@@ -37,6 +47,15 @@ public enum PlatformClipboard {
             return false
         }
         return true
+    }
+
+    private static func readWindows() -> String? {
+        guard OpenClipboard(nil) else { return nil }
+        defer { CloseClipboard() }
+        guard let handle = GetClipboardData(DWORD(CF_UNICODETEXT)) else { return nil }
+        guard let locked = GlobalLock(handle) else { return nil }
+        defer { _ = GlobalUnlock(handle) }
+        return String(decodingCString: locked.assumingMemoryBound(to: UInt16.self), as: UTF16.self)
     }
     #endif
 
@@ -60,6 +79,31 @@ public enum PlatformClipboard {
             }
         }
         return false
+    }
+
+    private static func readUnixCommand() -> String? {
+        let tools: [(path: String, args: [String])] = [
+            ("/usr/bin/wl-paste", []),
+            ("/usr/bin/xclip", ["-selection", "clipboard", "-o"])
+        ]
+        for tool in tools where FileManager.default.isExecutableFile(atPath: tool.path) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: tool.path)
+            process.arguments = tool.args
+            let stdout = Pipe()
+            process.standardOutput = stdout
+            process.standardError = Pipe()
+            do {
+                try process.run()
+                process.waitUntilExit()
+                guard process.terminationStatus == 0 else { continue }
+                let data = stdout.fileHandleForReading.readDataToEndOfFile()
+                if let text = String(data: data, encoding: .utf8), !text.isEmpty { return text }
+            } catch {
+                continue
+            }
+        }
+        return nil
     }
     #endif
 }

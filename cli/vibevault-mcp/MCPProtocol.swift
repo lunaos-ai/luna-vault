@@ -3,7 +3,7 @@ import Foundation
 enum MCP {
     static let protocolVersion = "2024-11-05"
     static let serverName = "vibe-vault"
-    static let serverVersion = "0.1.0"
+    static let serverVersion = "0.2.2"
 }
 
 struct JSONRPCRequest: Decodable {

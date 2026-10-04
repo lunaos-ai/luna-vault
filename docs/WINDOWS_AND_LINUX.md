@@ -19,6 +19,7 @@ Vibe Vault ships a **native macOS SwiftUI app**, plus **CLI, MCP, and a cross-pl
 | MCP server | Yes | Yes | Native |
 | Native GUI app | Yes (SwiftUI) | Yes (`VibeVaultDesktop`) | Yes (`VibeVaultDesktop` / WinUI) |
 | Duplicate / copy / AI toggle | Yes | Desktop | Desktop |
+| Remembered projects | Yes | Desktop Projects tab + CLI | Desktop Projects tab + CLI |
 | Encrypted `.vvsync` export/import | Yes | CLI + desktop Sync tab | CLI + desktop Sync tab |
 | iCloud Drive sync | Yes | No (use `.vvsync`) | No (use `.vvsync`) |
 | Vision QR import | Yes | Unsupported | Unsupported |
@@ -86,7 +87,7 @@ powershell -File scripts/build-windows.ps1 -Desktop
 powershell -File scripts/package-windows-desktop.ps1
 ```
 
-CI builds the Windows CLI + MCP on `windows-latest` (`vibevault-windows-cli` zip + MSI). Desktop WinUI is built in the `windows-desktop` job (`vibevault-windows-desktop` zip).
+CI builds the Windows CLI + MCP on `windows-2022` with Windows SDK 10.0.26100 (`vibevault-windows-cli` zip + MSI). Desktop WinUI is built in the `windows-desktop` job (`vibevault-windows-desktop` zip). The `release` workflow attaches those archives to GitHub releases (`v*` tags, or a `workflow_dispatch` with an existing tag).
 
 **WSL2 fallback:**
 

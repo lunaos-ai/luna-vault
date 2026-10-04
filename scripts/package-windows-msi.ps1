@@ -5,11 +5,11 @@ Set-Location $Root
 
 $Cli = if ($env:CLI_BIN) { $env:CLI_BIN } else { Join-Path $Root ".build\release\vibevault.exe" }
 $Mcp = if ($env:MCP_BIN) { $env:MCP_BIN } else { Join-Path $Root ".build\release\vibevault-mcp.exe" }
-$RawVersion = if ($env:VIBEVAULT_VERSION) { $env:VIBEVAULT_VERSION } else { "0.1.0" }
+$RawVersion = if ($env:VIBEVAULT_VERSION) { $env:VIBEVAULT_VERSION } else { "0.2.2" }
 if ($RawVersion -match '^v?(\d+)\.(\d+)\.(\d+)') {
     $MsiVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
 } else {
-    $MsiVersion = "0.1.0.0"
+    $MsiVersion = "0.2.2.0"
 }
 
 if (-not (Test-Path $Cli) -or -not (Test-Path $Mcp)) {

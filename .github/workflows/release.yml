@@ -4,12 +4,19 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to attach Windows builds (e.g. v0.2.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   release:
+    if: github.event_name == 'push'
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +34,111 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: bash scripts/gh-release.sh
+
+  windows-cli:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v5
+        with:
+          winsdk: "10.0.26100.0"
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1.13.0
+        with:
+          swift-version: "6.2"
+          update-sdk-modules: true
+
+      - name: Fetch SQLite amalgamation
+        run: powershell -File scripts/ensure-sqlite-windows.ps1
+
+      - name: Build Windows CLI + MCP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          swift build -c release --product vibevault
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          swift build -c release --product vibevault-mcp
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package Windows CLI zip and MSI
+        run: |
+          $env:VIBEVAULT_VERSION = $env:TAG.TrimStart("v")
+          powershell -File scripts/package-windows-cli.ps1
+          powershell -File scripts/package-windows-msi.ps1
+
+      - name: Wait for GitHub Release
+        shell: bash
+        run: |
+          for i in $(seq 1 40); do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "release $TAG not found" >&2
+          exit 1
+
+      - name: Upload Windows CLI assets
+        shell: bash
+        run: |
+          shopt -s nullglob
+          gh release upload "$TAG" build/vibevault-windows-*.zip build/vibevault-windows-*.msi --clobber
+
+  windows-desktop:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v5
+        with:
+          winsdk: "10.0.26100.0"
+
+      - name: Setup Swift
+        uses: SwiftyLab/setup-swift@v1.13.0
+        with:
+          swift-version: "6.2"
+          update-sdk-modules: true
+
+      - name: Fetch SQLite amalgamation
+        run: powershell -File scripts/ensure-sqlite-windows.ps1
+
+      - name: Build VibeVaultDesktop
+        working-directory: apps/VibeVaultDesktop
+        run: |
+          if (Test-Path Package.resolved) { Remove-Item Package.resolved }
+          swift build -c release --product VibeVaultDesktop
+
+      - name: Package Windows desktop zip
+        run: |
+          $env:VIBEVAULT_VERSION = $env:TAG.TrimStart("v")
+          powershell -File scripts/package-windows-desktop.ps1
+
+      - name: Wait for GitHub Release
+        shell: bash
+        run: |
+          for i in $(seq 1 40); do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "release $TAG not found" >&2
+          exit 1
+
+      - name: Upload Windows desktop asset
+        shell: bash
+        run: |
+          shopt -s nullglob
+          gh release upload "$TAG" build/VibeVaultDesktop-windows-*.zip --clobber

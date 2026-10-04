@@ -144,6 +144,7 @@ extension EncryptedVaultStore {
         var lastRotatedAt: Date?
         var mcpAllowed: Bool
         var totpAuthURL: String?
+        var valueKind: SecretValueKind?
 
         init(_ s: Secret) {
             name = s.name; value = s.value; updatedAt = s.updatedAt
@@ -152,6 +153,7 @@ extension EncryptedVaultStore {
             rotateEveryDays = s.rotateEveryDays; lastRotatedAt = s.lastRotatedAt
             mcpAllowed = s.mcpAllowed
             totpAuthURL = s.totpAuthURL
+            valueKind = s.valueKind == .json ? .json : nil
         }
 
         func asSecret(maskValue: Bool = false, includeTOTP: Bool = true) -> Secret {
@@ -160,7 +162,8 @@ extension EncryptedVaultStore {
                 notes: notes, expiresAt: expiresAt, rotateEveryDays: rotateEveryDays,
                 lastRotatedAt: lastRotatedAt, mcpAllowed: mcpAllowed,
                 hasTOTP: totpAuthURL != nil,
-                totpAuthURL: includeTOTP ? totpAuthURL : nil
+                totpAuthURL: includeTOTP ? totpAuthURL : nil,
+                valueKind: valueKind ?? .text
             )
         }
     }

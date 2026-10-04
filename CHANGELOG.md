@@ -4,9 +4,36 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+### Fixed
+
+- Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI and MCP are built as separate SwiftPM products. Recovery prompts use the Windows C runtime instead of Glibc. The AppKit browser host is macOS-only, so Windows tests can build. Legacy v1 sync fixtures that call CommonCrypto stay on Apple platforms. Secret scanning allowlists RFC 6238 TOTP fixtures.
+
+## [0.2.2] — 2026-10-04
+
+### Fixed
+
+- Windows CI and release builds use Windows SDK 10.0.26100 so Swift 6.2 can import WinSDK and ucrt.
+
+## [0.2.1] — 2026-10-04
+
 ### Added
 
+- Remembered project folders: Projects list in the macOS app, `vibevault projects`, and a desktop Projects tab. Scans persist missing/leak counts, restore the last project, and flag moved folders so they can be relocated.
+- Release workflow builds Windows CLI zip/MSI and desktop zip and attaches them to the GitHub release.
+
+### Changed
+
+- Project scan treats a missing folder as an error instead of an empty result. Prefixed vault names (`PROJECT_KEY`) match required `KEY` using the project's saved prefix. `vibevault scan` and MCP `scan_project` remember the folder.
+
+## [0.2.0] — 2026-09-20
+
+### Added
+
+- `vibevault duplicate NAME` to copy a secret (AI access starts off on the copy).
 - Eye toggle on New Secret and Rotate sheets to show or hide the value while typing.
+- JSON secret values: store a pretty-printed object or array, reveal it as formatted JSON, import `.json` maps or documents, and add via `vibevault add --format json --file`.
+- macOS UI for JSON secrets: multiline editor (add, edit, rotate), formatted detail reveal, Text/JSON format switch, and import-review format labels.
+- New Secret prefills name and value when the clipboard holds a single `KEY=value` line (or one JSON document). Pasting that line into the name field splits it the same way.
 - Recovery-key fingerprints on new `.vvsync` bundles, a Keychain-backed recovery-key keyring, and Cloud Sync restore errors that distinguish a mismatched key from a corrupt backup.
 - Passkey-gated loopback HTTP MCP for AI sandboxes (`vibevault mcp passkey`, `mcp serve --http`, `mcp sandbox start`). Binds 127.0.0.1 only; bearer token or `Authorization: Passkey`.
 - Linux libsecret master-key storage (Secret Service via `dlopen`, mode-0600 file fallback and migration).
@@ -15,11 +42,13 @@ All notable changes to Vibe Vault are documented here.
 
 ### Changed
 
+- CLI reads used by AI agents (`vibevault run`, and any `VaultService.read` from Cursor Agent, Claude Code, and similar) now honor Allow AI agents. Human terminals still inject every secret. Copies made with Duplicate start with AI access off.
 - Cloud Sync recovery-key restore no longer reports a mismatched or rotated key as bundle corruption. Rotating the active key keeps previous keys for older backups.
 
 ### Fixed
 
 - CI: Linux SOCK_STREAM Int32 conversion, Swift 6 concurrent HTTP response capture, Windows jobs on windows-2022 + SDK 10.0.22621.
+- CI: Linux CLI smoke uses `--show-bin-path`; recovery-match tests pin ISO8601 dates; Windows Swift 6.2 with updated SDK modules.
 
 ## [0.1.4] — 2026-08-25
 
@@ -99,6 +128,9 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.2.2]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.2
+[0.2.1]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.1
+[0.2.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.0
 [0.1.4]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.4
 [0.1.3]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.3
 [0.1.2]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.2

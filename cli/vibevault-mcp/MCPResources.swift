@@ -57,8 +57,8 @@ enum MCPResources {
             ?? FileManager.default.currentDirectoryPath
         let url = URL(fileURLWithPath: path)
         do {
-            let known = Set((try? VaultService.live().list().map(\.name)) ?? [])
-            let result = try ProjectScanner().scan(projectURL: url, knownSecrets: known)
+            let names = (try? VaultService.live().list().map(\.name)) ?? []
+            let result = try ProjectWorkflow.scanAndRemember(projectURL: url, vaultNames: names)
             return formatScan(project: path, result: result)
         } catch {
             return "# Project setup\n\nPath: \(path)\n\nScan failed: \(error)\n"
