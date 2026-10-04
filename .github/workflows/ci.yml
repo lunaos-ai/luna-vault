@@ -38,9 +38,10 @@ jobs:
         run: bash scripts/tests/package-linux-smoke.sh
 
       - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_darwin_arm64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --redact --no-banner
 
       - name: Dependency scan (audit Package.resolved)
         run: |
@@ -70,7 +71,13 @@ jobs:
 
       - name: Smoke CLI help
         run: |
-          BIN="$(swift build -c release --show-bin-path)"
+          BIN="$(swift build -c release --show-bin-path | tail -n 1)"
+          echo "bin path: [$BIN]"
+          if [ ! -x "$BIN/vibevault" ]; then
+            BIN="$(find .build -type f -name vibevault | sed 's#/vibevault$##' | head -n 1)"
+            echo "fallback bin path: [$BIN]"
+            find .build -name 'vibevault*' -type f | head
+          fi
           test -x "$BIN/vibevault"
           "$BIN/vibevault" --help
           "$BIN/vibevault-mcp" --help || true
