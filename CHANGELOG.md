@@ -6,7 +6,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Fixed
 
-- Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI smoke calls the exe with the PowerShell call operator.
+- Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI and MCP are built as separate SwiftPM products, and secret scanning allowlists RFC 6238 TOTP fixtures.
 
 ## [0.2.2] — 2026-10-04
 

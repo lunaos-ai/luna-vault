@@ -59,7 +59,10 @@ jobs:
         run: powershell -File scripts/ensure-sqlite-windows.ps1
 
       - name: Build Windows CLI + MCP
-        run: swift build -c release --product vibevault --product vibevault-mcp
+        shell: pwsh
+        run: |
+          swift build -c release --product vibevault
+          swift build -c release --product vibevault-mcp
 
       - name: Package Windows CLI zip and MSI
         run: |

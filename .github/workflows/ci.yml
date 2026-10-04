@@ -41,7 +41,7 @@ jobs:
         run: |
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_darwin_arm64.tar.gz" \
             | tar -xz -C /tmp gitleaks
-          /tmp/gitleaks detect --source . --redact --no-banner
+          /tmp/gitleaks detect --source . --config .gitleaks.toml --redact --no-banner
 
       - name: Dependency scan (audit Package.resolved)
         run: |
@@ -67,7 +67,9 @@ jobs:
           git config --global --add safe.directory '*'
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libsqlite3-dev
-          swift build -c release --product vibevault --product vibevault-mcp
+          # SwiftPM applies a single --product. Build each executable on its own.
+          swift build -c release --product vibevault
+          swift build -c release --product vibevault-mcp
 
       - name: Smoke CLI help
         run: |
@@ -168,7 +170,11 @@ jobs:
         run: powershell -File scripts/ensure-sqlite-windows.ps1
 
       - name: Build Windows CLI + MCP
-        run: swift build -c release --product vibevault --product vibevault-mcp
+        shell: pwsh
+        run: |
+          # SwiftPM applies a single --product. Build each executable on its own.
+          swift build -c release --product vibevault
+          swift build -c release --product vibevault-mcp
 
       - name: Smoke CLI help
         shell: pwsh
