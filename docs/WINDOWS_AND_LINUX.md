@@ -87,7 +87,7 @@ powershell -File scripts/build-windows.ps1 -Desktop
 powershell -File scripts/package-windows-desktop.ps1
 ```
 
-CI builds the Windows CLI + MCP on `windows-latest` (`vibevault-windows-cli` zip + MSI). Desktop WinUI is built in the `windows-desktop` job (`vibevault-windows-desktop` zip). The `release` workflow attaches those archives to GitHub releases (`v*` tags, or a `workflow_dispatch` with an existing tag).
+CI builds the Windows CLI + MCP on `windows-2022` with Windows SDK 10.0.26100 (`vibevault-windows-cli` zip + MSI). Desktop WinUI is built in the `windows-desktop` job (`vibevault-windows-desktop` zip). The `release` workflow attaches those archives to GitHub releases (`v*` tags, or a `workflow_dispatch` with an existing tag).
 
 **WSL2 fallback:**
 

@@ -10,7 +10,7 @@ $Desktop = if ($env:DESKTOP_BIN) {
 }
 $Arch = if ($env:TARGET_ARCH) { $env:TARGET_ARCH } else { $env:PROCESSOR_ARCHITECTURE }
 if (-not $Arch) { $Arch = "unknown" }
-$Version = if ($env:VIBEVAULT_VERSION) { $env:VIBEVAULT_VERSION } else { "0.2.1" }
+$Version = if ($env:VIBEVAULT_VERSION) { $env:VIBEVAULT_VERSION } else { "0.2.2" }
 $Stage = Join-Path $Root "build\VibeVaultDesktop-windows-$Arch"
 $Out = Join-Path $Root "build\VibeVaultDesktop-windows-$Arch.zip"
 

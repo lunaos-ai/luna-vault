@@ -4,6 +4,12 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+## [0.2.2] — 2026-10-04
+
+### Fixed
+
+- Windows CI and release builds use Windows SDK 10.0.26100 so Swift 6.2 can import WinSDK and ucrt.
+
 ## [0.2.1] — 2026-10-04
 
 ### Added
@@ -118,6 +124,7 @@ All notable changes to Vibe Vault are documented here.
 - Read-cache invalidation on delete / rotate / update
 - Legacy Keychain items deleted after successful migrate
 
+[0.2.2]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.2
 [0.2.1]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.1
 [0.2.0]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.2.0
 [0.1.4]: https://github.com/lunaos-ai/luna-vault/releases/tag/v0.1.4
