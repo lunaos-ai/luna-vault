@@ -6,7 +6,7 @@ Secure credential access for AI coding agents. Native macOS SwiftUI app; CLI, MC
 [![Linux](https://img.shields.io/badge/Linux-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
 [![Windows](https://img.shields.io/badge/Windows-CLI%2BMCP%2BDesktop-black)](docs/WINDOWS_AND_LINUX.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.4-indigo)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.2-indigo)](CHANGELOG.md)
 
 ```bash
 # instead of this:
@@ -82,6 +82,7 @@ vibevault agents prepare --target all
 vibevault add CF_API_TOKEN
 cd ~/my-cloudflare-worker
 vibevault scan
+vibevault projects list
 vibevault run -- npm run dev
 vibevault push --to cloudflare --scope account_id=… --scope script_name=…
 ```
@@ -93,12 +94,26 @@ passwords, human app passwords, CSRF tokens, UUIDs, or custom-prefixed tokens.
 Generated drafts can be revealed or copied before Save; saved secret values are
 still copied through the audited read path.
 
+JSON credentials (service-account files, nested objects) can be stored as a JSON
+secret. The macOS app pretty-prints on save, reveals a formatted document, and
+lets you switch Text/JSON from add, detail, and edit.
+
+```bash
+vibevault add GOOGLE_SA --format json --file ./sa.json
+vibevault import --from json --path ./secrets.json
+vibevault duplicate GOOGLE_SA
+```
+
+`vibevault run` from Cursor Agent, Claude Code, or similar only injects secrets
+with **Allow AI agents** on. A human terminal still injects the full vault.
+
 Import paths:
 
 ```bash
 # Clipboard or dotenv-style files
 vibevault import --from clipboard
 vibevault import --from dotenv --path .env.local
+vibevault import --from json --path secrets.json
 
 # Shell env and 1Password CLI
 vibevault import --from env --pattern 'CF_*' 'STRIPE_*'
@@ -140,7 +155,7 @@ The installed policy says:
 - Do not create or commit `.env` / `.env.*` files with real secret values.
 - If a secret is missing, ask the user to import it into Vibe Vault; never ask
   them to paste the value into chat.
-- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access. Both honor Allow AI agents.
 - Prefer `.env.example` only for non-secret defaults and required names.
 ```
 
@@ -218,7 +233,7 @@ NOTARIZE=1 NOTARIZE_DMG=1 bash scripts/release.sh   # needs Apple creds
 bash scripts/publish-to-website.sh
 bash scripts/gtm-check.sh
 bash scripts/publish-all.sh --dry-run
-bash scripts/publish-all.sh --yes --tag v0.1.4
+bash scripts/publish-all.sh --yes --tag v0.2.2
 ```
 
 ### Encrypted cloud sync
@@ -265,4 +280,4 @@ MIT for CLI + VaultCore + MCP (`LICENSE`). App binary branding may remain LunaOS
 
 ## Status
 
-**v0.1.4** — see `CHANGELOG.md`.
+**v0.2.2** — see `CHANGELOG.md`.

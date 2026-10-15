@@ -14,7 +14,8 @@ echo "==> Building CLI + MCP"
 sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libsqlite3-dev >/dev/null
 rm -f Package.resolved
-swift build -c release --product vibevault --product vibevault-mcp -j "${SWIFT_BUILD_JOBS:-2}"
+swift build -c release --product vibevault -j "${SWIFT_BUILD_JOBS:-2}"
+swift build -c release --product vibevault-mcp -j "${SWIFT_BUILD_JOBS:-2}"
 ls -la .build/release/vibevault .build/release/vibevault-mcp
 
 echo "==> Building VibeVaultDesktop (Gtk 4; needs Swift 6+)"

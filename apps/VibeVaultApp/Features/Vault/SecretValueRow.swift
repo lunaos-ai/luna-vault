@@ -6,23 +6,26 @@ struct SecretValueRow: View {
     @EnvironmentObject var env: AppEnvironment
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let secret: Secret
+    var onEdit: (() -> Void)? = nil
     @State private var revealed = false
     @State private var revealedValue = ""
     @State private var copiedFlash = false
 
     var body: some View {
-        HStack(spacing: Tokens.Space.md) {
-            Text(revealed ? revealedValue : secret.maskedValue)
-                .font(.system(.title3, design: .monospaced).weight(.medium))
-                .textSelection(.enabled)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentTransition(.opacity)
-                .animation(Motion.value(reduceMotion, Motion.soft), value: revealed)
-                .animation(Motion.value(reduceMotion, Motion.soft), value: secret.id)
+        HStack(alignment: secret.valueKind == .json ? .top : .center, spacing: Tokens.Space.md) {
+            valueLabel
             revealButton
             copyButton
+            if let onEdit {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(Tokens.Text.secondary)
+                .help("Edit value")
+                .accessibilityLabel("Edit value")
+            }
         }
         .padding(.horizontal, Tokens.Space.lg)
         .padding(.vertical, Tokens.Space.lg)
@@ -57,6 +60,14 @@ struct SecretValueRow: View {
                     await flashCopied()
                 }
             }
+            if let onEdit {
+                Button("Edit value") { onEdit() }
+            }
+            if revealed, SecretJSON.looksLikeObjectOrArray(revealedValue) {
+                Button("Store as JSON") {
+                    Task { await storeAsJSON() }
+                }
+            }
             Button("Duplicate") {
                 Task { await env.duplicateSecret(name: secret.name) }
             }
@@ -70,6 +81,29 @@ struct SecretValueRow: View {
             revealed = false
             revealedValue = ""
             copiedFlash = false
+        }
+    }
+
+    @ViewBuilder
+    private var valueLabel: some View {
+        if secret.valueKind == .json {
+            SecretJSONValueBlock(
+                revealed: revealed,
+                masked: secret.maskedValue,
+                revealedValue: revealedValue
+            )
+            .contentTransition(.opacity)
+            .animation(Motion.value(reduceMotion, Motion.soft), value: revealed)
+        } else {
+            Text(revealed ? revealedValue : secret.maskedValue)
+                .font(.system(.title3, design: .monospaced).weight(.medium))
+                .textSelection(.enabled)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentTransition(.opacity)
+                .animation(Motion.value(reduceMotion, Motion.soft), value: revealed)
+                .animation(Motion.value(reduceMotion, Motion.soft), value: secret.id)
         }
     }
 
@@ -119,6 +153,17 @@ struct SecretValueRow: View {
     private func copyWithFlash() async {
         guard await env.copySecret(name: secret.name) else { return }
         await flashCopied()
+    }
+
+    private func storeAsJSON() async {
+        do {
+            try await env.service.updateValue(name: secret.name, value: revealedValue, valueKind: .json)
+            env.refresh()
+            env.showToast("Stored \(secret.name) as JSON")
+        } catch {
+            env.lastError = "\(error)"
+            env.showToast("Could not store as JSON", feedback: .caution)
+        }
     }
 
     @MainActor

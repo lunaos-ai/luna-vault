@@ -30,7 +30,10 @@ struct MainWindow: View {
             Text(env.lastError ?? "Unknown vault error")
         }
         .sheet(isPresented: $showAddSecret) {
-            AddSecretSheet().environmentObject(env)
+            NavigationStack {
+                AddSecretSheet()
+            }
+            .environmentObject(env)
         }
         .task {
             env.refresh()

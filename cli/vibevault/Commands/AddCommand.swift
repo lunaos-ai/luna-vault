@@ -9,6 +9,10 @@ struct AddCommand: AsyncParsableCommand {
 
     @Option(name: .shortAndLong, help: "Secret value. If omitted, read from stdin.") var value: String?
 
+    @Option(name: .long, help: "Read value from a UTF-8 file. .json implies --format json.") var file: String?
+
+    @Option(name: .long, help: "Value format: text or json.") var format: String?
+
     @Option(name: .shortAndLong, help: "Optional notes.") var notes: String?
 
     @Option(name: .long, help: "Expiry as ISO-8601 date or duration like 30d, 12w, 6mo.") var expires: String?
@@ -19,24 +23,33 @@ struct AddCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         let service = try VaultService.live()
-        let secretValue = try resolveValue()
+        let kind = try resolvedKind()
+        let secretValue = try resolveValue(kind: kind)
         let expiresAt = try expires.map { try parseExpiry($0) }
         do {
-            try service.add(name: name, value: secretValue, notes: notes, expiresAt: expiresAt, rotateEveryDays: rotateEvery)
+            try service.add(
+                name: name, value: secretValue, notes: notes,
+                expiresAt: expiresAt, rotateEveryDays: rotateEvery, valueKind: kind
+            )
             print("added \(name)")
         } catch SecretError.duplicate where upsert {
-            try service.update(name: name, value: secretValue, notes: notes, expiresAt: expiresAt, rotateEveryDays: rotateEvery)
+            try service.update(
+                name: name, value: secretValue, notes: notes,
+                expiresAt: expiresAt, rotateEveryDays: rotateEvery, valueKind: kind
+            )
             print("updated \(name)")
         } catch SecretError.duplicate {
             FileHandle.standardError.write(Data("secret '\(name)' already exists. Use --upsert to overwrite.\n".utf8))
             throw ExitCode(2)
+        } catch SecretError.invalidJSON(let message) {
+            FileHandle.standardError.write(Data("invalid JSON: \(message)\n".utf8))
+            throw ExitCode(64)
         }
     }
 
     private func parseExpiry(_ s: String) throws -> Date {
         let trimmed = s.trimmingCharacters(in: .whitespaces)
         if let date = ISO8601DateFormatter().date(from: trimmed) { return date }
-        // duration: <int><d|w|mo|y>
         let unitMap: [(String, Int)] = [("mo", 30), ("y", 365), ("w", 7), ("d", 1)]
         for (suffix, daysPerUnit) in unitMap where trimmed.hasSuffix(suffix) {
             let numPart = String(trimmed.dropLast(suffix.count))
@@ -47,8 +60,40 @@ struct AddCommand: AsyncParsableCommand {
         throw ValidationError("invalid --expires; use ISO-8601 date or 30d/12w/6mo/1y")
     }
 
-    private func resolveValue() throws -> String {
+    private func resolvedKind() throws -> SecretValueKind {
+        if let format {
+            guard let kind = SecretValueKind(rawValue: format.lowercased()) else {
+                throw ValidationError("invalid --format; use text or json")
+            }
+            return kind
+        }
+        if let file, URL(fileURLWithPath: file).pathExtension.lowercased() == "json" {
+            return .json
+        }
+        return .text
+    }
+
+    private func resolveValue(kind: SecretValueKind) throws -> String {
+        if value != nil, file != nil {
+            throw ValidationError("use either --value or --file, not both")
+        }
         if let v = value { return v }
+        if let file {
+            let url = URL(fileURLWithPath: file)
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw ValidationError("file not found: \(file)")
+            }
+            return try String(contentsOf: url, encoding: .utf8)
+        }
+        if kind == .json {
+            FileHandle.standardError.write(Data("Enter JSON for \(name), then Ctrl-D:\n".utf8))
+            let data = FileHandle.standardInput.readDataToEndOfFile()
+            guard let text = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+                throw ValidationError("no value provided")
+            }
+            return text
+        }
         FileHandle.standardError.write(Data("Enter value for \(name) (input hidden via terminal): ".utf8))
         guard let line = readLine() else { throw ValidationError("no value provided") }
         return line

@@ -16,7 +16,8 @@ The current product is strongest for solo developers and small teams using Curso
 
 - Encrypted local vault backed by `VaultCore`.
 - Master key stored in macOS Keychain.
-- Secret model supports name, value, notes, creation time, update time, expiry, rotation interval, last rotated timestamp, MCP access flag, and attached MFA/TOTP setup URL.
+- Secret model supports name, value, notes, creation time, update time, expiry, rotation interval, last rotated timestamp, MCP access flag, attached MFA/TOTP setup URL, and a text or JSON value format.
+- JSON secrets are validated as an object or array, stored pretty-printed, and edited or revealed as formatted JSON in the macOS app.
 - Local vault migration path from legacy Keychain-only items to the encrypted file vault.
 - Secret list hides values by default and exposes masked previews only.
 - Secret detail view supports copy, rotate, mark rotated, delete, metadata display, AI-agent access toggle, version preview, and single-secret restore.
@@ -29,7 +30,7 @@ The current product is strongest for solo developers and small teams using Curso
 
 - Native SwiftUI app with menu bar and main window surfaces.
 - Sidebar sections for Overview, Vault, Import, Projects, Providers, AI Agents, Audit, and Settings.
-- Add-secret sheet with secure value entry and generated-value helper.
+- Add-secret sheet with secure value entry, Text/JSON format picker, JSON editor, and generated-value helper.
 - Vault list with search, sorting/grouping-oriented UI work, badges, bulk selection, recent activity, and detail view.
 - Import screen for clipboard, files, password manager CSV exports, 1Password CLI, screenshots/images, shell environment, and system Keychain discovery.
 - Settings surface for a selectable 5-minute to 8-hour shared app/CLI unlock lease and Team license, plus a dedicated Cloud Sync screen.
@@ -40,13 +41,14 @@ The current product is strongest for solo developers and small teams using Curso
 
 The `vibevault` CLI currently exposes these command groups:
 
-- `add`: add or upsert a secret, with optional notes, expiry, and rotation interval.
+- `add`: add or upsert a secret, with optional notes, expiry, rotation interval, `--format json`, and `--file`.
 - `list`: list vault secret names and metadata, with JSON output.
 - `revoke`: delete a local secret. This does not revoke provider-side copies.
 - `rotate`: update a value or mark rotation without changing the value.
 - `import`: import from dotenv, shell env, 1Password CLI, clipboard, system Keychain discovery, password CSV, and image/OCR.
 - `scan`: scan project files for required secrets, missing secrets, extra vault secrets, and tracked secret-file leaks.
-- `run`: run a command with selected vault secrets injected into the environment.
+- `run`: run a command with selected vault secrets injected into the environment. AI agents only receive secrets with Allow AI agents enabled; a human terminal still injects the full vault.
+- `duplicate`: copy a secret to `NAME-copy`. AI access starts off on the copy.
 - `push`: push selected secrets to Cloudflare, Vercel, or PushCI.
 - `pull`: pull remote provider secret names and import values where the provider supports values.
 - `mcp`: install stdio MCP, enroll a sandbox passkey, and serve loopback HTTP MCP for AI sandboxes.
@@ -76,7 +78,8 @@ Generator templates include common developer needs such as provider API keys, we
 Implemented import paths:
 
 - Dotenv files, including comments, quoted values, and `export` prefixes.
-- Clipboard content containing `KEY=VALUE` lines.
+- JSON files: a map of string values becomes one secret per key; a nested object or array becomes one JSON secret.
+- Clipboard content containing `KEY=VALUE` lines or a JSON object.
 - Shell environment variables filtered by glob patterns.
 - 1Password CLI item JSON via `op item get`.
 - Password manager CSV exports:
@@ -120,10 +123,12 @@ The scanner detects required secret names from common local project files:
 It reports:
 
 - Required secret names.
-- Missing names compared with the local vault.
+- Missing names compared with the local vault, including prefixed vault names such as `PROJECT_KEY` for required `KEY`.
 - Extra names in the vault that are not referenced by the project.
 - Source files for detected names.
 - Git-tracked secret-file leaks.
+
+Remembered project folders persist under the vault data directory (`projects.json`). The macOS Projects list, `vibevault projects`, and the Linux/Windows desktop Projects tab restore the last scan, flag moved folders, and relocate them without losing prefix or counts. A missing folder is an error, not an empty scan.
 
 ### Git Guard
 
@@ -153,6 +158,8 @@ MCP tools currently include:
 - `suggest_secrets_for_task`: suggest secret names for a task without exposing values.
 - `reconcile_provider`: compare local names with Cloudflare, Vercel, or PushCI.
 - `push_secrets`: push MCP-allowed secrets to supported providers.
+
+CLI access from a detected coding agent (Cursor Agent, Claude Code, Copilot, Aider, Devin) uses the same Allow AI agents flag. A human terminal or the macOS app is not gated by that flag.
 
 ### Audit
 

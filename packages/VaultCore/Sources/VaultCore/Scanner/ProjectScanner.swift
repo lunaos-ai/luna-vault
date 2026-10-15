@@ -57,6 +57,7 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
     }
 
     public func scan(projectURL: URL, knownSecrets: Set<String>) throws -> ScanResult {
+        try Self.validateRoot(projectURL)
         var sources: [String: [String]] = [:]
         var required = Set<String>()
         let wanted = Set(parsers.map(\.filename))
@@ -81,7 +82,9 @@ public final class ProjectScanner: ProjectScanning, @unchecked Sendable {
     }
 
     private static let skipDirs: Set<String> = [
-        "node_modules", ".git", ".build", "DerivedData", "build", "dist", ".next", ".vercel"
+        "node_modules", ".git", ".build", "DerivedData", "build", "dist", ".next", ".vercel",
+        ".turbo", "coverage", ".venv", "venv", "Pods", "vendor", ".gradle", "target",
+        ".swiftpm", "Carthage", ".pnpm-store"
     ]
     private static let maxDepth = 8
 

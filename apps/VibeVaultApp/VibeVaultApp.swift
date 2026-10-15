@@ -45,6 +45,10 @@ struct VibeVaultCommands: Commands {
                 bridge.env?.copySelectedSecret = true
             }
             .keyboardShortcut("c")
+            Button("Duplicate Secret") {
+                bridge.env?.duplicateSelectedSecret = true
+            }
+            .keyboardShortcut("d", modifiers: [.command, .shift])
         }
     }
 }

@@ -36,10 +36,12 @@ final class CloudSyncRecoveryMatchTests: XCTestCase {
     func test_legacy_bundle_without_identity_still_decrypts() throws {
         let key = try CloudRecoveryKey.generate()
         // ISO-8601 backups persist whole seconds, so compare representable fixture dates.
-        let timestamp = Date(timeIntervalSince1970: 1_700_000_000)
-        let snapshot = CloudSyncSnapshot(exportedAt: timestamp, secrets: [
-            CloudSyncSecret(name: "OLD", value: "ok", createdAt: timestamp, updatedAt: timestamp)
-        ])
+        let capturedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let snapshot = CloudSyncSnapshot(
+            exportedAt: capturedAt,
+            sourceHost: "test-host",
+            secrets: [CloudSyncSecret(name: "OLD", value: "ok", updatedAt: capturedAt)]
+        )
         let encrypted = try CloudSync.encrypt(
             snapshot,
             passphrase: "correct horse battery staple",

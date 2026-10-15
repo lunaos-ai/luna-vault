@@ -41,34 +41,54 @@ public final class AgentDetector: AgentDetecting, @unchecked Sendable {
 
     private let env: [String: String]
     private let parentProcessLookup: () -> String?
+    private let ancestorProcessLookup: () -> [String]
 
     public init(
         env: [String: String] = ProcessInfo.processInfo.environment,
-        parentProcessLookup: @escaping () -> String? = AgentDetector.lookupParentProcess
+        parentProcessLookup: @escaping () -> String? = AgentDetector.lookupParentProcess,
+        ancestorProcessLookup: @escaping () -> [String] = AgentDetector.lookupAncestorProcesses
     ) {
         self.env = env
         self.parentProcessLookup = parentProcessLookup
+        self.ancestorProcessLookup = ancestorProcessLookup
     }
 
     public func detect() -> DetectedAgent {
         if let explicit = env["LUNA_AGENT"], !explicit.isEmpty {
             return DetectedAgent(name: explicit, confidence: .high, source: "LUNA_AGENT")
         }
-        for (key, name) in [("CODEX_THREAD_ID", "codex"), ("CLAUDECODE", "claude-code"),
-                            ("CURSOR_AGENT", "cursor"), ("GEMINI_CLI", "gemini-cli")] {
-            if let value = env[key], !value.isEmpty {
-                return DetectedAgent(name: name, confidence: .high, source: "env:\(key)")
+        if let fromEnv = MCPAllowlist.agent(fromEnv: env) {
+            return fromEnv
+        }
+        let parent = parentProcessLookup()
+        if let parent {
+            let key = MCPAllowlist.processKey(parent)
+            if MCPAllowlist.codingAgentBinaries.contains(key) {
+                return mapped(key, source: "parent-process:\(key)")
             }
         }
-        if let parent = parentProcessLookup() {
-            let lower = parent.lowercased()
-            let key = (lower as NSString).lastPathComponent
-            if let mapped = Self.knownAgents[key] {
-                return DetectedAgent(name: mapped, confidence: .medium, source: "parent-process:\(key)")
+        for ancestor in ancestorProcessLookup() {
+            let key = MCPAllowlist.processKey(ancestor)
+            if MCPAllowlist.codingAgentBinaries.contains(key) {
+                return mapped(key, source: "ancestor:\(key)")
+            }
+        }
+        if let parent {
+            let key = MCPAllowlist.processKey(parent)
+            if let mappedName = Self.knownAgents[key] {
+                return DetectedAgent(name: mappedName, confidence: .medium, source: "parent-process:\(key)")
             }
             return DetectedAgent(name: key, confidence: .low, source: "parent-process:\(key)")
         }
         return DetectedAgent(name: "unknown", confidence: .low, source: "fallback")
+    }
+
+    private func mapped(_ key: String, source: String) -> DetectedAgent {
+        DetectedAgent(
+            name: Self.knownAgents[key] ?? key,
+            confidence: .medium,
+            source: source
+        )
     }
 
     public static func lookupParentProcess() -> String? {
@@ -99,7 +119,7 @@ public final class AgentDetector: AgentDetecting, @unchecked Sendable {
 
 #if canImport(Darwin)
 @_silgen_name("proc_pidpath")
-private func proc_pidpath(_ pid: Int32, _ buffer: UnsafeMutablePointer<CChar>, _ buffersize: UInt32) -> Int32
+func proc_pidpath(_ pid: Int32, _ buffer: UnsafeMutablePointer<CChar>, _ buffersize: UInt32) -> Int32
 #endif
 
 public final class StubAgentDetector: AgentDetecting, @unchecked Sendable {

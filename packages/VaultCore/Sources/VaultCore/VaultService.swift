@@ -61,13 +61,13 @@ public final class VaultService: @unchecked Sendable {
         totpAuthURL: String? = nil,
         createdAt: Date? = nil,
         updatedAt: Date = Date(),
-        revisionAction: SecretRevisionAction = .created
+        revisionAction: SecretRevisionAction = .created,
+        valueKind: SecretValueKind = .text
     ) throws {
-        let secret = Secret(
+        let secret = try makeSecret(
             name: name, value: value, updatedAt: updatedAt, createdAt: createdAt, notes: notes,
             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, lastRotatedAt: lastRotatedAt,
-            mcpAllowed: mcpAllowed,
-            totpAuthURL: totpAuthURL
+            mcpAllowed: mcpAllowed, totpAuthURL: totpAuthURL, valueKind: valueKind
         )
         try addToStore(secret, action: revisionAction)
         invalidateCache(name: name)
@@ -81,14 +81,14 @@ public final class VaultService: @unchecked Sendable {
         totpAuthURL: String? = nil,
         createdAt: Date? = nil,
         updatedAt: Date = Date(),
-        revisionAction: SecretRevisionAction = .updated
+        revisionAction: SecretRevisionAction = .updated,
+        valueKind: SecretValueKind = .text
     ) throws {
         let existingCreatedAt = createdAt ?? (try? store.read(name: name).createdAt)
-        let secret = Secret(
+        let secret = try makeSecret(
             name: name, value: value, updatedAt: updatedAt, createdAt: existingCreatedAt, notes: notes,
             expiresAt: expiresAt, rotateEveryDays: rotateEveryDays, lastRotatedAt: lastRotatedAt,
-            mcpAllowed: mcpAllowed,
-            totpAuthURL: totpAuthURL
+            mcpAllowed: mcpAllowed, totpAuthURL: totpAuthURL, valueKind: valueKind
         )
         try updateStore(secret, action: revisionAction)
         invalidateCache(name: name)
@@ -102,7 +102,8 @@ public final class VaultService: @unchecked Sendable {
             createdAt: existing.createdAt,
             notes: existing.notes, expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: existing.lastRotatedAt,
-            mcpAllowed: allowed, totpAuthURL: existing.totpAuthURL
+            mcpAllowed: allowed, totpAuthURL: existing.totpAuthURL,
+            valueKind: existing.valueKind
         )
         try updateStore(updated, action: .accessChanged)
         invalidateCache(name: name)
@@ -111,33 +112,23 @@ public final class VaultService: @unchecked Sendable {
 
     public func rotate(name: String, newValue: String?) async throws {
         let existing = try await read(name: name, reason: "Rotate \(name)")
+        let nextValue: String
+        if let newValue {
+            nextValue = try SecretJSON.prepared(raw: newValue, kind: existing.valueKind).value
+        } else {
+            nextValue = existing.value
+        }
         let updated = Secret(
-            name: existing.name, value: newValue ?? existing.value, updatedAt: Date(),
+            name: existing.name, value: nextValue, updatedAt: Date(),
             createdAt: existing.createdAt,
             notes: existing.notes, expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays, lastRotatedAt: Date(),
-            mcpAllowed: existing.mcpAllowed, totpAuthURL: existing.totpAuthURL
+            mcpAllowed: existing.mcpAllowed, totpAuthURL: existing.totpAuthURL,
+            valueKind: existing.valueKind
         )
         try updateStore(updated, action: .rotated)
         invalidateCache(name: name)
         try recordEvent(name: name, action: .rotate, projectPath: currentProjectPath())
-    }
-
-    public struct ImportItem: Sendable {
-        public let name: String
-        public let value: String
-        public let notes: String?
-        public let totpAuthURL: String?
-        public init(name: String, value: String, notes: String? = nil, totpAuthURL: String? = nil) {
-            self.name = name; self.value = value; self.notes = notes; self.totpAuthURL = totpAuthURL
-        }
-    }
-
-    public struct ImportResult: Sendable {
-        public let imported: [String]
-        public let updated: [String]
-        public let skipped: [String]
-        public let failed: [(String, String)]
     }
 
     public func delete(name: String) throws {
@@ -151,6 +142,7 @@ public final class VaultService: @unchecked Sendable {
     }
 
     public func read(name: String, reason: String = "Read secret") async throws -> Secret {
+        try denyAgentIfBlocked(name: name)
         try await biometric.authenticate(reason: reason)
         if let cached = cacheQueue.sync(execute: { readCache[name] }) {
             do {

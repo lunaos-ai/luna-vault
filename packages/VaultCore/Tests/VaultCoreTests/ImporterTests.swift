@@ -26,6 +26,46 @@ final class ImporterTests: XCTestCase {
         XCTAssertEqual(items.first?.value, "abc")
     }
 
+    func test_clipboard_draft_prefills_single_pair() {
+        let draft = ClipboardSecretDraft.parse("  export CF_API_TOKEN=tok_abc  \n")
+        XCTAssertEqual(draft?.name, "CF_API_TOKEN")
+        XCTAssertEqual(draft?.value, "tok_abc")
+        XCTAssertEqual(draft?.valueKind, .text)
+    }
+
+    func test_clipboard_draft_ignores_multiple_pairs() {
+        let draft = ClipboardSecretDraft.parse("A=1\nB=2\n")
+        XCTAssertNil(draft)
+    }
+
+    func test_clipboard_draft_promotes_json_value() {
+        let draft = ClipboardSecretDraft.parse(#"GOOGLE_SA={"type":"service_account"}"#)
+        XCTAssertEqual(draft?.name, "GOOGLE_SA")
+        XCTAssertEqual(draft?.valueKind, .json)
+        XCTAssertTrue(draft?.value.contains("\n") == true)
+    }
+
+    func test_clipboard_draft_json_document_fills_value_only() {
+        let draft = ClipboardSecretDraft.parse(#"{"type":"service_account","private_key":"x"}"#)
+        XCTAssertEqual(draft?.name, "")
+        XCTAssertEqual(draft?.valueKind, .json)
+        XCTAssertTrue(draft?.value.contains("private_key") == true)
+    }
+
+    func test_clipboard_draft_ignores_plain_text() {
+        XCTAssertNil(ClipboardSecretDraft.parse("just a token"))
+        XCTAssertNil(ClipboardSecretDraft.parse(""))
+    }
+
+    func test_clipboard_draft_splits_pasted_name_field() {
+        let draft = ClipboardSecretDraft.fromPastedName("STRIPE_KEY=sk_live_123", valueIsEmpty: true)
+        XCTAssertEqual(draft?.name, "STRIPE_KEY")
+        XCTAssertEqual(draft?.value, "sk_live_123")
+        XCTAssertNil(ClipboardSecretDraft.fromPastedName("STRIPE_KEY=sk_live_123", valueIsEmpty: false))
+        XCTAssertNil(ClipboardSecretDraft.fromPastedName("STRIPE_KEY", valueIsEmpty: true))
+        XCTAssertNil(ClipboardSecretDraft.fromPastedName(#"{"a":1}"#, valueIsEmpty: true))
+    }
+
     func test_env_importer_matches_glob() {
         let env = ["CF_API_TOKEN": "tok1", "STRIPE_KEY": "k", "PATH": "/usr/bin", "HOME": "/root"]
         let items = EnvImporter.collect(env: env, matching: ["CF_*", "STRIPE_*"])

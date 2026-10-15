@@ -47,6 +47,8 @@ struct DesktopRootView: View {
         switch model.tab {
         case .vault:
             VaultPane(model: $model, onRefresh: refreshAll)
+        case .projects:
+            ProjectsPane(model: $model, onRefresh: refreshProjects)
         case .unlock:
             UnlockPane(model: $model, onRefresh: refreshUnlock)
         case .sync:
@@ -66,6 +68,28 @@ struct DesktopRootView: View {
         refreshLicense()
         refreshSandbox()
         refreshAudit()
+        refreshProjects()
+    }
+
+    private func refreshProjects() {
+        let rows = ProjectRegistry().list()
+        if rows.isEmpty {
+            model.projectLines = ["No remembered projects. Add a path and scan."]
+            return
+        }
+        model.projectLines = rows.map { row in
+            let mark = row.id == ProjectRegistry().selectedID ? "*" : " "
+            let health: String
+            switch row.access {
+            case .ready:
+                health = row.missingCount > 0 ? "missing \(row.missingCount)" : "ok"
+            case .missing:
+                health = "folder missing"
+            case .notDirectory:
+                health = "not a folder"
+            }
+            return "\(mark) \(row.name)  \(health)  \(row.path)"
+        }
     }
 
     private func refreshSandbox() {
@@ -98,6 +122,7 @@ struct DesktopRootView: View {
                let secret = try DesktopVault.service().list().first(where: { $0.name == selected }) {
                 model.selectedNotes = secret.notes
                 model.selectedMCPAllowed = secret.mcpAllowed
+                model.selectedIsJSON = secret.valueKind == .json
             } else if let selected = model.selectedName,
                !model.secretNames.contains(selected) {
                 model.selectedName = nil

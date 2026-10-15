@@ -23,7 +23,7 @@ struct VaultPane: View {
                 }
                 .frame(minWidth: 220)
                 HStack {
-                    Button("Add") { model.showAddForm.toggle() }
+                    Button("Add") { beginAdd() }
                     Button("Duplicate") { duplicateSelected() }
                     Button("Delete") { deleteSelected() }
                 }
@@ -31,6 +31,17 @@ struct VaultPane: View {
         } detail: {
             VaultPaneDetail(model: $model, onRefresh: onRefresh)
         }
+    }
+
+    private func beginAdd() {
+        model.showAddForm.toggle()
+        guard model.showAddForm,
+              model.draftName.isEmpty,
+              model.draftValue.isEmpty,
+              let draft = ClipboardSecretDraft.fromPasteboard() else { return }
+        model.draftName = draft.name
+        model.draftValue = draft.value
+        model.draftIsJSON = draft.valueKind == .json
     }
 
     private func duplicateSelected() {

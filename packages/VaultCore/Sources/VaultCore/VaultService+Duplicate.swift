@@ -14,7 +14,8 @@ extension VaultService {
             expiresAt: existing.expiresAt,
             rotateEveryDays: existing.rotateEveryDays,
             mcpAllowed: false,
-            totpAuthURL: existing.totpAuthURL
+            totpAuthURL: existing.totpAuthURL,
+            valueKind: existing.valueKind
         )
         return newName
     }

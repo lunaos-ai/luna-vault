@@ -27,7 +27,7 @@ vibevault agents status --target all
 - Do not create or commit `.env` / `.env.*` files with real secret values.
 - If a secret is missing, ask the user to import it into Vibe Vault; never ask
   them to paste the value into chat.
-- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access. Both honor Allow AI agents.
 - Prefer `.env.example` only for non-secret defaults and required names.
 ```
 
@@ -60,7 +60,8 @@ vibevault agents prepare --target claude
 ## Secrets
 
 Use Vibe Vault instead of plaintext `.env` files for real secrets. Run
-`vibevault scan`, use MCP or `vibevault run -- <command>` for scoped access,
+`vibevault scan`, use MCP or `vibevault run -- <command>` for scoped access
+(both honor Allow AI agents),
 and ask the user to import missing secrets into Vibe Vault.
 ```
 
@@ -77,7 +78,7 @@ vibevault agents prepare --target gemini
 
 Run `vibevault scan` before using secrets. Do not create `.env` files with real
 API keys. Ask the user to import missing secrets into Vibe Vault and use scoped
-access through MCP or `vibevault run -- <command>`.
+access through MCP or `vibevault run -- <command>`. Both honor Allow AI agents.
 ```
 
 ## Cursor

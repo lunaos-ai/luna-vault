@@ -38,9 +38,10 @@ jobs:
         run: bash scripts/tests/package-linux-smoke.sh
 
       - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_darwin_arm64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --config .gitleaks.toml --redact --no-banner
 
       - name: Dependency scan (audit Package.resolved)
         run: |
@@ -66,12 +67,24 @@ jobs:
           git config --global --add safe.directory '*'
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libsqlite3-dev
-          swift build -c release --product vibevault --product vibevault-mcp
+          # SwiftPM applies a single --product. Build each executable on its own.
+          swift build -c release --product vibevault
+          swift build -c release --product vibevault-mcp
 
       - name: Smoke CLI help
         run: |
-          .build/release/vibevault --help
-          .build/release/vibevault-mcp --help || true
+          BIN="$(swift build -c release --show-bin-path | tail -n 1)"
+          echo "bin path: [$BIN]"
+          if [ ! -x "$BIN/vibevault" ]; then
+            BIN="$(find .build -type f -name vibevault | sed 's#/vibevault$##' | head -n 1)"
+            echo "fallback bin path: [$BIN]"
+            find .build -name 'vibevault*' -type f | head
+          fi
+          test -x "$BIN/vibevault"
+          "$BIN/vibevault" --help
+          "$BIN/vibevault-mcp" --help || true
+          echo "CLI_BIN=$BIN/vibevault" >> "$GITHUB_ENV"
+          echo "MCP_BIN=$BIN/vibevault-mcp" >> "$GITHUB_ENV"
 
       - name: Package Linux CLI tarball
         run: |
@@ -142,12 +155,13 @@ jobs:
       - name: Setup VS Dev Environment
         uses: seanmiddleditch/gha-setup-vsdevenv@v5
         with:
-          winsdk: "10.0.22621.0"
+          winsdk: "10.0.26100.0"
 
       - name: Setup Swift
-        uses: SwiftyLab/setup-swift@v1.12.0
+        uses: SwiftyLab/setup-swift@v1.13.0
         with:
-          swift-version: "6.0.3"
+          swift-version: "6.2"
+          update-sdk-modules: true
 
       - name: Swift version
         run: swift --version
@@ -156,12 +170,20 @@ jobs:
         run: powershell -File scripts/ensure-sqlite-windows.ps1
 
       - name: Build Windows CLI + MCP
-        run: swift build -c release --product vibevault --product vibevault-mcp
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # SwiftPM applies a single --product. Build each executable on its own.
+          swift build -c release --product vibevault
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          swift build -c release --product vibevault-mcp
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Smoke CLI help
+        shell: pwsh
         run: |
-          .build\release\vibevault.exe --help
-          .build\release\vibevault-mcp.exe --help
+          & .\.build\release\vibevault.exe --help
+          & .\.build\release\vibevault-mcp.exe --help
 
       - name: Test VaultCore
         run: swift test --filter VaultCoreTests
@@ -190,12 +212,13 @@ jobs:
       - name: Setup VS Dev Environment
         uses: seanmiddleditch/gha-setup-vsdevenv@v5
         with:
-          winsdk: "10.0.22621.0"
+          winsdk: "10.0.26100.0"
 
       - name: Setup Swift
-        uses: SwiftyLab/setup-swift@v1.12.0
+        uses: SwiftyLab/setup-swift@v1.13.0
         with:
-          swift-version: "6.0.3"
+          swift-version: "6.2"
+          update-sdk-modules: true
 
       - name: Swift version
         run: swift --version

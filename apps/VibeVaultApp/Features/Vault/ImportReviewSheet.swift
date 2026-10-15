@@ -139,7 +139,8 @@ struct ImportReviewSheet: View {
                 name: row.vaultName(prefix: prefix),
                 value: row.value,
                 notes: row.notes ?? notes,
-                totpAuthURL: row.totpAuthURL
+                totpAuthURL: row.totpAuthURL,
+                valueKind: row.valueKind
             )
         }
         do {

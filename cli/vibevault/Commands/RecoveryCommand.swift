@@ -1,7 +1,10 @@
 import ArgumentParser
 #if canImport(Darwin)
 import Darwin
-#else
+#elseif os(Windows)
+import WinSDK
+import ucrt
+#elseif canImport(Glibc)
 import Glibc
 #endif
 import Foundation

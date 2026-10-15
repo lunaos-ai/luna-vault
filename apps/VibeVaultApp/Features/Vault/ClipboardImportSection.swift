@@ -32,14 +32,14 @@ struct ClipboardImportSection: View {
 
             switch phase {
             case .idle:
-                Text("Copy KEY=VALUE lines, then read your clipboard.")
+                Text("Copy KEY=VALUE lines or a JSON object, then read your clipboard.")
                     .font(.caption)
                     .foregroundStyle(Tokens.Text.secondary)
             case .empty:
                 feedbackRow(
                     icon: "exclamationmark.circle.fill",
                     tint: Tokens.Status.warning,
-                    text: "Clipboard has no dotenv-shaped lines (KEY=VALUE)."
+                    text: "Clipboard has no dotenv-shaped lines (KEY=VALUE) or JSON object."
                 )
             case .preview:
                 Text("Found \(previewItems.count) secret\(previewItems.count == 1 ? "" : "s"). Review before importing.")

@@ -15,6 +15,7 @@ struct ScanCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         let projectURL = URL(fileURLWithPath: path ?? FileManager.default.currentDirectoryPath)
+        try ProjectScanner.validateRoot(projectURL)
         if gitOnly {
             let leaks = GitLeakScanner.trackedLeaks(projectURL: projectURL)
             printGitLeaks(leaks, json: json, projectURL: projectURL)
@@ -23,8 +24,8 @@ struct ScanCommand: AsyncParsableCommand {
         }
 
         let service = try VaultService.live()
-        let known = Set(try service.list().map(\.name))
-        let result = try ProjectScanner().scan(projectURL: projectURL, knownSecrets: known)
+        let names = try service.list().map(\.name)
+        let result = try ProjectWorkflow.scanAndRemember(projectURL: projectURL, vaultNames: names)
         if json {
             let payload: [String: Any] = [
                 "required": Array(result.required).sorted(),
