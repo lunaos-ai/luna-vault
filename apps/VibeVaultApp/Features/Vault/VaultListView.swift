@@ -37,7 +37,10 @@ struct VaultListView: View {
         }
         .toolbar { toolbar }
         .sheet(isPresented: $showAdd) {
-            AddSecretSheet().environmentObject(env)
+            NavigationStack {
+                AddSecretSheet()
+            }
+            .environmentObject(env)
         }
         .sheet(isPresented: $showAddVerificationCode) {
             AddAuthenticatorSheet().environmentObject(env)
@@ -65,6 +68,14 @@ struct VaultListView: View {
                   let id = selection,
                   let name = env.secrets.first(where: { $0.id == id })?.name else { return }
             Task { await env.copySecret(name: name) }
+        }
+        .onChange(of: env.duplicateSelectedSecret) { _, dup in
+            guard dup else { return }
+            env.duplicateSelectedSecret = false
+            guard !isSelecting,
+                  let id = selection,
+                  let name = env.secrets.first(where: { $0.id == id })?.name else { return }
+            Task { _ = await env.duplicateSecret(name: name) }
         }
         .onChange(of: env.openAddSecret) { _, open in
             if open { showAdd = true }

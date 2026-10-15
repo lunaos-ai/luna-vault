@@ -8,7 +8,7 @@ Policy version: 1.2.0
 - Run `vibevault scan` before secret-dependent work in this repo.
 - Do not create `.env` / `.env.*` files with real secret values.
 - If a secret is missing, ask the user to import it into Vibe Vault; never ask them to paste the raw value into chat.
-- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access.
+- Use Vibe Vault MCP or `vibevault run -- <command>` for scoped access. Both honor Allow AI agents.
 - Keep `.env.example` only for required names and safe defaults.
 
 <!-- /vibe-vault -->

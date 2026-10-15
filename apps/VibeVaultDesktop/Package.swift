@@ -15,11 +15,6 @@ let package = Package(
             url: "https://github.com/moreSwift/swift-cross-ui.git",
             exact: "0.9.0"
         ),
-        // Keep under 1.8 so Linux Swift 5.10 CI can resolve (1.8+ needs tools 6.0).
-        .package(
-            url: "https://github.com/apple/swift-argument-parser.git",
-            "1.3.0"..<"1.8.0"
-        ),
     ],
     targets: [
         .executableTarget(

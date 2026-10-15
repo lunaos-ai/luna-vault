@@ -24,7 +24,10 @@ struct VaultPaneDetail: View {
     @ViewBuilder
     private func secretDetail(_ name: String) -> some View {
         Text(name).font(.system(size: 18, weight: .semibold))
-        Text(model.revealedValue ?? "••••••••")
+        if model.selectedIsJSON {
+            Text("JSON").foregroundColor(.gray).font(.system(size: 12))
+        }
+        Text(model.revealedValue ?? (model.selectedIsJSON ? "{…}" : "••••••••"))
             .font(.system(size: 14, design: .monospaced))
         if let notes = model.selectedNotes, !notes.isEmpty {
             Text(notes).foregroundColor(.gray)
@@ -51,6 +54,9 @@ struct VaultPaneDetail: View {
             Text("New secret").font(.system(size: 16, weight: .semibold))
             TextField("NAME", text: $model.draftName)
             TextField("Value", text: $model.draftValue)
+            Button(model.draftIsJSON ? "Format: JSON" : "Format: Text") {
+                model.draftIsJSON.toggle()
+            }
             TextField("Notes (optional)", text: $model.draftNotes)
             HStack {
                 Button("Save") { saveDraft() }
@@ -59,6 +65,7 @@ struct VaultPaneDetail: View {
                     model.draftName = ""
                     model.draftValue = ""
                     model.draftNotes = ""
+                    model.draftIsJSON = false
                 }
             }
         }
@@ -72,6 +79,7 @@ struct VaultPaneDetail: View {
                 model.revealedValue = secret.value
                 model.selectedNotes = secret.notes
                 model.selectedMCPAllowed = secret.mcpAllowed
+                model.selectedIsJSON = secret.valueKind == .json
                 model.statusMessage = "Revealed \(name)"
                 model.errorMessage = nil
             } catch {
@@ -124,12 +132,15 @@ struct VaultPaneDetail: View {
         }
         do {
             let notes = model.draftNotes.isEmpty ? nil : model.draftNotes
-            try DesktopVault.service().add(name: name, value: value, notes: notes)
+            let kind: SecretValueKind = model.draftIsJSON ? .json : .text
+            try DesktopVault.service().add(name: name, value: value, notes: notes, valueKind: kind)
             model.showAddForm = false
             model.draftName = ""
             model.draftValue = ""
             model.draftNotes = ""
+            model.draftIsJSON = false
             model.selectedName = name
+            model.selectedIsJSON = kind == .json
             model.statusMessage = "Saved \(name)"
             onRefresh()
         } catch {

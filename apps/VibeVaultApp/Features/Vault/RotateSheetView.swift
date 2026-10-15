@@ -13,13 +13,20 @@ struct RotateSheetView: View {
     @State private var status: String?
 
     var body: some View {
+        NavigationStack {
         Form {
             Section {
-                RevealableSecureField(title: "New value", text: $newValue)
+                if secret.valueKind == .json {
+                    SecretJSONEditor(text: $newValue, errorMessage: jsonError, minHeight: 180)
+                } else {
+                    RevealableSecureField(title: "New value", text: $newValue)
+                }
             } header: {
                 Text("Rotate \(secret.name)")
             } footer: {
-                Text("Audit log records who rotated and when.")
+                Text(secret.valueKind == .json
+                     ? "Replacement must be a JSON object or array. Audit log records who rotated and when."
+                     : "Audit log records who rotated and when.")
             }
             Section {
                 Toggle("Also push to a provider", isOn: $alsoPush)
@@ -48,7 +55,8 @@ struct RotateSheetView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 480, minHeight: 360)
+        .navigationTitle("Rotate")
+        .frame(minWidth: 520, minHeight: secret.valueKind == .json ? 560 : 360)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { isPresented = false }
@@ -58,9 +66,21 @@ struct RotateSheetView: View {
                     Task { await perform() }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(newValue.isEmpty)
+                .disabled(newValue.isEmpty || jsonInvalid)
             }
         }
+        }
+    }
+
+    private var jsonError: String? {
+        guard secret.valueKind == .json,
+              !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        if (try? SecretJSON.prettyPrinted(newValue)) != nil { return nil }
+        return "Enter a JSON object or array."
+    }
+
+    private var jsonInvalid: Bool {
+        secret.valueKind == .json && jsonError != nil
     }
 
     @MainActor

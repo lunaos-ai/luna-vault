@@ -106,14 +106,17 @@ extension AppEnvironment {
     }
 
     func scan(projectURL: URL) {
-        let known = knownSecretNames(for: projectURL)
+        let names = secrets.map(\.name)
+        let prefix = projectPrefix(for: projectURL)
         scanResult = nil
         isScanning = true
         lastScannedURL = projectURL
         Task.detached(priority: .userInitiated) { [weak self] in
             let result: Result<ScanResult, Error>
             do {
-                let scan = try ProjectScanner().scan(projectURL: projectURL, knownSecrets: known)
+                let scan = try ProjectWorkflow.scanAndRemember(
+                    projectURL: projectURL, vaultNames: names, prefix: prefix
+                )
                 result = .success(scan)
             } catch {
                 result = .failure(error)
@@ -125,6 +128,7 @@ extension AppEnvironment {
                 case .success(let r):
                     self.scanResult = r
                     self.updateCloudflareScope(from: projectURL)
+                    self.reloadProjects()
                 case .failure(let e): self.lastError = "\(e)"
                 }
             }
@@ -141,13 +145,7 @@ extension AppEnvironment {
 
     /// Treats `MYPROJECT_CF_TOKEN` as satisfying scan requirement `CF_TOKEN` for that project.
     func knownSecretNames(for projectURL: URL) -> Set<String> {
-        let prefix = SecretNaming.defaultProjectPrefix(from: projectURL)
-        var known = Set(secrets.map(\.name))
-        guard !prefix.isEmpty else { return known }
-        for secret in secrets where secret.name.hasPrefix(prefix) {
-            known.insert(String(secret.name.dropFirst(prefix.count)))
-        }
-        return known
+        SecretNaming.knownNames(vaultNames: secrets.map(\.name), prefix: projectPrefix(for: projectURL))
     }
 }
 

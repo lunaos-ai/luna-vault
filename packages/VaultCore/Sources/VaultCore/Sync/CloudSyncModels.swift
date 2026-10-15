@@ -59,6 +59,7 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
     public let lastRotatedAt: Date?
     public let mcpAllowed: Bool
     public let totpAuthURL: String?
+    public let valueKind: SecretValueKind
 
     enum CodingKeys: String, CodingKey {
         case name
@@ -71,6 +72,7 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
         case lastRotatedAt
         case mcpAllowed
         case totpAuthURL
+        case valueKind
     }
 
     public init(
@@ -83,7 +85,8 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
         rotateEveryDays: Int? = nil,
         lastRotatedAt: Date? = nil,
         mcpAllowed: Bool = false,
-        totpAuthURL: String? = nil
+        totpAuthURL: String? = nil,
+        valueKind: SecretValueKind = .text
     ) {
         self.name = name
         self.value = value
@@ -95,6 +98,7 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
         self.lastRotatedAt = lastRotatedAt
         self.mcpAllowed = mcpAllowed
         self.totpAuthURL = totpAuthURL
+        self.valueKind = valueKind
     }
 
     public init(from decoder: Decoder) throws {
@@ -109,6 +113,7 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
         lastRotatedAt = try container.decodeIfPresent(Date.self, forKey: .lastRotatedAt)
         mcpAllowed = try container.decodeIfPresent(Bool.self, forKey: .mcpAllowed) ?? false
         totpAuthURL = try container.decodeIfPresent(String.self, forKey: .totpAuthURL)
+        valueKind = try container.decodeIfPresent(SecretValueKind.self, forKey: .valueKind) ?? .text
     }
 
     public init(secret: Secret) {
@@ -122,7 +127,8 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
             rotateEveryDays: secret.rotateEveryDays,
             lastRotatedAt: secret.lastRotatedAt,
             mcpAllowed: secret.mcpAllowed,
-            totpAuthURL: secret.totpAuthURL
+            totpAuthURL: secret.totpAuthURL,
+            valueKind: secret.valueKind
         )
     }
 
@@ -138,7 +144,8 @@ public struct CloudSyncSecret: Codable, Equatable, Sendable {
             lastRotatedAt: lastRotatedAt,
             mcpAllowed: mcpAllowed,
             hasTOTP: totpAuthURL != nil,
-            totpAuthURL: totpAuthURL
+            totpAuthURL: totpAuthURL,
+            valueKind: valueKind
         )
     }
 }

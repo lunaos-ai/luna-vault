@@ -8,6 +8,7 @@ struct SecretDetailView: View {
     @State private var deleteConfirm = false
     @State private var showRotateSheet = false
     @State private var showTOTPSheet = false
+    @State private var showEditValue = false
     @State private var unlockedTOTPAuthURL: String?
 
     var body: some View {
@@ -20,6 +21,7 @@ struct SecretDetailView: View {
                 SecretDetailActions(
                     secret: currentSecret,
                     showRotateSheet: $showRotateSheet,
+                    showEditValue: $showEditValue,
                     deleteConfirm: $deleteConfirm
                 )
             }
@@ -48,6 +50,10 @@ struct SecretDetailView: View {
         }
         .sheet(isPresented: $showTOTPSheet) {
             TOTPSetupSheet(secretName: currentSecret.name, unlockedAuthURL: $unlockedTOTPAuthURL)
+                .environmentObject(env)
+        }
+        .sheet(isPresented: $showEditValue) {
+            EditSecretValueSheet(secret: currentSecret, isPresented: $showEditValue)
                 .environmentObject(env)
         }
     }
@@ -86,9 +92,15 @@ struct SecretDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(Tokens.Text.secondary)
             }
-            SecretValueRow(secret: currentSecret)
-                .environmentObject(env)
-                .padding(.top, Tokens.Space.xs)
+            if currentSecret.valueKind == .json {
+                SecretJSONHero(secret: currentSecret, onEdit: { showEditValue = true })
+                    .environmentObject(env)
+                    .padding(.top, Tokens.Space.xs)
+            } else {
+                SecretValueRow(secret: currentSecret, onEdit: { showEditValue = true })
+                    .environmentObject(env)
+                    .padding(.top, Tokens.Space.xs)
+            }
         }
     }
 
@@ -115,6 +127,8 @@ struct SecretDetailView: View {
                 Divider().padding(.leading, Tokens.Space.md)
                 row("Notes", notes)
             }
+            Divider().padding(.leading, Tokens.Space.md)
+            row("Format", currentSecret.valueKind.label)
             Divider().padding(.leading, Tokens.Space.md)
             TOTPDetailRow(
                 secret: currentSecret,

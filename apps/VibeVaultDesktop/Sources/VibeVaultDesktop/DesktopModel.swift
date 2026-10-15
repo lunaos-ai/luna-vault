@@ -4,6 +4,7 @@ import VaultCore
 struct DesktopModel {
     enum Tab: String, CaseIterable, Identifiable {
         case vault = "Vault"
+        case projects = "Projects"
         case unlock = "Unlock"
         case sync = "Sync"
         case sandbox = "Sandbox"
@@ -17,6 +18,7 @@ struct DesktopModel {
     var selectedName: String?
     var revealedValue: String?
     var selectedNotes: String?
+    var selectedIsJSON = false
     var selectedMCPAllowed = false
     var search = ""
     var statusMessage = ""
@@ -28,6 +30,7 @@ struct DesktopModel {
     var draftName = ""
     var draftValue = ""
     var draftNotes = ""
+    var draftIsJSON = false
     var showAddForm = false
     var syncPath = ""
     var syncPassphrase = ""
@@ -37,6 +40,8 @@ struct DesktopModel {
     var sandboxMinutes = "30"
     var sandboxStatus = "Stopped"
     var auditLines: [String] = []
+    var projectPath = ""
+    var projectLines: [String] = []
 
     var visibleSecretNames: [String] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)

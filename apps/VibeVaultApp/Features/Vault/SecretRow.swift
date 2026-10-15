@@ -64,7 +64,7 @@ struct SecretRow: View {
     }
 
     private var avatar: some View {
-        Image(systemName: "key.fill")
+        Image(systemName: secret.valueKind == .json ? "curlybraces" : "key.fill")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(Tokens.Text.tertiary)
             .frame(width: 22, height: 22)
@@ -111,6 +111,9 @@ struct SecretRow: View {
             }
             if secret.hasTOTP {
                 Text("· MFA")
+            }
+            if secret.valueKind == .json {
+                Text("· JSON")
             }
         }
         .font(.caption)

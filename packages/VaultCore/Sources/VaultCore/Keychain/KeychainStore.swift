@@ -78,7 +78,8 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
             rotateEveryDays: secret.rotateEveryDays,
             lastRotatedAt: secret.lastRotatedAt,
             mcpAllowed: secret.mcpAllowed ? true : nil,
-            totpAuthURL: secret.totpAuthURL
+            totpAuthURL: secret.totpAuthURL,
+            valueKind: secret.valueKind == .json ? .json : nil
         )
         return meta.encode()
     }
@@ -131,7 +132,8 @@ public final class KeychainStore: KeychainStoring, @unchecked Sendable {
             rotateEveryDays: meta.rotateEveryDays, lastRotatedAt: meta.lastRotatedAt,
             mcpAllowed: meta.mcpAllowed ?? false,
             hasTOTP: meta.totpAuthURL != nil,
-            totpAuthURL: includeTOTP ? meta.totpAuthURL : nil
+            totpAuthURL: includeTOTP ? meta.totpAuthURL : nil,
+            valueKind: meta.valueKind ?? .text
         )
     }
 
