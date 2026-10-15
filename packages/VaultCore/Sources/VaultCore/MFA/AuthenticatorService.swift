@@ -50,21 +50,30 @@ public final class AuthenticatorService: @unchecked Sendable {
     }
 
     public func list() throws -> [AuthenticatorAccountMetadata] {
-        try store.listAuthenticators()
+        let accounts = try store.listAuthenticators()
+        return detector.detect().requiresAuthenticatorAllowlist ? accounts.filter(\.mcpAllowed) : accounts
     }
 
-    public func code(id: UUID, reason: String = "Show authenticator code", at date: Date = Date()) async throws -> TOTPCode {
+    public func code(id: UUID, reason: String = "Show authenticator code", at date: Date? = nil) async throws -> TOTPCode {
+        try await generateCode(id: id, reason: reason, at: date,
+                               agentAccess: detector.detect().requiresAuthenticatorAllowlist)
+    }
+
+    func generateCode(id: UUID, reason: String, at date: Date?, agentAccess: Bool) async throws -> TOTPCode {
+        if agentAccess { try requireAgentAccess(id: id) }
         try await biometric.authenticate(reason: reason)
         let account = try store.readAuthenticator(id: id)
+        if agentAccess && !account.mcpAllowed { throw AuthenticatorError.agentAccessDenied }
         let code = try TOTPGenerator.code(for: TOTPAccount(
             secret: account.secret, issuer: account.issuer, account: account.accountName,
             digits: account.digits, period: account.period, algorithm: account.algorithm
-        ), at: date)
+        ), at: date ?? Date())
         try record(id, action: .read)
         return code
     }
 
     public func addRecoveryCodes(id: UUID, values: [String]) async throws {
+        try requireHumanManagement()
         let cleanedValues = values.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         guard !cleanedValues.isEmpty,
               cleanedValues.allSatisfy({ !$0.isEmpty && $0.count <= 256 }),
@@ -81,6 +90,7 @@ public final class AuthenticatorService: @unchecked Sendable {
     }
 
     public func nextRecoveryCode(id: UUID) async throws -> RecoveryCode {
+        try requireHumanManagement()
         try await biometric.authenticate(reason: "Show next recovery code")
         let account = try store.readAuthenticator(id: id)
         guard let code = account.recoveryCodes.first(where: { $0.usedAt == nil }) else {
@@ -91,6 +101,7 @@ public final class AuthenticatorService: @unchecked Sendable {
     }
 
     public func markRecoveryCodeUsed(id: UUID, recoveryCodeID: UUID) async throws {
+        try requireHumanManagement()
         try await biometric.authenticate(reason: "Mark recovery code used")
         var account = try store.readAuthenticator(id: id)
         guard let index = account.recoveryCodes.firstIndex(where: { $0.id == recoveryCodeID }) else {

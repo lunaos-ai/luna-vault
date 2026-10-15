@@ -46,6 +46,14 @@ The extension runs only on API-key dashboard pages declared in `manifest.json` h
 
 The extension also accepts a selected value on supported pages when it looks like a secret but does not match a provider-specific pattern.
 
+PushCI (`app.pushci.dev`, `staging.pushci.dev`) and AMLIQ can hand off authenticator
+setup using **Save to VibeVault**. The local app reviews the import; the website
+still confirms MFA with a generated code. Agent access is enabled separately in
+the app. See [Authenticator access for agents](../../docs/AGENT_AUTHENTICATOR_ACCESS.md).
+
+Test the browser bridge with `node --test extensions/browser-vibevault/tests/*.test.cjs`
+from the repository root.
+
 ## Security Model
 
 - The content script does not use `chrome.storage`, `localStorage`, or IndexedDB.

@@ -6,6 +6,8 @@ All notable changes to Vibe Vault are documented here.
 
 ### Added
 
+- Per-authenticator **Allow AI agents** control, audited MCP code requests and revocation, and PushCI enrollment import through the browser extension. Existing authenticators default to private; agents receive temporary codes only.
+
 - Eye toggle on New Secret and Rotate sheets to show or hide the value while typing.
 - Recovery-key fingerprints on new `.vvsync` bundles, a Keychain-backed recovery-key keyring, and Cloud Sync restore errors that distinguish a mismatched key from a corrupt backup.
 - Passkey-gated loopback HTTP MCP for AI sandboxes (`vibevault mcp passkey`, `mcp serve --http`, `mcp sandbox start`). Binds 127.0.0.1 only; bearer token or `Authorization: Passkey`.
@@ -14,6 +16,8 @@ All notable changes to Vibe Vault are documented here.
 - Desktop Sandbox and Audit tabs (Linux / Windows).
 
 ### Changed
+
+- `vibevault otp code` now requires the authenticator's agent-access permission, including when process detection cannot identify the caller. CLI vault unlock requirements still apply.
 
 - Cloud Sync recovery-key restore no longer reports a mismatched or rotated key as bundle corruption. Rotating the active key keeps previous keys for older backups.
 

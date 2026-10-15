@@ -21,6 +21,7 @@ public protocol AgentDetecting: Sendable {
 
 public final class AgentDetector: AgentDetecting, @unchecked Sendable {
     public static let knownAgents: [String: String] = [
+        "codex": "codex",
         "claude": "claude-code",
         "claude-code": "claude-code",
         "cursor": "cursor",
@@ -52,6 +53,12 @@ public final class AgentDetector: AgentDetecting, @unchecked Sendable {
     public func detect() -> DetectedAgent {
         if let explicit = env["LUNA_AGENT"], !explicit.isEmpty {
             return DetectedAgent(name: explicit, confidence: .high, source: "LUNA_AGENT")
+        }
+        for (key, name) in [("CODEX_THREAD_ID", "codex"), ("CLAUDECODE", "claude-code"),
+                            ("CURSOR_AGENT", "cursor"), ("GEMINI_CLI", "gemini-cli")] {
+            if let value = env[key], !value.isEmpty {
+                return DetectedAgent(name: name, confidence: .high, source: "env:\(key)")
+            }
         }
         if let parent = parentProcessLookup() {
             let lower = parent.lowercased()

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vibe Vault Importer",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Save newly generated provider API keys directly into Vibe Vault.",
   "minimum_chrome_version": "114",
   "icons": {
@@ -10,7 +10,10 @@
     "48": "assets/icon-48.png",
     "128": "assets/icon-128.png"
   },
-  "permissions": ["nativeMessaging", "clipboardRead"],
+  "permissions": [
+    "nativeMessaging",
+    "clipboardRead"
+  ],
   "host_permissions": [
     "https://aistudio.google.com/*",
     "https://makersuite.google.com/*",
@@ -29,7 +32,9 @@
     "https://vercel.com/*",
     "https://dash.cloudflare.com/*",
     "https://amliq.finance/*",
-    "https://*.amliq.finance/*"
+    "https://*.amliq.finance/*",
+    "https://app.pushci.dev/*",
+    "https://staging.pushci.dev/*"
   ],
   "background": {
     "service_worker": "src/background.js"
@@ -54,10 +59,17 @@
         "https://vercel.com/*",
         "https://dash.cloudflare.com/*",
         "https://amliq.finance/*",
-        "https://*.amliq.finance/*"
+        "https://*.amliq.finance/*",
+        "https://app.pushci.dev/*",
+        "https://staging.pushci.dev/*"
       ],
-      "js": ["src/content.js"],
-      "css": ["src/styles.css"],
+      "js": [
+        "src/authenticator-bridge.js",
+        "src/content.js"
+      ],
+      "css": [
+        "src/styles.css"
+      ],
       "run_at": "document_idle"
     }
   ],

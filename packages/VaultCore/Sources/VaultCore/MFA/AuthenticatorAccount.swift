@@ -24,17 +24,41 @@ public struct AuthenticatorAccount: Codable, Equatable, Identifiable, Sendable {
     public var updatedAt: Date
     public var favorite: Bool
     public var recoveryCodes: [RecoveryCode]
+    public var mcpAllowed: Bool
 
     public init(
         id: UUID = UUID(), issuer: String, accountName: String, secret: Data,
         algorithm: TOTPAlgorithm = .sha1, digits: Int = 6, period: Int = 30,
         createdAt: Date = Date(), updatedAt: Date = Date(), favorite: Bool = false,
-        recoveryCodes: [RecoveryCode] = []
+        recoveryCodes: [RecoveryCode] = [], mcpAllowed: Bool = false
     ) {
         self.id = id; self.issuer = issuer; self.accountName = accountName
         self.secret = secret; self.algorithm = algorithm; self.digits = digits
         self.period = period; self.createdAt = createdAt; self.updatedAt = updatedAt
         self.favorite = favorite; self.recoveryCodes = recoveryCodes
+        self.mcpAllowed = mcpAllowed
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, issuer, accountName, secret, algorithm, digits, period
+        case createdAt, updatedAt, favorite, recoveryCodes, mcpAllowed
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        issuer = try values.decode(String.self, forKey: .issuer)
+        accountName = try values.decode(String.self, forKey: .accountName)
+        secret = try values.decode(Data.self, forKey: .secret)
+        algorithm = try values.decode(TOTPAlgorithm.self, forKey: .algorithm)
+        digits = try values.decode(Int.self, forKey: .digits)
+        period = try values.decode(Int.self, forKey: .period)
+        createdAt = try values.decode(Date.self, forKey: .createdAt)
+        updatedAt = try values.decode(Date.self, forKey: .updatedAt)
+        favorite = try values.decode(Bool.self, forKey: .favorite)
+        recoveryCodes = try values.decode([RecoveryCode].self, forKey: .recoveryCodes)
+        // Existing vaults and backups must never implicitly grant agent access.
+        mcpAllowed = try values.decodeIfPresent(Bool.self, forKey: .mcpAllowed) ?? false
     }
 }
 
@@ -50,6 +74,7 @@ public struct AuthenticatorAccountMetadata: Codable, Equatable, Identifiable, Se
     public let favorite: Bool
     public let recoveryCodeCount: Int
     public let unusedRecoveryCodeCount: Int
+    public let mcpAllowed: Bool
 
     public init(_ account: AuthenticatorAccount) {
         id = account.id; issuer = account.issuer; accountName = account.accountName
@@ -57,6 +82,7 @@ public struct AuthenticatorAccountMetadata: Codable, Equatable, Identifiable, Se
         createdAt = account.createdAt; updatedAt = account.updatedAt; favorite = account.favorite
         recoveryCodeCount = account.recoveryCodes.count
         unusedRecoveryCodeCount = account.recoveryCodes.filter { $0.usedAt == nil }.count
+        mcpAllowed = account.mcpAllowed
     }
 }
 
@@ -68,6 +94,8 @@ public enum AuthenticatorError: Error, Equatable, CustomStringConvertible {
     case invalidRecoveryCodes
     case noUnusedRecoveryCodes
     case recoveryCodeNotFound(UUID)
+    case agentAccessDenied
+    case humanRequired
 
     public var description: String {
         switch self {
@@ -78,6 +106,8 @@ public enum AuthenticatorError: Error, Equatable, CustomStringConvertible {
         case .invalidRecoveryCodes: return "recovery codes must be non-empty and unique"
         case .noUnusedRecoveryCodes: return "no unused recovery codes remain"
         case .recoveryCodeNotFound: return "recovery code not found"
+        case .agentAccessDenied: return "authenticator is not AI-accessible; enable Allow AI agents in VibeVault"
+        case .humanRequired: return "manage authenticator access, setup keys, and recovery codes in the VibeVault app"
         }
     }
 }
