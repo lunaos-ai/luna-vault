@@ -21,6 +21,7 @@ public protocol AgentDetecting: Sendable {
 
 public final class AgentDetector: AgentDetecting, @unchecked Sendable {
     public static let knownAgents: [String: String] = [
+        "codex": "codex",
         "claude": "claude-code",
         "claude-code": "claude-code",
         "cursor": "cursor",

@@ -9,6 +9,7 @@ struct AuthenticatorDetailView: View {
     @State private var showDelete = false
     @State private var showRecoveryImport = false
     @State private var revealedRecoveryCode: RecoveryCode?
+    @State private var changingAccess = false
 
     var body: some View {
         ScrollView {
@@ -28,6 +29,7 @@ struct AuthenticatorDetailView: View {
                     .accessibilityLabel(account.favorite ? "Remove favorite" : "Add favorite")
                 }
                 codeSurface
+                agentAccessSurface
                 recoverySurface
                 HStack {
                     Spacer()
@@ -83,6 +85,29 @@ struct AuthenticatorDetailView: View {
         .background(Tokens.Surface.elevated, in: RoundedRectangle(cornerRadius: Tokens.Radius.md))
         .overlay(RoundedRectangle(cornerRadius: Tokens.Radius.md)
             .stroke(Tokens.Surface.separator, lineWidth: Tokens.Stroke.hairline))
+    }
+
+    private var agentAccessSurface: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.sm) {
+            Toggle("Allow AI agents", isOn: Binding(
+                get: { account.mcpAllowed },
+                set: { allowed in
+                    changingAccess = true
+                    Task {
+                        do {
+                            try await env.authenticatorService.setMCPAllowed(id: account.id, allowed: allowed)
+                            env.refreshAuthenticators()
+                        } catch { env.lastError = "\(error)" }
+                        changingAccess = false
+                    }
+                }
+            ))
+            .toggleStyle(.switch)
+            .tint(Tokens.Palette.accent)
+            .disabled(changingAccess)
+            Text("Connected agents can request sign-in codes for this account through MCP or the CLI. This lets them complete MFA without asking you for each code. Setup keys and recovery codes stay private. Turn this off to revoke access.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
     }
 
     private var recoverySurface: some View {

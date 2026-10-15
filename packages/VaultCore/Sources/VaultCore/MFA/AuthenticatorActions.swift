@@ -27,6 +27,7 @@ extension AuthenticatorService {
     }
 
     public func replaceSeed(id: UUID, input: String) async throws {
+        try requireHumanManagement()
         let parsed = try TOTPGenerator.account(from: input)
         try await biometric.authenticate(reason: "Replace authenticator setup key")
         var account = try store.readAuthenticator(id: id)
@@ -34,6 +35,7 @@ extension AuthenticatorService {
         account.algorithm = parsed.algorithm
         account.digits = parsed.digits
         account.period = parsed.period
+        account.mcpAllowed = false
         account.updatedAt = Date()
         try update(account, action: .seedReplaced)
         try record(id, action: .write)

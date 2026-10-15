@@ -12,7 +12,7 @@ struct OTPListCommand: AsyncParsableCommand {
             let payload: [[String: Any]] = accounts.map {
                 ["id": $0.id.uuidString, "issuer": $0.issuer, "account": $0.accountName,
                  "digits": $0.digits, "period": $0.period, "favorite": $0.favorite,
-                 "recovery_codes_remaining": $0.unusedRecoveryCodeCount]
+                 "recovery_codes_remaining": $0.unusedRecoveryCodeCount, "agent_access_allowed": $0.mcpAllowed]
             }
             let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
             print(String(data: data, encoding: .utf8) ?? "[]")
@@ -35,7 +35,8 @@ struct OTPCodeCommand: AsyncParsableCommand {
     mutating func run() async throws {
         let service = try AuthenticatorService.live()
         let id = try OTPCLI.resolve(identifier, in: service)
-        let result = try await service.code(id: id, reason: "Generate authenticator code from CLI")
+        // CLI and MCP are automation surfaces; never rely on process-name detection alone.
+        let result = try await service.codeForAgent(id: id)
         if copy {
             try OTPClipboard.copy(result.code, expiresAfter: clipboardSeconds)
             print("copied; expires in \(max(5, min(300, clipboardSeconds)))s")

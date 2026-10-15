@@ -127,6 +127,11 @@ let package = Package(
             dependencies: ["VaultCore"],
             path: "packages/VaultCore/Tests/VaultCoreTests"
         ),
+        .testTarget(
+            name: "VibeVaultMCPTests",
+            dependencies: ["vibevault-mcp", "VaultCore"],
+            path: "cli/vibevault-mcp-tests"
+        ),
         .executableTarget(
             name: "vibevault",
             dependencies: [

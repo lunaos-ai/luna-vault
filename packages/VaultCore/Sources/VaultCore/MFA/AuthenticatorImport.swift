@@ -17,16 +17,19 @@ public struct AuthenticatorImportResult: Equatable, Sendable {
 
 extension AuthenticatorService {
     public func accountsForEncryptedBackup() async throws -> [AuthenticatorAccount] {
+        try requireHumanManagement()
         try await biometric.authenticate(reason: "Export authenticators to encrypted backup")
         return try store.allAuthenticators()
     }
 
     public func revisionsForEncryptedBackup() throws -> [AuthenticatorRevision] {
+        try requireHumanManagement()
         guard let store = store as? VersionedAuthenticatorStoring else { return [] }
         return try store.allAuthenticatorRevisions()
     }
 
     public func mergeRevisionsFromEncryptedBackup(_ revisions: [AuthenticatorRevision]) throws {
+        try requireHumanManagement()
         guard let store = store as? VersionedAuthenticatorStoring else { return }
         try store.mergeAuthenticatorRevisions(revisions)
     }
@@ -35,6 +38,7 @@ extension AuthenticatorService {
         _ accounts: [AuthenticatorAccount],
         duplicatePolicy: AuthenticatorDuplicatePolicy
     ) async throws -> AuthenticatorImportResult {
+        try requireHumanManagement()
         guard accounts.count <= 10_000 else { throw TOTPError.invalidParameter("account count") }
         try await biometric.authenticate(reason: "Import authenticators from encrypted backup")
         var imported: [UUID] = []

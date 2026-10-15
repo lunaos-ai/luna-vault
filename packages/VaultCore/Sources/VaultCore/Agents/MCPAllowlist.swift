@@ -3,15 +3,16 @@ import Foundation
 /// When a coding agent is the caller, only `mcpAllowed` secrets may be read.
 public enum MCPAllowlist {
     public static let codingAgentNames: Set<String> = [
-        "claude-code", "cursor", "vscode", "devin", "sourcegraph-cody", "aider"
+        "codex", "claude-code", "cursor", "vscode", "devin", "sourcegraph-cody", "aider"
     ]
 
     /// Process basenames that mean an AI agent, not a human IDE or shell.
     public static let codingAgentBinaries: Set<String> = [
-        "cursor-agent", "claude", "claude-code", "copilot", "aider", "devin", "cody"
+        "codex", "cursor-agent", "claude", "claude-code", "copilot", "aider", "devin", "cody"
     ]
 
     public static let agentEnvKeys: [String: String] = [
+        "CODEX_THREAD_ID": "codex",
         "CLAUDECODE": "claude-code",
         "CLAUDE_CODE": "claude-code",
         "CURSOR_AGENT": "cursor",

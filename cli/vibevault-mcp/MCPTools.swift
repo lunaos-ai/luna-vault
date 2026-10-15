@@ -75,11 +75,13 @@ enum MCPTools {
                 "required": ["path", "task"]
             ]
         )
-    ] + MCPProviderTools.definitions
+    ] + MCPProviderTools.definitions + MCPAuthenticatorTools.definitions
 
     static func call(name: String, arguments: [String: Any], context: MCPContext) async -> [String: Any] {
         do {
             switch name {
+            case "list_authenticators", "get_authenticator_code", "revoke_authenticator_access":
+                return try await MCPAuthenticatorTools.call(name: name, args: arguments, context: context)
             case "list_secrets": return try await listSecrets(context: context)
             case "read_secret": return try await readSecret(args: arguments, context: context)
             case "set_mcp_allowed": return try await setMCPAllowed(args: arguments, context: context)
@@ -161,7 +163,10 @@ enum MCPTools {
     }
 
     static func getAuditLog(args: [String: Any], context: MCPContext) throws -> [String: Any] {
-        let allowedNames = Set(try context.service.list().filter(\.mcpAllowed).map(\.name))
+        var allowedNames = Set(try context.service.list().filter(\.mcpAllowed).map(\.name))
+        if let authenticators = try? AuthenticatorService(vaultService: context.service) {
+            allowedNames.formUnion(try authenticators.listForAgent().map { "authenticator:\($0.id.uuidString)" })
+        }
         var filter = AuditFilter(limit: (args["limit"] as? Int) ?? 50)
         if let a = args["agent"] as? String, !a.isEmpty { filter.agent = a }
         if let s = args["secret"] as? String, !s.isEmpty {

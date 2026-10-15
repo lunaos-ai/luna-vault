@@ -4,6 +4,14 @@ All notable changes to Vibe Vault are documented here.
 
 ## Unreleased
 
+### Added
+
+- Per-authenticator **Allow AI agents** control, audited MCP code requests and revocation, and PushCI enrollment import through the browser extension. Existing authenticators default to private; agents receive temporary codes only.
+
+### Changed
+
+- `vibevault otp code` now requires the authenticator's agent-access permission, including when process detection cannot identify the caller. CLI vault unlock requirements still apply.
+
 ### Fixed
 
 - Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI and MCP are built as separate SwiftPM products. Recovery prompts use the Windows C runtime instead of Glibc. The AppKit browser host is macOS-only, so Windows tests can build. Legacy v1 sync fixtures that call CommonCrypto stay on Apple platforms. Secret scanning allowlists RFC 6238 TOTP fixtures.
