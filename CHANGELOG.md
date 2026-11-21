@@ -14,6 +14,7 @@ All notable changes to Vibe Vault are documented here.
 
 ### Fixed
 
+- Secrets added or changed through the CLI or MCP now appear in the running macOS app within about a second, without a restart. The vault posts a payload-free `dev.vibevault.vault-changed` distributed notification after every save, and the app reloads (debounced) on it and when it becomes active.
 - Windows loopback MCP uses an explicit Winsock version word and `IPPROTO_TCP.rawValue`. On Windows, ArgumentParser resolves to 1.8+ so SwiftCrossUI's WinUI path can build. CLI and MCP are built as separate SwiftPM products. Recovery prompts use the Windows C runtime instead of Glibc. The AppKit browser host is macOS-only, so Windows tests can build. Legacy v1 sync fixtures that call CommonCrypto stay on Apple platforms. Secret scanning allowlists RFC 6238 TOTP fixtures.
 
 ## [0.2.2] — 2026-10-04

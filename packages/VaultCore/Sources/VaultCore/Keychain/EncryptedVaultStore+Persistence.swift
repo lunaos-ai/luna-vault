@@ -64,6 +64,7 @@ extension EncryptedVaultStore {
         try blob.write(to: fileURL, options: .atomic)
         PlatformFilePermissions.restrictToOwner(fileURL)
         VaultPaths.includeInBackup(fileURL)
+        VaultChangeNotifier.post()
     }
 
     func appendRevision(
