@@ -55,6 +55,9 @@ struct MainWindow: View {
         .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
             env.refreshSharedUnlockSessionStatus()
         }
+        .onReceive(VaultChangeSignal.publisher) { _ in
+            env.refresh()
+        }
         .onChange(of: selection) { _, _ in
             Feedback.play(.select, soundsEnabled: env.uiSoundsEnabled)
         }
